@@ -47,7 +47,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SDK-2, WI-1yaa.SPEC-4]
 
-### WI-1yaa.SDK-4: SDK schema-conformance tests [READY]
+### WI-1yaa.SDK-4: SDK schema-conformance tests [DONE]
 service: yaagents/sdk-fastapi
 brief: pytest suite asserting every `AgenticResponse.*` body validates against
 the matching `schemas/v0.1` schema using the shared `spec/examples/v0.1`
