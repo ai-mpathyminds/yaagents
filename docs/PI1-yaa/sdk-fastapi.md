@@ -33,7 +33,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SDK-1]
 
-### WI-1yaa.SDK-3: `@agentic_operation` decorator + OpenAPI generation [READY]
+### WI-1yaa.SDK-3: `@agentic_operation` decorator + OpenAPI generation [WIP]
 service: yaagents/sdk-fastapi
 brief: `@agentic_operation(resource, operation_kind, mutating, roles,
 responses)` decorator: injects `AgenticContext`, and generates the FastAPI
