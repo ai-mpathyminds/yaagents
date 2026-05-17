@@ -20,7 +20,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.SDK-2: `AgenticContext` + `RequiredInput` [WIP]
+### WI-1yaa.SDK-2: `AgenticContext` + `RequiredInput` [DONE]
 service: yaagents/sdk-fastapi
 brief: `AgenticContext` FastAPI dependency extracting `tenant_id`, `actor_id`,
 `correlation_id`, `request_id` from request headers (the gateway-injected set);
