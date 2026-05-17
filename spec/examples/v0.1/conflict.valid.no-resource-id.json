@@ -1,0 +1,9 @@
+{
+  "type": "conflict",
+  "code": "RESOURCE_ALREADY_EXISTS",
+  "message": "An optimization with this configuration already exists.",
+  "trace": {
+    "correlationId": "corr-302",
+    "requestId": "req-302"
+  }
+}

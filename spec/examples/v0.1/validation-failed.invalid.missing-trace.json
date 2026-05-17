@@ -1,0 +1,11 @@
+{
+  "type": "validation_failed",
+  "code": "VALIDATION_FAILED",
+  "message": "The request inputs failed validation.",
+  "errors": [
+    {
+      "field": "budget",
+      "message": "Budget must be greater than 0."
+    }
+  ]
+}

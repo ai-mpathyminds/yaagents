@@ -1,0 +1,9 @@
+{
+  "type": "not_an_error",
+  "code": "INTERNAL_ERROR",
+  "message": "An unexpected error occurred.",
+  "trace": {
+    "correlationId": "corr-404",
+    "requestId": "req-404"
+  }
+}
