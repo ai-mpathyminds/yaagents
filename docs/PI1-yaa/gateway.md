@@ -51,7 +51,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-2]
 
-### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [WIP]
+### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [DONE]
 service: yaagents/gateway
 brief: Enforce route `roles:` (ALL must be present in actor claims) — failure →
 `403 application/vnd.yaagents.error+json`. Reverse-proxy
