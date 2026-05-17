@@ -5,7 +5,7 @@ ADR: PI1-yaa-0002 (normative table source, 202 schema-only), PI1-yaa-0003 (Hatch
 
 ---
 
-### WI-1yaa.SDK-1: `AgenticResponse` factory — all 10 response types [READY]
+### WI-1yaa.SDK-1: `AgenticResponse` factory — all 10 response types [WIP]
 service: yaagents/sdk-fastapi
 brief: `AgenticResponse` class with the 10 factory methods (PRD §5.5):
 `success/created/accepted/clarification_required/validation_failed/
