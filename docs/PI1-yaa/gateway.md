@@ -1,6 +1,6 @@
 # PI1-yaa — Component: Go gateway (`gateway/`)
 
-Owner lane: go-developer. Sprint 2. Published as `ghcr.io/yaagents/gateway:0.1.0`
+Owner lane: go-developer. Sprint 2. Published as `ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0`
 (publish WIs in `release-and-publish.md`). ADR: PI1-yaa-0001 (net-new base,
 NOT a consumer/fork of internal gateways; HS256+JWKS dual JWT).
 
@@ -14,7 +14,7 @@ NOT a consumer/fork of internal gateways; HS256+JWKS dual JWT).
 
 ### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [READY]
 service: yaagents/gateway
-brief: Go module `github.com/yaagents/gateway`; `net/http` server (no heavy
+brief: Go module `github.com/ai-mpathyminds/yaagents/gateway`; `net/http` server (no heavy
 framework per ADR 0001 §2). Config from env (`GATEWAY_PORT` default 8080 /
 portfolio 8120, `GATEWAY_ROUTES_FILE`, `GATEWAY_AUDIT_LOG`). Parse + validate
 `routes.yaml` against the PRD §5.4 schema (id/method/path/target/roles/
@@ -112,7 +112,7 @@ config (if any) MUST NOT supply a functional `GATEWAY_JWT_SECRET`;
 No `.env` file committed to the repo. `trivy` config scan in CI (via REL-5/REL-6)
 flags any secret in layers at publish time.
 acceptance:
-- `docker inspect ghcr.io/yaagents/gateway:0.1.0` Env list contains no `GATEWAY_JWT_SECRET=*` default
+- `docker inspect ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0` Env list contains no `GATEWAY_JWT_SECRET=*` default
 - `trivy config ./docker/gateway/Dockerfile` exits 0 (no secret in Dockerfile)
 - CI fails if any `ENV *SECRET*=` or `ENV *TOKEN*=` literal found in Dockerfile (`grep` gate in REL-6)
 library_ref: ADR PI1-yaa-0001
