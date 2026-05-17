@@ -1,7 +1,7 @@
 # PI1-yaa — Component: TypeScript client (`client-ts/`)
 
 Owner lane: frontend-developer (a **library**, not a UI app). Sprint 4.
-Published as npm `@yaagents/client`. ADR: PI1-yaa-0002, PI1-yaa-0003 (dual
+Published as npm `@aimpathyminds/yaagents-client`. ADR: PI1-yaa-0002, PI1-yaa-0003 (dual
 ESM+CJS, zero runtime deps).
 
 > Duplication note: see `client-python.md` — PYC/TSC are intentional

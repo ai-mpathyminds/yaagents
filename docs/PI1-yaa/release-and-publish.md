@@ -51,11 +51,11 @@ depends_on: [WI-1yaa.SDK-4, WI-1yaa.PYC-3, WI-1yaa.CLI-4]
 
 ### WI-1yaa.REL-4: npm publish (OIDC provenance) [READY] — Sprint 5
 service: yaagents/(ci)
-brief: `@yaagents/client` dual ESM+CJS package (ADR 0003) with
+brief: `@aimpathyminds/yaagents-client` dual ESM+CJS package (ADR 0003) with
 `yaagents.profile`+`PROFILE_VERSION`. GH Actions: build → `npm publish
 --provenance` via OIDC (no `NPM_TOKEN`).
 acceptance:
-- `npm install @yaagents/client` from public npm succeeds (PRD §12.11); provenance attached
+- `npm install @aimpathyminds/yaagents-client` from public npm succeeds (PRD §12.11); provenance attached
 - No `NPM_TOKEN` secret in repo
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.TSC-3]
@@ -64,12 +64,12 @@ depends_on: [WI-1yaa.TSC-3]
 service: yaagents/(ci)
 brief: Multi-stage Alpine Dockerfile (non-root, `CGO_ENABLED=0`). GH Actions
 `docker/build-push-action` multi-arch (`linux/amd64`+`linux/arm64`) →
-`ghcr.io/yaagents/gateway:0.1.0`+`:latest` via `GITHUB_TOKEN` OIDC
+`ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0`+`:latest` via `GITHUB_TOKEN` OIDC
 (`packages: write`). **SBOM generated at publish + attached to GitHub
 Release** (format = platform-engineer A-4 pick per ADR 0005/OQ-5). Cosign =
 PI2-yaa (note only).
 acceptance:
-- `docker pull ghcr.io/yaagents/gateway:0.1.0` succeeds, both arches (PRD §12.12)
+- `docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0` succeeds, both arches (PRD §12.12)
 - SBOM artifact on the GitHub Release; `trivy` image scan in CI; no PAT used
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.GW-5]
@@ -131,7 +131,7 @@ is **PI2-yaa scope** — do not pull forward.
 acceptance:
 - `v0.1.0` GitHub Release has a `sbom.spdx.json` asset
 - `python -c "import json; json.load(open('sbom.spdx.json'))"` succeeds (valid JSON)
-- SBOM `spdxVersion: SPDX-2.3` field present; `name` = `ghcr.io/yaagents/gateway:0.1.0`
+- SBOM `spdxVersion: SPDX-2.3` field present; `name` = `ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0`
 - No additional secrets added to the GH repo for this step
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.REL-5]
