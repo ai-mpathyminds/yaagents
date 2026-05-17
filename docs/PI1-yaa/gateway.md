@@ -12,7 +12,7 @@ NOT a consumer/fork of internal gateways; HS256+JWKS dual JWT).
 
 ---
 
-### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [WIP]
+### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [DONE]
 service: yaagents/gateway
 brief: Go module `github.com/ai-mpathyminds/yaagents/gateway`; `net/http` server (no heavy
 framework per ADR 0001 §2). Config from env (`GATEWAY_PORT` default 8080 /
@@ -26,7 +26,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001 (net-new standalone OSS gateway; future internal base)
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [READY]
+### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [WIP]
 service: yaagents/gateway
 brief: JWT bearer validation. `GATEWAY_JWT_SECRET` → HS256 (dev/demo default);
 `GATEWAY_JWT_JWKS_URL` → RS256 via cached JWKS (prod); JWKS precedence if both
