@@ -217,7 +217,7 @@ content-type/schema wiring.
 ### 5.4 Component 4 — Go Gateway (`gateway/`)
 
 **Directory:** `gateway/`
-**Published image:** `ghcr.io/yaagents/gateway:0.1.0` (GHCR, multi-arch: `linux/amd64` + `linux/arm64`)
+**Published image:** `ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0` (GHCR, multi-arch: `linux/amd64` + `linux/arm64`)
 
 **Responsibilities:**
 
@@ -258,6 +258,8 @@ routes:
 | `GATEWAY_JWT_SECRET` | HS256 secret (dev only) |
 | `GATEWAY_JWT_JWKS_URL` | JWKS URL for RS256 (production) |
 | `GATEWAY_AUDIT_LOG` | `stdout` (default) or future sink config |
+
+**Go module:** `github.com/ai-mpathyminds/yaagents/gateway`
 
 **Build:** Multi-stage Alpine Dockerfile, non-root user, CGO_ENABLED=0. SBOM generated
 at publish time (PI1-yaa); Cosign signing deferred to PI2-yaa.
@@ -338,8 +340,8 @@ at publish time (PI1-yaa); Cosign signing deferred to PI2-yaa.
 ### 5.7 Component 7 — TypeScript Client (`client-ts/`)
 
 **Directory:** `client-ts/`
-**npm package:** `@yaagents/client`
-**Installs via:** `npm install @yaagents/client`
+**npm package:** `@aimpathyminds/yaagents-client`
+**Installs via:** `npm install @aimpathyminds/yaagents-client`
 
 **Note:** This is a **library**, not a UI application. Targets ESM + CommonJS; supports
 Node.js and browser environments. TypeScript types are first-class.
@@ -457,8 +459,8 @@ yaagents conformance-test http://localhost:8120
 ### 7.1 Gateway image
 
 ```
-ghcr.io/yaagents/gateway:0.1.0
-ghcr.io/yaagents/gateway:latest   (convenience alias)
+ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0
+ghcr.io/ai-mpathyminds/yaagents-gateway:latest   (convenience alias)
 ```
 
 - Registry: GitHub Container Registry (GHCR)
@@ -485,7 +487,7 @@ ghcr.io/yaagents/gateway:latest   (convenience alias)
 
 | Package | Version | Description |
 |---------|---------|-------------|
-| `@yaagents/client` | `0.1.0` | TypeScript/JavaScript client |
+| `@aimpathyminds/yaagents-client` | `0.1.0` | TypeScript/JavaScript client |
 
 - Format: ESM primary + CommonJS compat bundle
 - Types: TypeScript declarations (`.d.ts`) bundled
@@ -611,8 +613,8 @@ before public launch. This is a legal gate, not a PI1-yaa engineering gate.
 8. The Campaign reference example runs with `docker compose up` in `examples/campaign-api/`.
 9. `yaagents-cli conformance-test http://localhost:8120` returns PASS.
 10. `pip install yaagents-fastapi`, `pip install yaagents-client`, `pip install yaagents-cli` succeed from public PyPI.
-11. `npm install @yaagents/client` succeeds from public npm.
-12. `docker pull ghcr.io/yaagents/gateway:0.1.0` succeeds from GHCR.
+11. `npm install @aimpathyminds/yaagents-client` succeeds from public npm.
+12. `docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0` succeeds from GHCR.
 
 ---
 
