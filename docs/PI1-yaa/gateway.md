@@ -38,7 +38,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [WIP]
+### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [DONE]
 service: yaagents/gateway
 brief: Extract `X-Tenant-ID` + actor claims from the validated token; enforce
 `tenantRequired` per route (reject `400`/`403` per profile when absent).
@@ -51,7 +51,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-2]
 
-### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [READY]
+### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [WIP]
 service: yaagents/gateway
 brief: Enforce route `roles:` (ALL must be present in actor claims) — failure →
 `403 application/vnd.yaagents.error+json`. Reverse-proxy

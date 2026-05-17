@@ -24,6 +24,7 @@ import (
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/auth"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/proxy"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/tenant"
 )
@@ -53,11 +54,18 @@ func main() {
 	authMiddle := auth.Middleware(validator, log)
 	ctxMiddle := tenant.ContextMiddleware(log) // WI-1yaa.GW-3
 
+	// Route dispatcher: RBAC + typed-response passthrough proxy (WI-1yaa.GW-4).
+	dispatcher, dispErr := proxy.New(routeList, log)
+	if dispErr != nil {
+		log.Error("failed to build route dispatcher — cannot start", "error", dispErr.Error())
+		os.Exit(1)
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
-	// Catch-all: auth → tenant context → dispatch stub (GW-4 replaces stub).
-	mux.Handle("/", authMiddle(ctxMiddle(http.HandlerFunc(notImplemented))))
+	// Catch-all: auth → tenant context → route dispatcher.
+	mux.Handle("/", authMiddle(ctxMiddle(dispatcher)))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
@@ -93,14 +101,6 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = fmt.Fprint(w, `{"status":"ok"}`)
-}
-
-// notImplemented is a placeholder handler for authenticated routes until
-// GW-4 wires the route dispatcher.
-func notImplemented(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusNotImplemented)
-	_, _ = fmt.Fprint(w, `{"status":"not implemented","note":"route dispatch wired in WI-1yaa.GW-4"}`)
 }
 
 // makeReadyzHandler returns a readiness handler that returns 200 when routes are
