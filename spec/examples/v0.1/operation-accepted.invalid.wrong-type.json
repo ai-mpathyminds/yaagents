@@ -1,0 +1,11 @@
+{
+  "type": "accepted",
+  "code": "OPERATION_ACCEPTED",
+  "message": "Operation accepted.",
+  "operationId": "op-001",
+  "statusUrl": "/operations/op-001/status",
+  "trace": {
+    "correlationId": "corr-503",
+    "requestId": "req-503"
+  }
+}

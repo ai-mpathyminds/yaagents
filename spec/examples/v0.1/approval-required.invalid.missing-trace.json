@@ -1,0 +1,6 @@
+{
+  "type": "approval_required",
+  "code": "APPROVAL_REQUIRED",
+  "message": "Human approval is required.",
+  "approvalToken": "apptok-xyz"
+}

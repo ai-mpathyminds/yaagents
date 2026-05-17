@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "code": "CAMPAIGN_LOCKED",
+  "message": "Campaign is currently locked.",
+  "trace": {
+    "correlationId": "corr-303",
+    "requestId": "req-303"
+  }
+}

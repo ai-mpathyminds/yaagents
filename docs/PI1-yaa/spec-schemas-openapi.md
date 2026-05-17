@@ -68,7 +68,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-3]
 
-### WI-1yaa.SPEC-5: Shared golden conformance corpus [READY]
+### WI-1yaa.SPEC-5: Shared golden conformance corpus [WIP]
 service: yaagents/spec
 brief: Author `spec/examples/v0.1/` — for each of the 6 media types, one
 `*.valid.json` and ≥1 `*.invalid.json` fixture (the invalid set covers a

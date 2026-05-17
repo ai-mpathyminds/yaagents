@@ -1,0 +1,7 @@
+{
+  "type": "operation_accepted",
+  "code": "OPERATION_ACCEPTED",
+  "message": "Operation accepted for asynchronous processing.",
+  "operationId": "op-001",
+  "statusUrl": "/operations/op-001/status"
+}

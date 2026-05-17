@@ -1,0 +1,10 @@
+{
+  "type": "conflict",
+  "code": "APPROVAL_REQUIRED",
+  "message": "Human approval is required.",
+  "approvalToken": "apptok-xyz",
+  "trace": {
+    "correlationId": "corr-203",
+    "requestId": "req-203"
+  }
+}

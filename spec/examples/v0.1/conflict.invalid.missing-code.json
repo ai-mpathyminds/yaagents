@@ -1,0 +1,8 @@
+{
+  "type": "conflict",
+  "message": "Campaign is currently locked.",
+  "trace": {
+    "correlationId": "corr-304",
+    "requestId": "req-304"
+  }
+}

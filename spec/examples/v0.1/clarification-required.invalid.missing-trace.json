@@ -1,0 +1,14 @@
+{
+  "type": "clarification_required",
+  "code": "CLARIFICATION_REQUIRED",
+  "message": "Additional information is required.",
+  "requiredInputs": [
+    {
+      "name": "successMetric",
+      "location": "body",
+      "type": "string",
+      "required": true,
+      "question": "Which success metric should be optimized?"
+    }
+  ]
+}

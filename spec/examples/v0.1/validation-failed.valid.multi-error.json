@@ -1,0 +1,19 @@
+{
+  "type": "validation_failed",
+  "code": "VALIDATION_FAILED",
+  "message": "Multiple fields failed validation.",
+  "errors": [
+    {
+      "field": "successMetric",
+      "message": "successMetric must be one of: ctr, cpl, conversion_rate, lead_quality."
+    },
+    {
+      "field": "maxRecommendations",
+      "message": "maxRecommendations must be between 1 and 10."
+    }
+  ],
+  "trace": {
+    "correlationId": "corr-102",
+    "requestId": "req-102"
+  }
+}
