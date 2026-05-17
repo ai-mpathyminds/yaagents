@@ -1,5 +1,7 @@
 # YAAgents v0.1 — Agentic REST Profile MVP (PI1-yaa) — PRD Seed
-Status: [DRAFT]
+Status: [READY]
+
+> Seeded by chief-architect. Expanded by product-manager 2026-05-17.
 Target product: yaagents
 Target services: spec/schemas/openapi, gateway (Go), sdk-fastapi (Py), client-python (Py), client-ts (TS), cli (Py), examples/campaign-api, docker-compose demo
 Owner: product-manager (yaagents)
