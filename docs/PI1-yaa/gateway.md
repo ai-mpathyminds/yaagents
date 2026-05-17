@@ -12,7 +12,7 @@ NOT a consumer/fork of internal gateways; HS256+JWKS dual JWT).
 
 ---
 
-### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [READY]
+### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [WIP]
 service: yaagents/gateway
 brief: Go module `github.com/ai-mpathyminds/yaagents/gateway`; `net/http` server (no heavy
 framework per ADR 0001 §2). Config from env (`GATEWAY_PORT` default 8080 /
