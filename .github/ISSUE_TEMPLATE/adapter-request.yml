@@ -1,0 +1,79 @@
+name: Adapter Request
+description: Request native YAAgents support for a server framework (Spring Boot, ASP.NET Core, Express, etc.).
+labels: ["adapter", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to request a YAAgents server-side SDK adapter for a
+        framework not yet supported. Adapters let teams expose agentic APIs using
+        `application/vnd.yaagents.*` response types from their preferred language
+        and web framework.
+
+        Current adapters: **sdk-fastapi** (Python FastAPI).
+
+  - type: input
+    id: framework
+    attributes:
+      label: Framework
+      description: Name and language of the framework (e.g. "Spring Boot / Java", "ASP.NET Core / C#").
+      placeholder: "Spring Boot / Java"
+    validations:
+      required: true
+
+  - type: input
+    id: ecosystem_size
+    attributes:
+      label: Ecosystem / adoption signal
+      description: |
+        Approximate number of users, GitHub stars, or downloads — helps prioritise.
+        A rough order of magnitude is fine.
+      placeholder: "Spring Boot: ~10M downloads/month on Maven Central"
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Your use case
+      description: |
+        Describe the agentic API you are building and why you need this framework
+        rather than the existing Python FastAPI SDK.
+      placeholder: |
+        We have an existing Spring Boot microservices platform. Adding a Python
+        service solely to use sdk-fastapi adds operational overhead. We want to
+        expose our campaign-optimization endpoint from our Java service directly.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Willing to contribute?
+      description: |
+        Contributions are not currently accepted (legal review pending — see
+        CONTRIBUTING.md). This question is forward-looking: once contributions open,
+        would you be willing to maintain this adapter under the YAAgents license?
+      options:
+        - "Yes — I would author and maintain it"
+        - "Yes — I would co-maintain it with others"
+        - "No — I need the maintainers to build it"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: prior_art
+    attributes:
+      label: Prior art / reference implementations
+      description: |
+        Links to existing OpenAPI-first, response-typed, or agentic patterns in
+        this framework ecosystem that could inform the adapter design.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this adapter has not already been requested.
+          required: true
+        - label: I understand contributions are paused pending legal review (CONTRIBUTING.md).
+          required: true
