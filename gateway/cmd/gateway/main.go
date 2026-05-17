@@ -25,6 +25,7 @@ import (
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/tenant"
 )
 
 func main() {
@@ -50,13 +51,13 @@ func main() {
 		os.Exit(1)
 	}
 	authMiddle := auth.Middleware(validator, log)
+	ctxMiddle := tenant.ContextMiddleware(log) // WI-1yaa.GW-3
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
-	// Catch-all: all other requests require a valid bearer token.
-	// Route dispatch (RBAC + reverse-proxy) wired in WI-1yaa.GW-4.
-	mux.Handle("/", authMiddle(http.HandlerFunc(notImplemented)))
+	// Catch-all: auth → tenant context → dispatch stub (GW-4 replaces stub).
+	mux.Handle("/", authMiddle(ctxMiddle(http.HandlerFunc(notImplemented))))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

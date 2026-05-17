@@ -26,7 +26,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001 (net-new standalone OSS gateway; future internal base)
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [WIP]
+### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [DONE]
 service: yaagents/gateway
 brief: JWT bearer validation. `GATEWAY_JWT_SECRET` → HS256 (dev/demo default);
 `GATEWAY_JWT_JWKS_URL` → RS256 via cached JWKS (prod); JWKS precedence if both
@@ -38,7 +38,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [READY]
+### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [WIP]
 service: yaagents/gateway
 brief: Extract `X-Tenant-ID` + actor claims from the validated token; enforce
 `tenantRequired` per route (reject `400`/`403` per profile when absent).
