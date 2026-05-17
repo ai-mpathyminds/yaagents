@@ -1,6 +1,7 @@
 // Command gateway is the yaagents API gateway — a lightweight reverse proxy
-// that adds authn, tenant/actor context, RBAC, and typed-response passthrough
-// for the Agentic REST Profile (ADR PI1-yaa-0001).
+// that adds authn, tenant/actor context, RBAC, typed-response passthrough,
+// audit logging, and Prometheus metrics for the Agentic REST Profile
+// (ADR PI1-yaa-0001).
 //
 // Configuration is via environment variables:
 //
@@ -21,9 +22,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/auth"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/proxy"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/tenant"
@@ -45,6 +48,18 @@ func main() {
 		slog.Int("routes_loaded", len(routeList)),
 	)
 
+	// Audit log sink (WI-1yaa.GW-5).
+	auditSink, closeAudit, auditErr := audit.OpenSink(cfg.AuditLog)
+	if auditErr != nil {
+		log.Error("cannot open audit log — cannot start", "error", auditErr.Error())
+		os.Exit(1)
+	}
+	defer closeAudit()
+	auditLog := audit.New(auditSink)
+
+	// Prometheus metrics registry (WI-1yaa.GW-5).
+	reg := metrics.New()
+
 	// Auth validator — fail-fast if not configured (WI-1yaa.GW-2).
 	validator, authErr := auth.NewValidator(log)
 	if authErr != nil {
@@ -54,8 +69,8 @@ func main() {
 	authMiddle := auth.Middleware(validator, log)
 	ctxMiddle := tenant.ContextMiddleware(log) // WI-1yaa.GW-3
 
-	// Route dispatcher: RBAC + typed-response passthrough proxy (WI-1yaa.GW-4).
-	dispatcher, dispErr := proxy.New(routeList, log)
+	// Route dispatcher: RBAC + typed-response passthrough + audit + metrics (GW-4/GW-5).
+	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg)
 	if dispErr != nil {
 		log.Error("failed to build route dispatcher — cannot start", "error", dispErr.Error())
 		os.Exit(1)
@@ -64,6 +79,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
+	mux.HandleFunc("GET /metrics", reg.Handler())
 	// Catch-all: auth → tenant context → route dispatcher.
 	mux.Handle("/", authMiddle(ctxMiddle(dispatcher)))
 
@@ -75,7 +91,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown on SIGTERM / SIGINT.
+	// Graceful shutdown on SIGTERM / SIGINT — drains in-flight requests (GW-5).
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, syscall.SIGINT)
 
@@ -103,9 +119,9 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 }
 
-// makeReadyzHandler returns a readiness handler that returns 200 when routes are
-// loaded and 503 otherwise. Full readiness logic (JWKS reachability, etc.) is
-// added in WI-1yaa.GW-5.
+// makeReadyzHandler returns a readiness handler: 200 when at least one route is
+// loaded, 503 otherwise. Routes are validated at boot so a non-zero count means
+// configuration is valid (WI-1yaa.GW-5 AC).
 func makeReadyzHandler(ready bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
