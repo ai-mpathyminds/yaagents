@@ -1,6 +1,8 @@
 package proxy
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -9,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/reqctx"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 )
@@ -29,12 +33,18 @@ func ctxRequest(method, path string, body io.Reader, roles []string, tenantID st
 }
 
 // makeDispatcher builds a RouteDispatcher with a single upstream test server.
+// auditLog and reg may be nil to disable audit/metrics in a given test.
 func makeDispatcher(t *testing.T, upstream *httptest.Server, routeDef routes.Route) *RouteDispatcher {
+	t.Helper()
+	return makeDispatcherWithObs(t, upstream, routeDef, nil, nil)
+}
+
+func makeDispatcherWithObs(t *testing.T, upstream *httptest.Server, routeDef routes.Route, auditLog *audit.Logger, reg *metrics.Registry) *RouteDispatcher {
 	t.Helper()
 	if upstream != nil {
 		routeDef.Target = upstream.URL
 	}
-	d, err := New([]routes.Route{routeDef}, nullLog())
+	d, err := New([]routes.Route{routeDef}, nullLog(), auditLog, reg)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -378,7 +388,6 @@ func TestBuildProxy_DirectorSetsSchemeAndHost(t *testing.T) {
 	targetURL, _ := url.Parse("http://backend.internal:9090")
 	var gotScheme, gotHost string
 
-	// Capture what Director sets by calling it directly.
 	p := buildProxy(targetURL, routes.Route{ID: "x", Method: "GET", Path: "/p", Target: targetURL.String()}, nullLog())
 
 	req := ctxRequest("GET", "/p", nil, nil, "")
@@ -391,5 +400,134 @@ func TestBuildProxy_DirectorSetsSchemeAndHost(t *testing.T) {
 	}
 	if gotHost != "backend.internal:9090" {
 		t.Errorf("host: want backend.internal:9090, got %q", gotHost)
+	}
+}
+
+// --- Audit + Metrics observation tests (WI-1yaa.GW-5) ---
+
+// TestDispatcher_AuditTrue_EmitsEvent verifies that a route with audit:true
+// causes one JSON audit event to be written after the request completes.
+func TestDispatcher_AuditTrue_EmitsEvent(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	var buf bytes.Buffer
+	auditLog := audit.New(&buf)
+
+	route := routes.Route{
+		ID: "audited", Method: "GET", Path: "/data", Target: upstream.URL,
+		Audit: true,
+	}
+	d := makeDispatcherWithObs(t, upstream, route, auditLog, nil)
+
+	req := ctxRequest("GET", "/data", nil, []string{}, "tenant-x")
+	w := httptest.NewRecorder()
+	d.ServeHTTP(w, req)
+
+	if buf.Len() == 0 {
+		t.Fatal("expected audit event to be written; buffer is empty")
+	}
+	var evt audit.Event
+	if err := json.Unmarshal(buf.Bytes(), &evt); err != nil {
+		t.Fatalf("audit event is not valid JSON: %v\nraw: %s", err, buf.String())
+	}
+	if evt.RouteID != "audited" {
+		t.Errorf("route_id: want %q, got %q", "audited", evt.RouteID)
+	}
+	if evt.StatusCode != http.StatusOK {
+		t.Errorf("status_code: want 200, got %d", evt.StatusCode)
+	}
+	if evt.TenantID != "tenant-x" {
+		t.Errorf("tenant_id: want tenant-x, got %q", evt.TenantID)
+	}
+	if evt.Timestamp == "" {
+		t.Error("timestamp should be non-empty")
+	}
+}
+
+// TestDispatcher_AuditFalse_NoEvent verifies that a route with audit:false
+// (the default) does NOT write any audit event.
+func TestDispatcher_AuditFalse_NoEvent(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	var buf bytes.Buffer
+	auditLog := audit.New(&buf)
+
+	route := routes.Route{
+		ID: "silent", Method: "GET", Path: "/data", Target: upstream.URL,
+		Audit: false,
+	}
+	d := makeDispatcherWithObs(t, upstream, route, auditLog, nil)
+
+	req := ctxRequest("GET", "/data", nil, []string{}, "")
+	d.ServeHTTP(httptest.NewRecorder(), req)
+
+	if buf.Len() != 0 {
+		t.Errorf("expected no audit event for audit:false route; got: %s", buf.String())
+	}
+}
+
+// TestDispatcher_MetricsRecorded verifies that the metrics registry records one
+// observation per request with the correct route ID.
+func TestDispatcher_MetricsRecorded(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	}))
+	defer upstream.Close()
+
+	reg := metrics.New()
+	route := routes.Route{
+		ID: "m1", Method: "POST", Path: "/items", Target: upstream.URL,
+	}
+	d := makeDispatcherWithObs(t, upstream, route, nil, reg)
+
+	req := ctxRequest("POST", "/items", nil, []string{}, "")
+	d.ServeHTTP(httptest.NewRecorder(), req)
+
+	// Check Prometheus output contains the route + status.
+	var buf bytes.Buffer
+	reg.WritePrometheus(&buf)
+	out := buf.String()
+
+	if !strings.Contains(out, `route="m1"`) {
+		t.Errorf("expected route m1 in metrics output; got:\n%s", out)
+	}
+	if !strings.Contains(out, `status="201"`) {
+		t.Errorf("expected status 201 in metrics output; got:\n%s", out)
+	}
+}
+
+// TestResponseRecorder_CapturesStatus verifies the responseRecorder wrapper.
+func TestResponseRecorder_CapturesStatus(t *testing.T) {
+	w := httptest.NewRecorder()
+	rr := &responseRecorder{ResponseWriter: w, code: http.StatusOK}
+
+	rr.WriteHeader(http.StatusAccepted)
+	if rr.code != http.StatusAccepted {
+		t.Errorf("code: want 202, got %d", rr.code)
+	}
+	// Second WriteHeader should not overwrite the first captured code.
+	rr.WriteHeader(http.StatusInternalServerError)
+	if rr.code != http.StatusAccepted {
+		t.Errorf("code should not change after first WriteHeader, got %d", rr.code)
+	}
+}
+
+// TestResponseRecorder_DefaultsTo200OnWrite verifies that a Write without a
+// prior WriteHeader is recorded as 200.
+func TestResponseRecorder_DefaultsTo200OnWrite(t *testing.T) {
+	w := httptest.NewRecorder()
+	rr := &responseRecorder{ResponseWriter: w, code: http.StatusOK}
+	_, _ = rr.Write([]byte("hello"))
+	if rr.code != http.StatusOK {
+		t.Errorf("expected 200 default, got %d", rr.code)
+	}
+	if !rr.wroteHeader {
+		t.Error("wroteHeader should be true after Write")
 	}
 }

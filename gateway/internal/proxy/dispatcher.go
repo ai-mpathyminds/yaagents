@@ -1,6 +1,7 @@
 // Package proxy implements the yaagents gateway route dispatcher:
 // per-route RBAC enforcement, typed-response passthrough via
-// httputil.ReverseProxy, and X-YAAgents-Profile header injection.
+// httputil.ReverseProxy, X-YAAgents-Profile header injection, and optional
+// per-route audit logging + Prometheus metrics observation (WI-1yaa.GW-5).
 //
 // ADR: PI1-yaa-0001 (net/http only; no framework imports; no cross-product deps).
 package proxy
@@ -13,7 +14,10 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/reqctx"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/response"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
@@ -27,7 +31,7 @@ const ProfileHeader = "X-YAAgents-Profile"
 const ProfileVersion = "v0.1"
 
 // routeEntry pairs a validated Route with its pre-built HTTP handler.
-// The handler chain is: EnforceTenant → RBAC → reverse-proxy.
+// The handler chain is: observe → EnforceTenant → RBAC → reverse-proxy.
 type routeEntry struct {
 	route   routes.Route
 	handler http.Handler
@@ -35,24 +39,34 @@ type routeEntry struct {
 
 // RouteDispatcher matches inbound requests to the route table and forwards
 // them to the upstream target with RBAC enforcement and typed-response passthrough.
+// auditLog and reg are optional (nil disables the feature).
 type RouteDispatcher struct {
-	entries []routeEntry
-	log     *slog.Logger
+	entries  []routeEntry
+	log      *slog.Logger
+	auditLog *audit.Logger
+	reg      *metrics.Registry
 }
 
 // New builds a RouteDispatcher from a validated route list.
-// Returns an error if any route's target URL cannot be parsed (belt-and-suspenders;
-// routes.Load already validates URLs at boot).
-func New(routeList []routes.Route, log *slog.Logger) (*RouteDispatcher, error) {
-	entries := make([]routeEntry, 0, len(routeList))
+// auditLog and reg may be nil to disable audit/metrics respectively.
+// Returns an error if any route's target URL cannot be parsed.
+func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry) (*RouteDispatcher, error) {
+	d := &RouteDispatcher{
+		entries:  make([]routeEntry, 0, len(routeList)),
+		log:      log,
+		auditLog: auditLog,
+		reg:      reg,
+	}
 	for _, r := range routeList {
 		handler, err := makeRouteHandler(r, log)
 		if err != nil {
 			return nil, fmt.Errorf("building handler for route %q: %w", r.ID, err)
 		}
-		entries = append(entries, routeEntry{route: r, handler: handler})
+		// Wrap with per-request observation (metrics + audit).
+		handler = d.observeHandler(handler, r)
+		d.entries = append(d.entries, routeEntry{route: r, handler: handler})
 	}
-	return &RouteDispatcher{entries: entries, log: log}, nil
+	return d, nil
 }
 
 // ServeHTTP implements http.Handler. It matches the request, applies the per-route
@@ -95,7 +109,6 @@ func matchPath(pattern, requestPath string) bool {
 	}
 	for i, ps := range pSegs {
 		if strings.HasPrefix(ps, "{") && strings.HasSuffix(ps, "}") {
-			// Placeholder — match any non-empty segment.
 			if rSegs[i] == "" {
 				return false
 			}
@@ -121,6 +134,63 @@ func splitPath(path string) []string {
 	return out
 }
 
+// responseRecorder wraps http.ResponseWriter to capture the first status code
+// written by downstream handlers (including httputil.ReverseProxy).
+type responseRecorder struct {
+	http.ResponseWriter
+	code        int
+	wroteHeader bool
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	if !rr.wroteHeader {
+		rr.code = code
+		rr.wroteHeader = true
+	}
+	rr.ResponseWriter.WriteHeader(code)
+}
+
+func (rr *responseRecorder) Write(b []byte) (int, error) {
+	if !rr.wroteHeader {
+		rr.code = http.StatusOK
+		rr.wroteHeader = true
+	}
+	return rr.ResponseWriter.Write(b)
+}
+
+// observeHandler wraps h to measure latency, record metrics, and emit an audit
+// event (only when route.Audit is true). Metrics and audit logging are no-ops
+// when the respective field on RouteDispatcher is nil.
+func (d *RouteDispatcher) observeHandler(h http.Handler, route routes.Route) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rr := &responseRecorder{ResponseWriter: w, code: http.StatusOK}
+		start := time.Now()
+
+		h.ServeHTTP(rr, r)
+
+		latencyMS := float64(time.Since(start).Milliseconds())
+
+		if d.reg != nil {
+			d.reg.Record(route.ID, rr.code, latencyMS)
+		}
+		if route.Audit && d.auditLog != nil {
+			ctx := r.Context()
+			d.auditLog.Log(audit.Event{
+				Timestamp:     audit.Timestamp(),
+				RouteID:       route.ID,
+				Method:        r.Method,
+				Path:          r.URL.Path,
+				TenantID:      reqctx.TenantID(ctx),
+				ActorSubject:  reqctx.ActorSubject(ctx),
+				StatusCode:    rr.code,
+				LatencyMS:     latencyMS,
+				CorrelationID: reqctx.CorrelationID(ctx),
+				RequestID:     reqctx.RequestID(ctx),
+			})
+		}
+	})
+}
+
 // makeRouteHandler constructs the per-route handler chain:
 //
 //	EnforceTenant(route.TenantRequired) → RBAC check → reverse-proxy
@@ -130,7 +200,7 @@ func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error
 		return nil, fmt.Errorf("parsing target %q: %w", route.Target, err)
 	}
 
-	proxy := buildProxy(targetURL, route, log)
+	rp := buildProxy(targetURL, route, log)
 
 	// Inner handler: RBAC then proxy.
 	rbacAndProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +213,7 @@ func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error
 			})
 			return
 		}
-		proxy.ServeHTTP(w, r)
+		rp.ServeHTTP(w, r)
 	})
 
 	// Wrap with per-route tenant enforcement.
@@ -163,11 +233,8 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 		Director: func(req *http.Request) {
 			req.URL.Scheme = targetURL.Scheme
 			req.URL.Host = targetURL.Host
-			// Preserve the original request path (including query string and
-			// {param} segments) — do not rewrite to targetURL.Path.
 			req.Host = targetURL.Host
 
-			// Inject tenant/actor context headers for the upstream service.
 			tenant.InjectUpstreamHeaders(req)
 
 			log.Debug("proxying request",
@@ -178,8 +245,6 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 			)
 		},
 		ModifyResponse: func(resp *http.Response) error {
-			// Add profile header without touching status, Content-Type, or body
-			// (typed-response passthrough per AC).
 			resp.Header.Set(ProfileHeader, ProfileVersion)
 			return nil
 		},
@@ -204,7 +269,7 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 // role claims. Returns a descriptive error listing the first missing role.
 func enforceRoles(r *http.Request, required []string) error {
 	if len(required) == 0 {
-		return nil // Route is open to all authenticated callers.
+		return nil
 	}
 	actorRoles := reqctx.ActorRoles(r.Context())
 	roleSet := make(map[string]bool, len(actorRoles))
