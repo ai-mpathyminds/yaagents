@@ -1,0 +1,308 @@
+openapi: "3.1.0"
+info:
+  title: YAAgents Response Profile — x-yaagents Extension + Example Surface
+  version: "0.1.0"
+  description: >
+    Documents the x-yaagents OpenAPI operation-metadata extension and provides
+    a worked example operation surface for POST /campaigns/{campaignId}/optimizations
+    wiring each response type to its vendor Content-Type and schema $ref per
+    YAAgents Agentic REST Response Profile v0.1 (PRD §5.3).
+    Authoritative source: spec/agentic-rest-profile.md (ADR PI1-yaa-0002).
+
+# -----------------------------------------------------------------------
+# x-yaagents extension schema — documents the 4 required fields.
+# Applied as an operation-level extension on any agentic endpoint.
+# The CLI validate-openapi command verifies presence + correct wiring.
+# -----------------------------------------------------------------------
+# Extension shape (applied to any operation):
+#
+#   x-yaagents:
+#     resource: <string>          # Domain resource name (e.g. Campaign)
+#     operationKind: <enum>       # recommendation | generation | mutation | analysis
+#     deterministic: <boolean>    # Whether the operation is deterministic
+#     mutating: <boolean>         # Whether the operation mutates state
+#
+# Full schema is also captured in components.schemas.XYaagentsExtension below.
+# -----------------------------------------------------------------------
+
+components:
+  schemas:
+
+    # ------------------------------------------------------------------
+    # XYaagentsExtension — schema for the x-yaagents operation extension
+    # ------------------------------------------------------------------
+    XYaagentsExtension:
+      type: object
+      title: x-yaagents Operation Metadata
+      description: >
+        Operation-level metadata extension applied to every agentic endpoint.
+        Enables the CLI validator and gateway to identify and verify agentic
+        operations. Add as x-yaagents: on the OpenAPI operation object.
+      required:
+        - resource
+        - operationKind
+        - deterministic
+        - mutating
+      additionalProperties: false
+      properties:
+        resource:
+          type: string
+          minLength: 1
+          description: >
+            Domain resource name this operation acts upon (e.g. Campaign,
+            Asset, Lead). Used for audit logging and RBAC scope matching.
+          examples:
+            - Campaign
+            - Asset
+        operationKind:
+          type: string
+          enum:
+            - recommendation
+            - generation
+            - mutation
+            - analysis
+          description: >
+            Classifies the nature of the agentic operation:
+            - recommendation: suggests options without applying them
+            - generation: creates new content or artifacts
+            - mutation: modifies existing state
+            - analysis: inspects and reports on existing data
+        deterministic:
+          type: boolean
+          description: >
+            true if repeated identical inputs always produce the same output.
+            false for LLM-backed or stochastic operations.
+        mutating:
+          type: boolean
+          description: >
+            true if the operation modifies persistent state (database writes,
+            external API side-effects). false for read-only or draft-only ops.
+
+    # ------------------------------------------------------------------
+    # CampaignOptimization — domain response schema for the 201 success path
+    # ------------------------------------------------------------------
+    CampaignOptimization:
+      type: object
+      title: Campaign Optimization
+      description: >
+        Domain resource returned on successful synchronous creation of a
+        campaign optimization (HTTP 201 application/json).
+        Body shape is service-defined; trace is RECOMMENDED per profile §7.2.
+      required:
+        - optimizationId
+        - campaignId
+        - recommendations
+      additionalProperties: false
+      properties:
+        optimizationId:
+          type: string
+          minLength: 1
+          description: Stable identifier for this optimization resource.
+        campaignId:
+          type: string
+          minLength: 1
+          description: The campaign this optimization applies to.
+        recommendations:
+          type: array
+          minItems: 1
+          description: Ordered list of optimization recommendations.
+          items:
+            type: object
+            required:
+              - metric
+              - suggestion
+            additionalProperties: false
+            properties:
+              metric:
+                type: string
+                description: The metric this recommendation targets (e.g. ctr).
+              suggestion:
+                type: string
+                description: Human-readable recommendation text.
+              confidenceScore:
+                type: number
+                minimum: 0
+                maximum: 1
+                description: Model confidence in this recommendation (0–1).
+        trace:
+          type: object
+          description: Correlation identifiers (RECOMMENDED per profile §7.2).
+          properties:
+            correlationId:
+              type: string
+            requestId:
+              type: string
+
+# -----------------------------------------------------------------------
+# Worked example — POST /campaigns/{campaignId}/optimizations
+# Wires 201/400/422/424 per PRD §5.3 normative table.
+# -----------------------------------------------------------------------
+paths:
+  /campaigns/{campaignId}/optimizations:
+    post:
+      operationId: createCampaignOptimization
+      summary: Create a campaign optimization
+      description: >
+        Agentic operation: analyses a campaign and generates ranked optimization
+        recommendations. Demonstrates YAAgents Profile v0.1 response surface
+        wiring per PRD §5.3 and spec/agentic-rest-profile.md §4.
+      tags:
+        - campaigns
+      x-yaagents:
+        resource: Campaign
+        operationKind: recommendation
+        deterministic: false
+        mutating: false
+      parameters:
+        - name: campaignId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Identifier of the campaign to optimize.
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: >
+            Cross-service correlation ID. Gateway generates a UUID v4 if absent.
+        - name: X-Request-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: >
+            Per-request unique ID. Gateway generates a UUID v4 if absent.
+        - name: X-Tenant-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Tenant identifier for RBAC scoping.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - successMetric
+              properties:
+                successMetric:
+                  type: string
+                  enum:
+                    - ctr
+                    - cpl
+                    - conversion_rate
+                    - lead_quality
+                  description: The metric to optimize for.
+                maxRecommendations:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 3
+                  description: Maximum number of recommendations to return.
+      responses:
+        "201":
+          description: >
+            Optimization created successfully (synchronous path).
+            Content-Type: application/json
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+            X-Request-ID:
+              schema:
+                type: string
+            X-YAAgents-Profile:
+              schema:
+                type: string
+                enum:
+                  - v0.1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CampaignOptimization"
+
+        "400":
+          description: >
+            The agent requires additional inputs before it can proceed.
+            Content-Type: application/vnd.yaagents.clarification+json
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+            X-Request-ID:
+              schema:
+                type: string
+            X-YAAgents-Profile:
+              schema:
+                type: string
+                enum:
+                  - v0.1
+          content:
+            application/vnd.yaagents.clarification+json:
+              schema:
+                $ref: "../schemas/v0.1/clarification-required.schema.json"
+              example:
+                type: clarification_required
+                code: CLARIFICATION_REQUIRED
+                message: Additional information is required.
+                requiredInputs:
+                  - name: successMetric
+                    location: body
+                    type: string
+                    required: true
+                    question: Which success metric should be optimized?
+                    allowedValues:
+                      - ctr
+                      - cpl
+                      - conversion_rate
+                      - lead_quality
+                trace:
+                  correlationId: corr-123
+                  requestId: req-456
+
+        "422":
+          description: >
+            The request inputs failed validation.
+            Content-Type: application/vnd.yaagents.validation-error+json
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+            X-Request-ID:
+              schema:
+                type: string
+            X-YAAgents-Profile:
+              schema:
+                type: string
+                enum:
+                  - v0.1
+          content:
+            application/vnd.yaagents.validation-error+json:
+              schema:
+                $ref: "../schemas/v0.1/validation-failed.schema.json"
+
+        "424":
+          description: >
+            An upstream dependency failed preventing this operation.
+            Content-Type: application/vnd.yaagents.error+json
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+            X-Request-ID:
+              schema:
+                type: string
+            X-YAAgents-Profile:
+              schema:
+                type: string
+                enum:
+                  - v0.1
+          content:
+            application/vnd.yaagents.error+json:
+              schema:
+                $ref: "../schemas/v0.1/agentic-error.schema.json"
