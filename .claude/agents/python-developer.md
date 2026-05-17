@@ -34,7 +34,6 @@ You are the **Python Developer** for `yaagents`. You implement Python WIs: the F
 ```
 Agent: python-developer
 WI: <WI-id>
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 ## Handoff

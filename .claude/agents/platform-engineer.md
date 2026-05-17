@@ -57,7 +57,6 @@ Typical next at A-4 close: `scrum-master` for A-5 mechanical pi-open.
 ```
 Agent: platform-engineer
 WI: <WI-id>
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 No sub-agent spawning (`.claude/rules/token-budget.md`).

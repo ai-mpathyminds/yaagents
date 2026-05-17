@@ -75,7 +75,6 @@ Typical next after planning = `platform-engineer` (NFR pass) then language devel
 ```
 Agent: yaagents-architect
 WI: <WI-id or plan-PI{n}-yaa>
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 ## Phase B protocol
