@@ -55,7 +55,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-2]
 
-### WI-1yaa.SPEC-4: `x-yaagents` OpenAPI extension + example surface [WIP]
+### WI-1yaa.SPEC-4: `x-yaagents` OpenAPI extension + example surface [DONE]
 service: yaagents/openapi
 brief: Author `openapi/yaagents-response-profile.yaml` — the `x-yaagents`
 operation-metadata extension (`resource`, `operationKind`
