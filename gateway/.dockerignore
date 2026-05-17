@@ -1,0 +1,21 @@
+# yaagents gateway — Docker build context exclusions (NFR-GW-1)
+#
+# Secrets and credential files must never enter the image build context.
+# All credentials are runtime env-vars injected by the orchestrator.
+
+# Secret files
+.env
+.env.*
+*.secret
+*.pem
+*.key
+
+# Test files (not needed in the runtime image)
+**/*_test.go
+
+# Development/tooling
+.claude/
+docs/
+.git/
+.gitignore
+.dockerignore
