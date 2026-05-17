@@ -101,7 +101,7 @@ depends_on: [WI-1yaa.GW-4]
 | [SUPPLY-CHAIN] OIDC — no long-lived token | feature WI | REL-5 |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
 
-### WI-1yaa.NFR-GW-1: No secrets in gateway image/config [WIP]
+### WI-1yaa.NFR-GW-1: No secrets in gateway image/config [DONE]
 service: yaagents/gateway
 brief: [SEC] Enforce secret hygiene in the gateway Dockerfile and default config.
 `docker/gateway/Dockerfile` MUST NOT contain any `ENV` instruction that sets a
