@@ -5,12 +5,12 @@ description: Resolve cross-lane file conflicts at PC-2 for scrum-master — appe
 
 # lane-merge-resolver
 
-> Skeleton + resolution-rules table authored at PI14-plt-aip A-3a by chief-architect. Full body + backing script land in WI-14.SKILL-4 (Sprint 3 execution).
+> Resolution-rules table authored at PI14-plt-aip A-3a by chief-architect. Full body + backing script (`bin/lane-merge-resolve.sh`) + test fixture landed in WI-14.SKILL-4 [DONE] (PI14-plt-aip Sprint 3; AUDIT.md 2026-05-15). Skill is active.
 
 **Primary caller**: `scrum-master` at PC-2 (branch-merge ops at PI close per `.claude/rules/portfolio-conventions.md` writable-paths table).
 **Escalation caller**: portfolio-tier `platform-engineer` for the mechanical bits when LLM judgment is not needed (or when scrum-master delegates).
 
-**Status**: skeleton — DO NOT INVOKE UNTIL WI-14.SKILL-4 [DONE].
+**Status**: active — WI-14.SKILL-4 closed [DONE] in PI14-plt-aip Sprint 3 (DO-NOT-INVOKE marker removed 2026-05-17 per WI-15.GOV-5; verified against AUDIT.md 2026-05-15 wi-closed row).
 
 **Supersedes**: the never-authored `bin/audit-merge-resolve.sh` referenced in `portfolio/PROCESS.md` 2026-05-11 [PROPOSED] "PI-close ceremony for two-lane model". The script never landed; this skill replaces it with broader scope (all shared-file conflict classes, not just `AUDIT.md`). PROCESS.md annotation update is part of WI-14.SKILL-4's PR.
 
@@ -74,7 +74,7 @@ See `portfolio/system-refs/adr/PI14-plt-aip-0005.md` for the full escalation rat
 
 ## Test fixture
 
-`.claude/skills/lane-merge-resolver/test/` (lands in WI-14.SKILL-4):
+`.claude/skills/lane-merge-resolver/test/` (landed in WI-14.SKILL-4 [DONE]):
 - 5 racing append-only entries in AUDIT.md (3 Lane A + 2 Lane B; overlapping timestamps)
 - 1 semantic conflict on `.claude/agents/chief-architect.md` (both lanes added a different line to a "Reads" section)
 - 1 per-lane code edit (`platform-services/audit/handler.go` Lane B + `oppor/campaigns/handler.go` Lane A — no collision)
