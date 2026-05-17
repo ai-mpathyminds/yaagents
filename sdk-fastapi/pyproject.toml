@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yaagents-fastapi"
+dynamic = ["version"]
+description = "YAAgents FastAPI SDK — Agentic REST Profile v0.1 (spec/agentic-rest-profile.md)"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+keywords = ["yaagents", "agentic", "REST", "fastapi", "profile-v0.1"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Typing :: Typed",
+]
+dependencies = [
+    "fastapi>=0.111",
+]
+
+[project.urls]
+Homepage = "https://github.com/ai-mpathyminds/yaagents"
+"Supports-YAAgents-Profile" = "v0.1"
+
+[tool.hatch.version]
+path = "src/yaagents_fastapi/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yaagents_fastapi"]
+
+# ── ruff ────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+# ── mypy ────────────────────────────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]
+
+# ── pytest ───────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
