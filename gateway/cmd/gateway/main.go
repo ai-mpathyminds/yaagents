@@ -21,6 +21,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/auth"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
@@ -42,11 +43,20 @@ func main() {
 		slog.Int("routes_loaded", len(routeList)),
 	)
 
+	// Auth validator — fail-fast if not configured (WI-1yaa.GW-2).
+	validator, authErr := auth.NewValidator(log)
+	if authErr != nil {
+		log.Error("auth not configured — cannot start", "error", authErr.Error())
+		os.Exit(1)
+	}
+	authMiddle := auth.Middleware(validator, log)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
-
-	// Routing middleware (auth, RBAC, proxy) wired in WI-1yaa.GW-2 through GW-4.
+	// Catch-all: all other requests require a valid bearer token.
+	// Route dispatch (RBAC + reverse-proxy) wired in WI-1yaa.GW-4.
+	mux.Handle("/", authMiddle(http.HandlerFunc(notImplemented)))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
@@ -82,6 +92,14 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = fmt.Fprint(w, `{"status":"ok"}`)
+}
+
+// notImplemented is a placeholder handler for authenticated routes until
+// GW-4 wires the route dispatcher.
+func notImplemented(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotImplemented)
+	_, _ = fmt.Fprint(w, `{"status":"not implemented","note":"route dispatch wired in WI-1yaa.GW-4"}`)
 }
 
 // makeReadyzHandler returns a readiness handler that returns 200 when routes are
