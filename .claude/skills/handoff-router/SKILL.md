@@ -25,7 +25,7 @@ The four fields are load-bearing. Omit `cwd` only when the next agent runs at th
 
 ## Required AUDIT.md entry
 
-Append exactly one line to `C:\Users\kulka\work\aimpathyminds\portfolio\AUDIT.md`:
+Append exactly one line to `"${PORTFOLIO_ROOT:-$(git rev-parse --show-toplevel)}/portfolio/AUDIT.md"` (workspace-relative; resolves from the env var if set, else the repo root — never a hardcoded OS path):
 
 ```
 <YYYY-MM-DD HH:MM> | <your-agent-name> | <product or "portfolio"> | <event verb> | <artifact path>

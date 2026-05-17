@@ -28,7 +28,7 @@ The split is deliberate. `handoff-router` answers "what shipped"; `runbook-feedb
 
 ## Required output — one NDJSON line
 
-Append exactly one line to `C:\Users\kulka\work\aimpathyminds\portfolio\METRICS\feedback.ndjson`:
+Append exactly one line to `"${PORTFOLIO_ROOT:-$(git rev-parse --show-toplevel)}/portfolio/METRICS/feedback.ndjson"` (workspace-relative; resolves from the env var if set, else the repo root — never a hardcoded OS path):
 
 ```json
 {"ts":"2026-04-24T16:45:12Z","pi":"PI6","runbook_entry":"B-14","wi":"WI-6.A11","agent":"go-developer","deviations":[{"WI":"WI-6.A11","AC":"tooling-api /execute endpoint","reason":"endpoint did not exist; used /test per PI4 convention"}],"help_needed":[]}
