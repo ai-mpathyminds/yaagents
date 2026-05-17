@@ -12,7 +12,7 @@ first per the runbook A-3 ordering rule. ADR: PI1-yaa-0002.
 
 ---
 
-### WI-1yaa.SPEC-1: Authoritative Response Profile spec [WIP]
+### WI-1yaa.SPEC-1: Authoritative Response Profile spec [DONE]
 service: yaagents/spec
 brief: Author `spec/agentic-rest-profile.md` — authoritative prose definition
 of the Agentic REST Response Profile. The PRD §4 normative status × media-type
