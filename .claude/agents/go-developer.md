@@ -30,7 +30,6 @@ You are the **Go Developer** for `yaagents`. You implement Go WIs (the `gateway/
 ```
 Agent: go-developer
 WI: <WI-id>
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 ## Handoff

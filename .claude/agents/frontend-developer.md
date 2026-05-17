@@ -33,7 +33,6 @@ You are the **TypeScript Developer** for `yaagents`. You implement the `@yaagent
 ```
 Agent: frontend-developer
 WI: <WI-id>
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 ```
 
 ## Handoff
