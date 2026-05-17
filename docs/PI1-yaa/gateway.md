@@ -65,7 +65,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-3]
 
-### WI-1yaa.GW-5: Audit log + health/readiness + metrics [WIP]
+### WI-1yaa.GW-5: Audit log + health/readiness + metrics [DONE]
 service: yaagents/gateway
 brief: Per-request structured JSON audit event when route `audit:true`
 (route id, tenant, actor, status, latency_ms, correlation_id) to
