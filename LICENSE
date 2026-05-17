@@ -1,0 +1,44 @@
+IMPORTANT NOTICE: This GTM README includes a draft licensing strategy for product planning. It is not legal advice. Before publishing the license publicly or accepting external contributions, consult a qualified software licensing lawyer.
+
+---
+
+YAAgents Community License v0.1
+
+Copyright (c) 2026 AimpathyMinds
+
+Permission is granted to use, copy, modify, and distribute this software and its documentation for the following permitted uses:
+
+1. Personal use by individual developers.
+2. Academic research, teaching, and student projects.
+3. Non-commercial use.
+4. Evaluation, testing, and proof-of-concept use.
+5. Use by small organizations with fewer than 10 employees and less than USD 1,000,000 in annual gross revenue.
+
+The following uses require a separate commercial license from the copyright holder:
+
+1. Production use by organizations with 10 or more employees.
+2. Production use by organizations with USD 1,000,000 or more in annual gross revenue.
+3. Use as part of a commercial SaaS, hosted, or managed service offering.
+4. Embedding, bundling, or redistributing the software as part of a commercial product.
+5. Use by consulting, system integration, or platform companies to deliver paid services to third parties.
+6. Use that competes with a paid YAAgents offering.
+
+You may not remove copyright notices, license notices, or attribution notices.
+
+You may not use the YAAgents name, logo, or trademarks to imply endorsement without written permission.
+
+The software is provided "as is", without warranty of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement.
+
+In no event shall the authors or copyright holders be liable for any claim, damages, or other liability arising from the software or its use.
+
+For commercial licensing, contact: commercial@aimpathyminds.com
+
+---
+
+THRESHOLD LOCK STATUS: The combined-AND community threshold above
+(<10 employees AND <USD 1,000,000 annual gross revenue) is a placeholder
+pending chief-architect/user confirmation at PI1-yaa PC-6 (pre-publish gate).
+The threshold text is subject to change before the v0.1.0 public release.
+Engineering artifacts ship with this placeholder; the legal-review gate at
+PC-6 locks the final wording. See COMMERCIAL.md for the commercial licence
+and docs/adr/PI1-yaa-0004.md for the decision record.
