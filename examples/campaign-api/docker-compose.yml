@@ -1,0 +1,74 @@
+# yaagents Compose Demo — campaign-api reference example
+# ports: 8120 (gateway), 8121 (campaign-api) — portfolio band 8120-8129
+# See: yaagents/docs/PI1-yaa/examples-campaign-api.md (WI-1yaa.EX-3)
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
+# Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
+# instead (ADR PI1-yaa-0001 §3).
+#
+# NFR-refined by platform-engineer at A-4 (compose-linter clean).
+
+name: yaagents-demo
+
+services:
+  yaagents-gateway:
+    image: ghcr.io/yaagents/gateway:0.1.0        # pinned — never :latest
+    ports:
+      - "8120:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_JWT_SECRET: "demo-secret-not-for-production"   # demo only; see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./routes.yaml:/etc/yaagents/routes.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    depends_on:
+      campaign-api:
+        condition: service_healthy
+    restart: on-failure
+
+  campaign-api:
+    build:
+      context: .
+      dockerfile: Dockerfile                      # authored by python-developer in EX-1
+    # Internal port 8121 — not exposed to the host (gateway proxies)
+    expose:
+      - "8121"
+    environment:
+      PORT: "8121"
+      YAAGENTS_PROFILE_VERSION: "v0.1"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8121/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+    volumes:
+      - campaign-data:/app/data
+    networks:
+      - yaagents-net
+    restart: on-failure
+
+volumes:
+  campaign-data:        # named — no anonymous volumes
+
+networks:
+  yaagents-net:         # named network — intra-product isolation

@@ -12,7 +12,7 @@ ADR: PI1-yaa-0002, PI1-yaa-0003 (Hatch).
 
 ---
 
-### WI-1yaa.PYC-1: `YaAgentsClient` + resource fluent accessors [DRAFT]
+### WI-1yaa.PYC-1: `YaAgentsClient` + resource fluent accessors [READY]
 service: yaagents/client-python
 brief: `YaAgentsClient(base_url, token, tenant_id)`; `.campaigns(id)` →
 `CampaignResource`; `CampaignResource.optimizations.create(body)` →
@@ -26,7 +26,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.PYC-2: Typed exception mapping [DRAFT]
+### WI-1yaa.PYC-2: Typed exception mapping [READY]
 service: yaagents/client-python
 brief: Map response status+vendor content-type → typed exceptions:
 `ClarificationRequired` (`.required_inputs`), `ValidationFailed` (`.errors`),
@@ -39,7 +39,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.PYC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.PYC-3: Client conformance tests [DRAFT]
+### WI-1yaa.PYC-3: Client conformance tests [READY]
 service: yaagents/client-python
 brief: pytest suite driving the client against a fixture HTTP server that
 replays the `spec/examples/v0.1` golden corpus; assert correct
@@ -49,3 +49,19 @@ acceptance:
 - Coverage ≥80%; lint/type/audit clean
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.PYC-2, WI-1yaa.SPEC-5]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] dependency audit (`pip-audit`) | feature WI | PYC-3 acceptance criteria |
+| [SRE] health/readiness/logs | N/A | library, not a running service |
+| [SUPPLY-CHAIN] OIDC publish — no long-lived token | feature WI | REL-3 (PyPI Trusted Publisher) |
+| [SUPPLY-CHAIN] reproducible builds (Hatch) | feature WI | REL-3 + ADR PI1-yaa-0003 |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+No new NFR WIs required — all applicable dimensions covered by feature WIs.

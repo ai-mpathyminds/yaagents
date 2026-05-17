@@ -12,7 +12,7 @@ NOT a consumer/fork of internal gateways; HS256+JWKS dual JWT).
 
 ---
 
-### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [DRAFT]
+### WI-1yaa.GW-1: Gateway skeleton + config + route-YAML loader [READY]
 service: yaagents/gateway
 brief: Go module `github.com/yaagents/gateway`; `net/http` server (no heavy
 framework per ADR 0001 §2). Config from env (`GATEWAY_PORT` default 8080 /
@@ -26,7 +26,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001 (net-new standalone OSS gateway; future internal base)
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [DRAFT]
+### WI-1yaa.GW-2: Authentication middleware (HS256 dev / JWKS prod) [READY]
 service: yaagents/gateway
 brief: JWT bearer validation. `GATEWAY_JWT_SECRET` → HS256 (dev/demo default);
 `GATEWAY_JWT_JWKS_URL` → RS256 via cached JWKS (prod); JWKS precedence if both
@@ -38,7 +38,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [DRAFT]
+### WI-1yaa.GW-3: Tenant/actor context + correlation/request-id injection [READY]
 service: yaagents/gateway
 brief: Extract `X-Tenant-ID` + actor claims from the validated token; enforce
 `tenantRequired` per route (reject `400`/`403` per profile when absent).
@@ -51,7 +51,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-2]
 
-### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [DRAFT]
+### WI-1yaa.GW-4: Route RBAC + typed-response passthrough proxy [READY]
 service: yaagents/gateway
 brief: Enforce route `roles:` (ALL must be present in actor claims) — failure →
 `403 application/vnd.yaagents.error+json`. Reverse-proxy
@@ -65,7 +65,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-3]
 
-### WI-1yaa.GW-5: Audit log + health/readiness + metrics [DRAFT]
+### WI-1yaa.GW-5: Audit log + health/readiness + metrics [READY]
 service: yaagents/gateway
 brief: Per-request structured JSON audit event when route `audit:true`
 (route id, tenant, actor, status, latency_ms, correlation_id) to
@@ -78,3 +78,42 @@ acceptance:
 - SIGTERM drains in-flight then exits
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-4]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] authn | feature WI | GW-2 (HS256 dev / JWKS prod) |
+| [SEC] RBAC enforcement | feature WI | GW-4 (role claim check → 403) |
+| [SEC] no secret in image/config | **NFR WI below** | WI-1yaa.NFR-GW-1 |
+| [SEC] govulncheck | feature WI | REL-6 (CI matrix) |
+| [SEC] trivy image scan | feature WI | REL-5 (GHCR publish) |
+| [SRE] /healthz + /readyz | feature WI | GW-5 |
+| [SRE] structured JSON logs + corr-id | feature WI | GW-1 + GW-3 |
+| [SRE] graceful shutdown | feature WI | GW-5 |
+| [SRE] resource limits in compose | feature WI | WI-1yaa.NFR-EX-1 (examples-campaign-api.md) |
+| [SUPPLY-CHAIN] multi-arch image | feature WI | REL-5 |
+| [SUPPLY-CHAIN] SBOM | feature WI | REL-5 + WI-1yaa.NFR-REL-1 |
+| [SUPPLY-CHAIN] OIDC — no long-lived token | feature WI | REL-5 |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+### WI-1yaa.NFR-GW-1: No secrets in gateway image/config [READY]
+service: yaagents/gateway
+brief: [SEC] Enforce secret hygiene in the gateway Dockerfile and default config.
+`docker/gateway/Dockerfile` MUST NOT contain any `ENV` instruction that sets a
+secret value (JWT secret, API key, password). `GATEWAY_JWT_SECRET` is a
+**runtime env-var only** — never a Dockerfile default. The image's default
+config (if any) MUST NOT supply a functional `GATEWAY_JWT_SECRET`;
+`GATEWAY_JWT_JWKS_URL` is the production auth path (ADR PI1-yaa-0001 §3).
+No `.env` file committed to the repo. `trivy` config scan in CI (via REL-5/REL-6)
+flags any secret in layers at publish time.
+acceptance:
+- `docker inspect ghcr.io/yaagents/gateway:0.1.0` Env list contains no `GATEWAY_JWT_SECRET=*` default
+- `trivy config ./docker/gateway/Dockerfile` exits 0 (no secret in Dockerfile)
+- CI fails if any `ENV *SECRET*=` or `ENV *TOKEN*=` literal found in Dockerfile (`grep` gate in REL-6)
+library_ref: ADR PI1-yaa-0001
+depends_on: [WI-1yaa.GW-1]

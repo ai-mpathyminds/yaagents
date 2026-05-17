@@ -6,7 +6,7 @@ reserved Compose-e2e + CLI-conformance gate). ADR: PI1-yaa-0002, PI1-yaa-0003.
 
 ---
 
-### WI-1yaa.CLI-1: CLI skeleton + `validate-response` [DRAFT]
+### WI-1yaa.CLI-1: CLI skeleton + `validate-response` [READY]
 service: yaagents/cli
 brief: `yaagents` CLI (Typer or argparse — zero heavy deps preferred).
 `yaagents validate-response <file.json>`: infer media type from the body's
@@ -18,7 +18,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-2, WI-1yaa.SPEC-5]
 
-### WI-1yaa.CLI-2: `validate-openapi` [DRAFT]
+### WI-1yaa.CLI-2: `validate-openapi` [READY]
 service: yaagents/cli
 brief: `yaagents validate-openapi <file.yaml>`: assert (a) `x-yaagents`
 metadata present + well-formed on agentic operations, (b) each declared
@@ -30,7 +30,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-4]
 
-### WI-1yaa.CLI-3: `init fastapi` scaffold [DRAFT]
+### WI-1yaa.CLI-3: `init fastapi` scaffold [READY]
 service: yaagents/cli
 brief: `yaagents init fastapi`: generate a minimal FastAPI starter
 (`main.py` with one `@agentic_operation` endpoint correctly wired to
@@ -43,7 +43,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.CLI-2, WI-1yaa.SDK-3]
 
-### WI-1yaa.CLI-4: `conformance-test <base-url>` [DRAFT] — Sprint 5 gate
+### WI-1yaa.CLI-4: `conformance-test <base-url>` [READY] — Sprint 5 gate
 service: yaagents/cli
 brief: `yaagents conformance-test <base-url>`: exercise the mandatory response
 types against a live service (via the gateway), assert correct status +
@@ -55,3 +55,38 @@ acceptance:
 - Report text matches PRD §5.8 lines; a deliberately broken route → FAIL exit 1
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.CLI-1, WI-1yaa.EX-3]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] input-validation hardening | **NFR WI below** | WI-1yaa.NFR-CLI-1 |
+| [SEC] dependency audit (`pip-audit`) | feature WI | REL-6 CI matrix (Python job) |
+| [SRE] health/readiness/logs | N/A | CLI tool, not a running service |
+| [SUPPLY-CHAIN] OIDC publish — no long-lived token | feature WI | REL-3 (PyPI Trusted Publisher) |
+| [SUPPLY-CHAIN] reproducible builds (Hatch) | feature WI | REL-3 + ADR PI1-yaa-0003 |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+### WI-1yaa.NFR-CLI-1: CLI input-validation hardening [READY]
+service: yaagents/cli
+brief: [SEC] Harden all CLI entry points against malicious input.
+`validate-response <file>` and `validate-openapi <file>`: reject paths
+containing `..` or absolute paths outside the working directory (path-traversal
+defence); enforce a max file size of 10 MB before reading (DoS-from-local
+defence). `conformance-test <base-url>`: validate the URL scheme is `http` or
+`https` only — reject `file://`, `ftp://`, or any other scheme with exit 1 +
+clear error; parse with `urllib.parse`/Node URL, do not string-match. `init
+fastapi <target-dir>`: reject target paths with `..` traversal. All error
+messages MUST NOT echo raw user input back as shell-interpretable text
+(no f-string/template injection into shell calls).
+acceptance:
+- `yaagents validate-response ../../../etc/passwd` → exit 1 "path traversal not allowed"
+- `yaagents conformance-test file:///etc/hosts` → exit 1 "scheme must be http or https"
+- 5 MB file within limit → processed; 11 MB file → exit 1 "file exceeds 10 MB limit"
+- `ruff` + `mypy` clean; no `subprocess(shell=True)` with user input
+library_justify: novel; standalone OSS surface
+depends_on: [WI-1yaa.CLI-1, WI-1yaa.CLI-2, WI-1yaa.CLI-3, WI-1yaa.CLI-4]
