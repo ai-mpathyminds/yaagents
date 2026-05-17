@@ -43,7 +43,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.SPEC-3: OpenAPI reusable components [WIP]
+### WI-1yaa.SPEC-3: OpenAPI reusable components [DONE]
 service: yaagents/openapi
 brief: Author `openapi/yaagents-components.yaml` — standard headers
 (`X-Correlation-ID`, `X-Request-ID`, `X-Tenant-ID`, `X-YAAgents-Profile`),
