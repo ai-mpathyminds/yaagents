@@ -23,7 +23,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: []
 
-### WI-1yaa.REL-2: Dual-license artifacts [READY] — Sprint 1
+### WI-1yaa.REL-2: Dual-license artifacts [DONE] — Sprint 1
 service: yaagents/(root)
 brief: `LICENSE` = YAAgents Community License v0.1 (drafted verbatim from GTM
 README §14), `COMMERCIAL.md` = commercial terms + contact. Carry the
