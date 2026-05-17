@@ -27,7 +27,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (normative contract — no catalog entry)
 depends_on: []
 
-### WI-1yaa.SPEC-2: Six JSON schemas (Draft-07) [READY]
+### WI-1yaa.SPEC-2: Six JSON schemas (Draft-07) [WIP]
 service: yaagents/schemas
 brief: Author the 6 schemas under `schemas/v0.1/`:
 `clarification-required.schema.json`, `validation-failed.schema.json`,
