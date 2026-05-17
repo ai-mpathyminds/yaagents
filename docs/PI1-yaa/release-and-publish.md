@@ -10,7 +10,7 @@ PI1-yaa-0005 (OIDC publishing).
 
 ---
 
-### WI-1yaa.REL-1: Repo scaffolding [READY] — Sprint 1
+### WI-1yaa.REL-1: Repo scaffolding [DONE] — Sprint 1
 service: yaagents/(root)
 brief: `README.md` (overview, quick-start, architecture diagram, badge set —
 source-available wording per ADR 0004, never "open source"),
