@@ -9,7 +9,7 @@ ESM+CJS, zero runtime deps).
 
 ---
 
-### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [DRAFT]
+### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [READY]
 service: yaagents/client-ts
 brief: `YaAgentsClient({ baseUrl, token, tenantId })`; `client.campaigns
 .byId(id)` → `CampaignResource`; `.optimizations().create(body)` →
@@ -22,7 +22,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [DRAFT]
+### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [READY]
 service: yaagents/client-ts
 brief: `AgenticResult<T>` discriminated union over the response types
 (`created`→`resource:T`, `clarification_required`→`requiredInputs`,
@@ -36,7 +36,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.TSC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [DRAFT]
+### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [READY]
 service: yaagents/client-ts
 brief: `tsup` build emitting `dist/index.mjs` + `dist/index.cjs` + bundled
 `dist/index.d.ts`; `package.json` `exports` import/require map; `yaagents
@@ -47,3 +47,19 @@ acceptance:
 - vitest green vs corpus; coverage ≥80%; `eslint`+`tsc --noEmit`+`npm audit` clean
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.TSC-2, WI-1yaa.SPEC-5]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] dependency audit (`pnpm audit` / `npm audit`) | feature WI | TSC-3 acceptance criteria (`npm audit` clean) |
+| [SRE] health/readiness/logs | N/A | library, not a running service |
+| [SUPPLY-CHAIN] OIDC publish — npm provenance (no NPM_TOKEN) | feature WI | REL-4 |
+| [SUPPLY-CHAIN] reproducible builds (dual ESM+CJS, zero runtime deps) | feature WI | TSC-3 + ADR PI1-yaa-0003 |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+No new NFR WIs required — all applicable dimensions covered by feature WIs.

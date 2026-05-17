@@ -12,7 +12,7 @@ first per the runbook A-3 ordering rule. ADR: PI1-yaa-0002.
 
 ---
 
-### WI-1yaa.SPEC-1: Authoritative Response Profile spec [DRAFT]
+### WI-1yaa.SPEC-1: Authoritative Response Profile spec [READY]
 service: yaagents/spec
 brief: Author `spec/agentic-rest-profile.md` — authoritative prose definition
 of the Agentic REST Response Profile. The PRD §4 normative status × media-type
@@ -27,7 +27,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (normative contract — no catalog entry)
 depends_on: []
 
-### WI-1yaa.SPEC-2: Six JSON schemas (Draft-07) [DRAFT]
+### WI-1yaa.SPEC-2: Six JSON schemas (Draft-07) [READY]
 service: yaagents/schemas
 brief: Author the 6 schemas under `schemas/v0.1/`:
 `clarification-required.schema.json`, `validation-failed.schema.json`,
@@ -43,7 +43,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.SPEC-3: OpenAPI reusable components [DRAFT]
+### WI-1yaa.SPEC-3: OpenAPI reusable components [READY]
 service: yaagents/openapi
 brief: Author `openapi/yaagents-components.yaml` — standard headers
 (`X-Correlation-ID`, `X-Request-ID`, `X-Tenant-ID`, `X-YAAgents-Profile`),
@@ -55,7 +55,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-2]
 
-### WI-1yaa.SPEC-4: `x-yaagents` OpenAPI extension + example surface [DRAFT]
+### WI-1yaa.SPEC-4: `x-yaagents` OpenAPI extension + example surface [READY]
 service: yaagents/openapi
 brief: Author `openapi/yaagents-response-profile.yaml` — the `x-yaagents`
 operation-metadata extension (`resource`, `operationKind`
@@ -68,7 +68,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-3]
 
-### WI-1yaa.SPEC-5: Shared golden conformance corpus [DRAFT]
+### WI-1yaa.SPEC-5: Shared golden conformance corpus [READY]
 service: yaagents/spec
 brief: Author `spec/examples/v0.1/` — for each of the 6 media types, one
 `*.valid.json` and ≥1 `*.invalid.json` fixture (the invalid set covers a
@@ -80,3 +80,19 @@ acceptance:
 - A `spec/examples/INDEX.md` maps fixture → media type → expected validator verdict
 library_justify: novel; standalone OSS surface (de-facto contract test corpus)
 depends_on: [WI-1yaa.SPEC-2]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] secrets / access controls | N/A | static JSON/YAML/Markdown contract files; no secrets surface |
+| [SRE] health/readiness/logs/resource limits | N/A | static artifacts; no running service |
+| [SUPPLY-CHAIN] versioned archive published | feature WI | REL-6 (schemas + openapi archive on GitHub Release) |
+| [SUPPLY-CHAIN] OIDC | N/A | static artifacts; no package registry publish |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+No new NFR WIs required — static contract artifacts; all applicable dimensions covered.

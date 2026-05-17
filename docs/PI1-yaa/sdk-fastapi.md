@@ -5,7 +5,7 @@ ADR: PI1-yaa-0002 (normative table source, 202 schema-only), PI1-yaa-0003 (Hatch
 
 ---
 
-### WI-1yaa.SDK-1: `AgenticResponse` factory — all 10 response types [DRAFT]
+### WI-1yaa.SDK-1: `AgenticResponse` factory — all 10 response types [READY]
 service: yaagents/sdk-fastapi
 brief: `AgenticResponse` class with the 10 factory methods (PRD §5.5):
 `success/created/accepted/clarification_required/validation_failed/
@@ -20,7 +20,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.SDK-2: `AgenticContext` + `RequiredInput` [DRAFT]
+### WI-1yaa.SDK-2: `AgenticContext` + `RequiredInput` [READY]
 service: yaagents/sdk-fastapi
 brief: `AgenticContext` FastAPI dependency extracting `tenant_id`, `actor_id`,
 `correlation_id`, `request_id` from request headers (the gateway-injected set);
@@ -33,7 +33,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SDK-1]
 
-### WI-1yaa.SDK-3: `@agentic_operation` decorator + OpenAPI generation [DRAFT]
+### WI-1yaa.SDK-3: `@agentic_operation` decorator + OpenAPI generation [READY]
 service: yaagents/sdk-fastapi
 brief: `@agentic_operation(resource, operation_kind, mutating, roles,
 responses)` decorator: injects `AgenticContext`, and generates the FastAPI
@@ -47,7 +47,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SDK-2, WI-1yaa.SPEC-4]
 
-### WI-1yaa.SDK-4: SDK schema-conformance tests [DRAFT]
+### WI-1yaa.SDK-4: SDK schema-conformance tests [READY]
 service: yaagents/sdk-fastapi
 brief: pytest suite asserting every `AgenticResponse.*` body validates against
 the matching `schemas/v0.1` schema using the shared `spec/examples/v0.1`
@@ -57,3 +57,20 @@ acceptance:
 - `pytest` green; coverage ≥80%; `pip-audit` clean
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SDK-3, WI-1yaa.SPEC-5]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] dependency audit (`pip-audit`) | feature WI | SDK-4 acceptance criteria |
+| [SRE] health/readiness endpoints | N/A | library, not a running service |
+| [SRE] resource limits | N/A | library, not a running service |
+| [SUPPLY-CHAIN] OIDC publish — no long-lived token | feature WI | REL-3 (PyPI Trusted Publisher) |
+| [SUPPLY-CHAIN] reproducible builds (Hatch) | feature WI | REL-3 + ADR PI1-yaa-0003 |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+No new NFR WIs required — all applicable dimensions covered by feature WIs.

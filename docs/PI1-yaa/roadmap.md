@@ -1,6 +1,6 @@
 # PI1-yaa — YAAgents v0.1 Agentic REST Profile MVP — Roadmap (master)
 
-Status: [DRAFT] (WIs flip [READY] at A-4 platform-engineer NFR pass)
+Status: [READY] (A-4 platform-engineer NFR pass complete 2026-05-17; all 35 WIs [READY])
 PI: PI1-yaa · Lane: yaa (parallel to Lane A oppor + Lane B plt-aip)
 Author: yaagents-architect · Date: 2026-05-17
 PRD: `yaagents/system-refs/yaagents-mvp_detailed.md` (§ refs throughout)

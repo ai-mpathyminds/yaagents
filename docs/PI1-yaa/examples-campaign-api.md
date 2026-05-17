@@ -7,7 +7,7 @@ Ports: gateway `8120`, campaign-api `8121` (portfolio table).
 
 ---
 
-### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [DRAFT]
+### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [READY]
 service: yaagents/examples/campaign-api
 brief: FastAPI app exposing PRD §6.1 endpoints (`POST /campaigns`,
 `GET /campaigns/{id}`, `POST /campaigns/{id}/optimizations`,
@@ -21,7 +21,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (reference example)
 depends_on: [WI-1yaa.SDK-3]
 
-### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [DRAFT]
+### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [READY]
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/routes.yaml` mapping the §6.1 paths to
 `http://campaign-api:8121`, with `roles:` on the optimizations route (so a
@@ -33,7 +33,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-5, WI-1yaa.EX-1]
 
-### WI-1yaa.EX-3: Docker Compose demo [DRAFT] — Sprint 5
+### WI-1yaa.EX-3: Docker Compose demo [READY] — Sprint 5
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/docker-compose.yml` — `yaagents-gateway` (image
 or built; `8120:8080`) ↔ `campaign-api` (internal `8121`). HS256 demo token
@@ -46,7 +46,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (demo)
 depends_on: [WI-1yaa.EX-2, WI-1yaa.GW-5]
 
-### WI-1yaa.EX-4: End-to-end conformance gate (PI gate) [DRAFT] — Sprint 5
+### WI-1yaa.EX-4: End-to-end conformance gate (PI gate) [READY] — Sprint 5
 service: yaagents/examples/campaign-api
 brief: The PI1-yaa acceptance gate. With the Compose demo up: run
 `yaagents conformance-test http://localhost:8120` → `Overall: PASS`; exercise
@@ -60,3 +60,54 @@ acceptance:
 - grep proves §4 table appears only in `spec/` (no paraphrase elsewhere)
 library_justify: novel; standalone OSS surface (conformance gate)
 depends_on: [WI-1yaa.CLI-4, WI-1yaa.PYC-3, WI-1yaa.TSC-3, WI-1yaa.EX-3]
+
+---
+
+## NFR Addendum — A-4 platform-engineer pass (2026-05-17)
+
+Compose file authored at A-4: `examples/campaign-api/docker-compose.yml`
+compose-linter result: **11/11 checks PASS** (2026-05-17).
+
+### NFR dimension coverage
+
+| Dimension | Status | Covered by |
+|-----------|--------|------------|
+| [SEC] no real secrets in compose | **NFR WI below** | WI-1yaa.NFR-EX-2 |
+| [SRE] health checks in compose | feature WI | EX-3 (both services) |
+| [SRE] resource limits in compose | **NFR WI below** | WI-1yaa.NFR-EX-1 |
+| [SRE] named volumes in compose | feature WI | EX-3 (`campaign-data`) |
+| [SUPPLY-CHAIN] N/A | N/A | reference example; not published to a registry |
+| [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
+
+### WI-1yaa.NFR-EX-1: Compose resource limits [READY]
+service: yaagents/examples/campaign-api
+brief: [SRE] `examples/campaign-api/docker-compose.yml` MUST declare
+`deploy.resources.limits.memory` + `deploy.resources.limits.cpus` for every
+service. Limits: `yaagents-gateway`: memory 128m, cpus 0.50;
+`campaign-api`: memory 256m, cpus 0.50. Total ≤ 384 MB — safely within
+the 16 GB dev ceiling (PRD §9.1). The compose-linter skill (run at A-4,
+must also be clean at EX-3 acceptance) enforces check 3.
+acceptance:
+- `docker compose up` completes without OOM on a 4 GB Docker Desktop allocation
+- `docker stats` shows both services within their configured limits under load
+- compose-linter check 3 (resource limits) PASS on the file
+library_justify: novel; standalone OSS surface (demo)
+depends_on: [WI-1yaa.EX-3]
+
+### WI-1yaa.NFR-EX-2: Demo token discipline in compose [READY]
+service: yaagents/examples/campaign-api
+brief: [SEC] The Compose demo MUST make explicit that `GATEWAY_JWT_SECRET`
+is a hardcoded demo-only value. Concrete requirements: (1) compose file
+carries a `SECURITY NOTE` comment at the top (authored at A-4 — present);
+(2) `README.md` quick-start block warns "demo token — never use in production;
+set GATEWAY_JWT_JWKS_URL for production deployments" (ADR PI1-yaa-0001 §3);
+(3) no `.env` file with a real secret is committed (`git-secrets` / pre-commit
+hook in REL-1 SECURITY.md guards this); (4) `GATEWAY_JWT_SECRET` default value
+MUST be the literal string `demo-secret-not-for-production` — never a valid-looking
+random token that could be mistaken for a real credential.
+acceptance:
+- `grep -r GATEWAY_JWT_SECRET .env` fails (no .env in repo)
+- README quick-start block contains "never use in production" near the demo curl
+- `GATEWAY_JWT_SECRET` value in compose = `demo-secret-not-for-production` (string-checked in CI)
+library_justify: novel; standalone OSS surface (demo)
+depends_on: [WI-1yaa.EX-3, WI-1yaa.REL-1]
