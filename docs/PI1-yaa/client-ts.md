@@ -36,7 +36,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.TSC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [WIP]
+### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [DONE]
 service: yaagents/client-ts
 brief: `tsup` build emitting `dist/index.mjs` + `dist/index.cjs` + bundled
 `dist/index.d.ts`; `package.json` `exports` import/require map; `yaagents
