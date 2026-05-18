@@ -60,7 +60,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.TSC-3]
 
-### WI-1yaa.REL-5: GHCR gateway image (multi-arch, OIDC, SBOM) [READY] — Sprint 5
+### WI-1yaa.REL-5: GHCR gateway image (multi-arch, OIDC, SBOM) [DONE] — Sprint 5
 service: yaagents/(ci)
 brief: Multi-stage Alpine Dockerfile (non-root, `CGO_ENABLED=0`). GH Actions
 `docker/build-push-action` multi-arch (`linux/amd64`+`linux/arm64`) →
@@ -118,7 +118,7 @@ vulnerability correlation — deferred to PI2-yaa when Cosign signing ships
 | [SUPPLY-CHAIN] Cosign signing | explicitly out of scope | PI2-yaa (ADR PI1-yaa-0005) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa. GH Actions minutes are within the open-source free tier for public repos. No metered cloud infra spun up at publish time. |
 
-### WI-1yaa.NFR-REL-1: SBOM generation — SPDX 2.3 via syft [READY]
+### WI-1yaa.NFR-REL-1: SBOM generation — SPDX 2.3 via syft [DONE]
 service: yaagents/(ci)
 brief: [SUPPLY-CHAIN] Resolve OQ-5: generate SBOM for the gateway image using
 `syft` (`anchore/sbom-action` GH Action) outputting **SPDX 2.3 JSON**
