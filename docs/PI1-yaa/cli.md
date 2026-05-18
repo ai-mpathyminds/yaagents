@@ -30,7 +30,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-4]
 
-### WI-1yaa.CLI-3: `init fastapi` scaffold [READY]
+### WI-1yaa.CLI-3: `init fastapi` scaffold [DONE]
 service: yaagents/cli
 brief: `yaagents init fastapi`: generate a minimal FastAPI starter
 (`main.py` with one `@agentic_operation` endpoint correctly wired to
