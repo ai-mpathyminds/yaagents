@@ -22,7 +22,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [WIP]
+### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [DONE]
 service: yaagents/client-ts
 brief: `AgenticResult<T>` discriminated union over the response types
 (`created`→`resource:T`, `clarification_required`→`requiredInputs`,
@@ -36,7 +36,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.TSC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [READY]
+### WI-1yaa.TSC-3: Dual ESM+CJS build + corpus tests [WIP]
 service: yaagents/client-ts
 brief: `tsup` build emitting `dist/index.mjs` + `dist/index.cjs` + bundled
 `dist/index.d.ts`; `package.json` `exports` import/require map; `yaagents
