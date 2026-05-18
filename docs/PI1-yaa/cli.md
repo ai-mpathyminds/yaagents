@@ -18,7 +18,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-2, WI-1yaa.SPEC-5]
 
-### WI-1yaa.CLI-2: `validate-openapi` [WIP]
+### WI-1yaa.CLI-2: `validate-openapi` [DONE]
 service: yaagents/cli
 brief: `yaagents validate-openapi <file.yaml>`: assert (a) `x-yaagents`
 metadata present + well-formed on agentic operations, (b) each declared
