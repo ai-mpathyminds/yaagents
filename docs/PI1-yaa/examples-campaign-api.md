@@ -79,7 +79,7 @@ compose-linter result: **11/11 checks PASS** (2026-05-17).
 | [SUPPLY-CHAIN] N/A | N/A | reference example; not published to a registry |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
 
-### WI-1yaa.NFR-EX-1: Compose resource limits [READY]
+### WI-1yaa.NFR-EX-1: Compose resource limits [DONE]
 service: yaagents/examples/campaign-api
 brief: [SRE] `examples/campaign-api/docker-compose.yml` MUST declare
 `deploy.resources.limits.memory` + `deploy.resources.limits.cpus` for every
