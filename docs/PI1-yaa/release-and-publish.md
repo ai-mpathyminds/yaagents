@@ -36,7 +36,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0004
 depends_on: []
 
-### WI-1yaa.REL-3: PyPI publish (×3, OIDC Trusted Publisher) [READY] — Sprint 5
+### WI-1yaa.REL-3: PyPI publish (×3, OIDC Trusted Publisher) [DONE] — Sprint 5
 service: yaagents/(ci)
 brief: Hatch `pyproject.toml` for `yaagents-fastapi`/`yaagents-client`/
 `yaagents-cli` (ADR 0003); each declares `Supports-YAAgents-Profile: v0.1`.
