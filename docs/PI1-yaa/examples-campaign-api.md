@@ -94,7 +94,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (demo)
 depends_on: [WI-1yaa.EX-3]
 
-### WI-1yaa.NFR-EX-2: Demo token discipline in compose [READY]
+### WI-1yaa.NFR-EX-2: Demo token discipline in compose [DONE]
 service: yaagents/examples/campaign-api
 brief: [SEC] The Compose demo MUST make explicit that `GATEWAY_JWT_SECRET`
 is a hardcoded demo-only value. Concrete requirements: (1) compose file
