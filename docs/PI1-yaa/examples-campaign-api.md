@@ -33,7 +33,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-5, WI-1yaa.EX-1]
 
-### WI-1yaa.EX-3: Docker Compose demo [WIP] — Sprint 5
+### WI-1yaa.EX-3: Docker Compose demo [DONE] — Sprint 5
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/docker-compose.yml` — `yaagents-gateway` (image
 or built; `8120:8080`) ↔ `campaign-api` (internal `8121`). HS256 demo token
