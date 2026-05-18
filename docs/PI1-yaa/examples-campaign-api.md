@@ -7,7 +7,7 @@ Ports: gateway `8120`, campaign-api `8121` (portfolio table).
 
 ---
 
-### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [WIP]
+### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [DONE]
 service: yaagents/examples/campaign-api
 brief: FastAPI app exposing PRD §6.1 endpoints (`POST /campaigns`,
 `GET /campaigns/{id}`, `POST /campaigns/{id}/optimizations`,
@@ -21,7 +21,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (reference example)
 depends_on: [WI-1yaa.SDK-3]
 
-### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [READY]
+### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [WIP]
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/routes.yaml` mapping the §6.1 paths to
 `http://campaign-api:8121`, with `roles:` on the optimizations route (so a
