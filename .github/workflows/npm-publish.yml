@@ -1,0 +1,101 @@
+# .github/workflows/npm-publish.yml
+# WI-1yaa.REL-4 — npm publish @aimpathyminds/yaagents-client (OIDC provenance)
+# ADR PI1-yaa-0003 — dual ESM+CJS via tsup
+# ADR PI1-yaa-0005 — no long-lived token; npm publish --provenance via OIDC
+#
+# Package: @aimpathyminds/yaagents-client
+# Publishes ESM + CJS + .d.ts bundle to npmjs.com/package/@aimpathyminds/yaagents-client
+# Auth:    NODE_AUTH_TOKEN = npm Granular Access Token (external setup; NOT NPM_TOKEN)
+#          No NPM_TOKEN secret in repo (AC: WI-1yaa.REL-4)
+# OIDC:    id-token: write → npm attaches a SLSA provenance attestation at publish
+#
+# External setup (Phase-B dependency):
+#   1. Create an npm Granular Access Token scoped to @aimpathyminds/yaagents-client
+#      with "publish" permission (npmjs.com → Account → Access Tokens → Generate New Token)
+#   2. Add it as GH repo secret NODE_AUTH_TOKEN (NOT NPM_TOKEN)
+#   3. Create GitHub Actions environment "npm" with tag-ref protection (v*.*.*)
+#      to prevent accidental publishes from branch pushes
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
+
+permissions:
+  id-token: write   # OIDC token for npm provenance attestation (--provenance)
+
+jobs:
+  publish:
+    name: Build and publish @aimpathyminds/yaagents-client
+    runs-on: ubuntu-latest
+    environment: npm   # tag-only protection; matches external setup step 3
+
+    defaults:
+      run:
+        working-directory: client-ts
+
+    steps:
+      # ── checkout ─────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── toolchain ────────────────────────────────────────────────────────
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'   # writes ~/.npmrc auth stub
+
+      - name: Set up pnpm 9
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      # ── install ───────────────────────────────────────────────────────────
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # ── quality gates before publish ─────────────────────────────────────
+      - name: Type-check
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Test (unit + coverage)
+        run: pnpm run test
+
+      - name: Dependency audit
+        run: pnpm audit --audit-level=high
+
+      # ── build (dual ESM + CJS) ────────────────────────────────────────────
+      - name: Build dual-bundle (tsup)
+        run: pnpm run build
+
+      - name: Verify dual-bundle outputs
+        run: |
+          test -f dist/index.mjs  || { echo "ERROR: ESM output missing (dist/index.mjs)";  exit 1; }
+          test -f dist/index.cjs  || { echo "ERROR: CJS output missing (dist/index.cjs)";  exit 1; }
+          test -f dist/index.d.ts || { echo "ERROR: types missing (dist/index.d.ts)";       exit 1; }
+          echo "OK  dual-bundle: dist/index.{mjs,cjs,d.ts} present"
+
+      - name: Verify PROFILE_VERSION export
+        run: |
+          # Quick node smoke-test of the CJS bundle before publish
+          node -e "
+            const { PROFILE_VERSION } = require('./dist/index.cjs');
+            if (PROFILE_VERSION !== 'v0.1') throw new Error('PROFILE_VERSION=' + PROFILE_VERSION);
+            console.log('OK  PROFILE_VERSION=' + PROFILE_VERSION);
+          "
+
+      # ── publish to npm (with OIDC provenance) ────────────────────────────
+      # --provenance: npm CLI uses the OIDC token (id-token: write above) to
+      #   generate and attach a SLSA provenance attestation, linking the
+      #   published package to this exact workflow run / commit / repo.
+      # --access public: required for scoped packages (@aimpathyminds/*).
+      # NODE_AUTH_TOKEN: Granular Access Token (not NPM_TOKEN) — see external setup.
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

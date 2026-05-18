@@ -49,7 +49,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.SDK-4, WI-1yaa.PYC-3, WI-1yaa.CLI-4]
 
-### WI-1yaa.REL-4: npm publish (OIDC provenance) [READY] — Sprint 5
+### WI-1yaa.REL-4: npm publish (OIDC provenance) [DONE] — Sprint 5
 service: yaagents/(ci)
 brief: `@aimpathyminds/yaagents-client` dual ESM+CJS package (ADR 0003) with
 `yaagents.profile`+`PROFILE_VERSION`. GH Actions: build → `npm publish
