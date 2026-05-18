@@ -11,6 +11,7 @@ import json
 import sys
 
 from yaagents_cli._validate import validate_response
+from yaagents_cli._validate_openapi import validate_openapi
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -30,6 +31,26 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Path to the response body JSON file.",
     )
     vr.add_argument(
+        "--json",
+        dest="json_output",
+        action="store_true",
+        default=False,
+        help="Emit machine-readable JSON output.",
+    )
+
+    vo = sub.add_parser(
+        "validate-openapi",
+        help=(
+            "Validate an OpenAPI YAML file for YAAgents profile conformance: "
+            "x-yaagents metadata, §4 Content-Type table, and $ref resolution."
+        ),
+    )
+    vo.add_argument(
+        "file",
+        metavar="<file.yaml>",
+        help="Path to the OpenAPI YAML file.",
+    )
+    vo.add_argument(
         "--json",
         dest="json_output",
         action="store_true",
@@ -63,12 +84,36 @@ def _cmd_validate_response(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_validate_openapi(args: argparse.Namespace) -> int:
+    result = validate_openapi(args.file)
+
+    if args.json_output:
+        print(json.dumps(result.to_dict(), indent=2))
+        return 0 if result.passed else 1
+
+    # ── human-readable output ────────────────────────────────────────────────
+    if result.error:
+        print(f"ERROR: {result.error}", file=sys.stderr)
+        return 1
+
+    if result.passed:
+        print(f"PASS: {result.file}")
+        return 0
+
+    print(f"FAIL: {result.file}")
+    for finding in result.findings:
+        print(f"  [{finding.pointer}] {finding.message}")
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "validate-response":
         return _cmd_validate_response(args)
+    if args.command == "validate-openapi":
+        return _cmd_validate_openapi(args)
 
     parser.print_help()
     return 2
