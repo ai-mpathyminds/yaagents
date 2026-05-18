@@ -43,7 +43,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.CLI-2, WI-1yaa.SDK-3]
 
-### WI-1yaa.CLI-4: `conformance-test <base-url>` [READY] — Sprint 5 gate
+### WI-1yaa.CLI-4: `conformance-test <base-url>` [WIP] — Sprint 5 gate
 service: yaagents/cli
 brief: `yaagents conformance-test <base-url>`: exercise the mandatory response
 types against a live service (via the gateway), assert correct status +
