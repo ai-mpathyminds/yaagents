@@ -57,3 +57,15 @@ routes:
     target: http://campaign-api:8121
     tenantRequired: true
     audit: false
+
+  # ── POST /_demo/llm-down ─────────────────────── demo-only; NOT profile API ─
+  # Toggle the in-process LLM_DOWN flag on the campaign-api to drive flow 4
+  # (failed_dependency) through the gateway in the EX-4 acceptance gate.
+  # tenantRequired:false — no domain context needed for an internal toggle.
+  # NEVER add this route to production deployments.
+  - id: demo-llm-toggle
+    method: POST
+    path: /_demo/llm-down
+    target: http://campaign-api:8121
+    tenantRequired: false
+    audit: false

@@ -46,7 +46,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (demo)
 depends_on: [WI-1yaa.EX-2, WI-1yaa.GW-5]
 
-### WI-1yaa.EX-4: End-to-end conformance gate (PI gate) [READY] — Sprint 5
+### WI-1yaa.EX-4: End-to-end conformance gate (PI gate) [WIP] — Sprint 5
 service: yaagents/examples/campaign-api
 brief: The PI1-yaa acceptance gate. With the Compose demo up: run
 `yaagents conformance-test http://localhost:8120` → `Overall: PASS`; exercise

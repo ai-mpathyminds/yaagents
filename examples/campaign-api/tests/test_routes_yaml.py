@@ -42,6 +42,16 @@ _OPTIMIZATION_PATHS = {
     "/campaigns/{campaignId}/optimizations/{opId}",
 }
 
+# Demo-only routes (prefixed /_demo/) are excluded from §6.1 profile assertions.
+# They are intentionally NOT part of the YAAgents Profile and may have relaxed
+# tenantRequired / audit settings (EX-4 flow-4 gate support).
+_DEMO_PATH_PREFIX = "/_demo/"
+
+
+def _profile_routes(routes: list[dict]) -> list[dict]:  # type: ignore[type-arg]
+    """Return only the §6.1 profile routes (exclude /_demo/* internal routes)."""
+    return [r for r in routes if not r.get("path", "").startswith(_DEMO_PATH_PREFIX)]
+
 _PLACEHOLDER_RE = re.compile(r"\{([^{}]+)\}")
 _VALID_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
 
@@ -171,8 +181,12 @@ def test_non_optimization_routes_have_no_roles(
 def test_all_routes_have_tenant_required(
     route_list: list[dict],  # type: ignore[type-arg]
 ) -> None:
-    """Every route requires a tenant header (rejects requests without X-Tenant-ID)."""
-    for r in route_list:
+    """Every §6.1 profile route requires a tenant header.
+
+    Demo-only /_demo/* routes are excluded — they are internal toggle endpoints
+    not subject to the YAAgents Profile tenant enforcement requirement.
+    """
+    for r in _profile_routes(route_list):
         assert r.get("tenantRequired") is True, (
             f"Route {r['id']}: tenantRequired must be true, "
             f"got {r.get('tenantRequired')!r}"
@@ -196,8 +210,8 @@ def test_optimization_routes_have_audit_true(
 def test_non_optimization_routes_have_audit_false(
     route_list: list[dict],  # type: ignore[type-arg]
 ) -> None:
-    """Non-optimization routes do not emit audit events by default."""
-    for r in route_list:
+    """Non-optimization §6.1 routes do not emit audit events by default."""
+    for r in _profile_routes(route_list):
         if r["path"] not in _OPTIMIZATION_PATHS:
             # audit defaults to false when absent
             audit_val = r.get("audit", False)
@@ -209,7 +223,12 @@ def test_non_optimization_routes_have_audit_false(
 # ── route count sanity check ─────────────────────────────────────────────────
 
 
-def test_exactly_five_routes(route_list: list[dict]) -> None:  # type: ignore[type-arg]
-    assert len(route_list) == 5, (
-        f"Expected exactly 5 routes (§6.1), found {len(route_list)}"
+def test_exactly_five_profile_routes(
+    route_list: list[dict],  # type: ignore[type-arg]
+) -> None:
+    """Exactly 5 §6.1 profile routes (demo-only /_demo/* routes excluded)."""
+    profile = _profile_routes(route_list)
+    assert len(profile) == 5, (
+        f"Expected exactly 5 §6.1 routes, found {len(profile)}: "
+        f"{[r['path'] for r in profile]}"
     )
