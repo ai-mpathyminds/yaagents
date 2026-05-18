@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import httpx
-
 if TYPE_CHECKING:
     from ._client import YaAgentsClient
+
+from ._mapper import process_response
 
 __all__ = ["CampaignResource"]
 
@@ -24,14 +24,26 @@ class OptimizationsResource:
         body: dict[str, Any],
         *,
         correlation_id: str | None = None,
-    ) -> httpx.Response:
-        """POST /campaigns/{id}/optimizations — create a new optimization run."""
-        return self._client._request(
+    ) -> dict[str, Any]:
+        """POST /campaigns/{id}/optimizations — create a new optimization run.
+
+        Returns:
+            Deserialized payload for 200/201/202 responses.
+
+        Raises:
+            ClarificationRequired: Agent needs additional inputs (HTTP 400).
+            ValidationFailed: Request inputs failed validation (HTTP 422).
+            AgenticForbidden: Caller lacks permission (HTTP 403).
+            FailedDependency: Upstream service unavailable (HTTP 424).
+            AgenticError: All other non-success responses.
+        """
+        response = self._client._request(
             "POST",
             f"/campaigns/{self._campaign_id}/optimizations",
             body,
             correlation_id=correlation_id,
         )
+        return process_response(response)
 
 
 class AssetsResource:
@@ -46,14 +58,26 @@ class AssetsResource:
         body: dict[str, Any],
         *,
         correlation_id: str | None = None,
-    ) -> httpx.Response:
-        """POST /campaigns/{id}/assets:generate — trigger asset generation."""
-        return self._client._request(
+    ) -> dict[str, Any]:
+        """POST /campaigns/{id}/assets:generate — trigger asset generation.
+
+        Returns:
+            Deserialized payload for 200/201/202 responses.
+
+        Raises:
+            ClarificationRequired: Agent needs additional inputs (HTTP 400).
+            ValidationFailed: Request inputs failed validation (HTTP 422).
+            AgenticForbidden: Caller lacks permission (HTTP 403).
+            FailedDependency: Upstream service unavailable (HTTP 424).
+            AgenticError: All other non-success responses.
+        """
+        response = self._client._request(
             "POST",
             f"/campaigns/{self._campaign_id}/assets:generate",
             body,
             correlation_id=correlation_id,
         )
+        return process_response(response)
 
 
 class CampaignResource:
