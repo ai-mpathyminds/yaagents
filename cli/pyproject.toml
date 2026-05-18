@@ -55,6 +55,10 @@ python_version = "3.11"
 strict = true
 files = ["src"]
 
+[[tool.mypy.overrides]]
+module = ["jsonschema", "jsonschema.*", "yaml"]
+ignore_missing_imports = true
+
 # ── pytest ────────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
