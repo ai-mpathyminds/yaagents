@@ -34,7 +34,7 @@ _CT_OPERATION = "application/vnd.yaagents.operation+json"
 
 def _content_type(response: httpx.Response) -> str:
     """Return content-type with parameters stripped (``; charset=utf-8`` etc.)."""
-    return response.headers.get("content-type", "").split(";")[0].strip()
+    return str(response.headers.get("content-type", "")).split(";")[0].strip()
 
 
 def _json(response: httpx.Response) -> dict[str, Any]:
@@ -89,7 +89,7 @@ def process_response(response: httpx.Response) -> dict[str, Any]:
             str(body.get("message", "Clarification required")),
             status_code=status,
             content_type=ct,
-            code=body.get("code"),  # type: ignore[arg-type]
+            code=body.get("code"),
             body=body,
             required_inputs=cast(
                 list[dict[str, Any]], body.get("requiredInputs", [])
@@ -103,7 +103,7 @@ def process_response(response: httpx.Response) -> dict[str, Any]:
             str(body.get("message", "Validation failed")),
             status_code=status,
             content_type=ct,
-            code=body.get("code"),  # type: ignore[arg-type]
+            code=body.get("code"),
             body=body,
             errors=cast(list[dict[str, Any]], body.get("errors", [])),
         )
@@ -112,7 +112,7 @@ def process_response(response: httpx.Response) -> dict[str, Any]:
     if ct == _CT_ERROR:
         body = _json(response)
         error_type = str(body.get("type", "error"))
-        code: str | None = body.get("code")  # type: ignore[assignment]
+        code: str | None = body.get("code")
         msg = str(body.get("message", f"Agentic error (HTTP {status})"))
 
         if error_type == "forbidden":
@@ -155,7 +155,7 @@ def process_response(response: httpx.Response) -> dict[str, Any]:
             str(parsed.get("message", f"Agentic error (HTTP {status})")),
             status_code=status,
             content_type=ct,
-            code=parsed.get("code"),  # type: ignore[arg-type]
+            code=parsed.get("code"),
             body=parsed,
         )
 
