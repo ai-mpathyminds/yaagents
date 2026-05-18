@@ -12,7 +12,7 @@ ADR: PI1-yaa-0002, PI1-yaa-0003 (Hatch).
 
 ---
 
-### WI-1yaa.PYC-1: `YaAgentsClient` + resource fluent accessors [READY]
+### WI-1yaa.PYC-1: `YaAgentsClient` + resource fluent accessors [DONE]
 service: yaagents/client-python
 brief: `YaAgentsClient(base_url, token, tenant_id)`; `.campaigns(id)` →
 `CampaignResource`; `CampaignResource.optimizations.create(body)` →
