@@ -9,7 +9,7 @@ ESM+CJS, zero runtime deps).
 
 ---
 
-### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [READY]
+### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [WIP]
 service: yaagents/client-ts
 brief: `YaAgentsClient({ baseUrl, token, tenantId })`; `client.campaigns
 .byId(id)` → `CampaignResource`; `.optimizations().create(body)` →

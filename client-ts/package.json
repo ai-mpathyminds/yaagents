@@ -1,0 +1,33 @@
+{
+  "name": "@aimpathyminds/yaagents-client",
+  "version": "0.1.0",
+  "description": "YAAgents TypeScript client — Agentic REST Profile v0.1",
+  "keywords": ["yaagents", "agentic", "REST", "client", "profile-v0.1"],
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "lint": "eslint src tests",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "@typescript-eslint/parser": "^7.10.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "homepage": "https://github.com/ai-mpathyminds/yaagents",
+  "license": "SEE LICENSE IN ../LICENSE"
+}
