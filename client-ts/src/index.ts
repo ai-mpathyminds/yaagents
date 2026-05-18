@@ -26,3 +26,45 @@ export {
   OptimizationsResource,
   AssetsResource,
 } from "./resources.js";
+
+// ── Result types ──────────────────────────────────────────────────────────────
+export type {
+  AgenticResult,
+  AgenticSuccessResult,
+  AgenticErrorResult,
+  AgenticTrace,
+  RequiredInput,
+  ValidationErrorDetail,
+  SuccessVariant,
+  CreatedVariant,
+  AcceptedVariant,
+  ClarificationRequiredVariant,
+  ValidationFailedVariant,
+  ApprovalRequiredVariant,
+  ForbiddenVariant,
+  ConflictVariant,
+  FailedDependencyVariant,
+  ServerErrorVariant,
+} from "./result.js";
+
+// ── Typed error classes ───────────────────────────────────────────────────────
+export {
+  AgenticErrorBase,
+  ClarificationRequiredError,
+  ValidationFailedError,
+  ApprovalRequiredError,
+  ForbiddenError,
+  ConflictError,
+  FailedDependencyError,
+  AgenticServerError,
+} from "./errors.js";
+
+// ── Strict client ─────────────────────────────────────────────────────────────
+export {
+  StrictClient,
+  unwrapStrict,
+  StrictCampaignsAccessor,
+  StrictCampaignResource,
+  StrictOptimizationsResource,
+  StrictAssetsResource,
+} from "./strict.js";

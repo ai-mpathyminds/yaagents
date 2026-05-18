@@ -8,6 +8,7 @@
  */
 
 import { CampaignsAccessor } from "./resources.js";
+import { StrictClient } from "./strict.js";
 import type { ClientOptions, RequestOptions } from "./types.js";
 
 export { PROFILE_VERSION } from "./version.js";
@@ -45,6 +46,27 @@ export class YaAgentsClient {
     this.#token = token;
     this.#tenantId = tenantId;
     this.campaigns = new CampaignsAccessor(this);
+  }
+
+  // ---------------------------------------------------------------------------
+  // strict() — exception-style wrapper
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Return a `StrictClient` wrapper where every resource method throws a typed
+   * `AgenticErrorBase` subclass instead of returning an error result variant.
+   *
+   * The non-strict client is unchanged; this creates a parallel view.
+   *
+   * @example
+   * ```ts
+   * const strict = client.strict();
+   * // throws ClarificationRequiredError if the agent needs more input
+   * const result = await strict.campaigns.byId("c1").optimizations().create(body);
+   * ```
+   */
+  strict(): StrictClient {
+    return new StrictClient(this);
   }
 
   // ---------------------------------------------------------------------------
