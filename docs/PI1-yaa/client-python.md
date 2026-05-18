@@ -39,7 +39,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.PYC-1, WI-1yaa.SPEC-2]
 
-### WI-1yaa.PYC-3: Client conformance tests [READY]
+### WI-1yaa.PYC-3: Client conformance tests [DONE]
 service: yaagents/client-python
 brief: pytest suite driving the client against a fixture HTTP server that
 replays the `spec/examples/v0.1` golden corpus; assert correct
