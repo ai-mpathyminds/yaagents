@@ -8,6 +8,8 @@
  * ```
  */
 
+import { parseResponse } from "./mapper.js";
+import type { AgenticResult } from "./result.js";
 import type { RequestOptions } from "./types.js";
 // type-only import breaks the client ↔ resources circular reference at runtime
 import type { YaAgentsClient } from "./client.js";
@@ -31,19 +33,20 @@ export class OptimizationsResource {
    *
    * @param body - Request payload (framework-specific; see your gateway's OpenAPI spec).
    * @param options - Per-call options such as a custom `correlationId`.
-   * @returns Parsed JSON response body.
+   * @returns `AgenticResult<T>` — never throws; switch on `result.type`.
+   *          Use `client.strict()` for exception-style handling.
    */
-  async create(
+  async create<T = Record<string, unknown>>(
     body: Record<string, unknown>,
     options?: RequestOptions,
-  ): Promise<unknown> {
+  ): Promise<AgenticResult<T>> {
     const response = await this.#client._request(
       "POST",
       `/campaigns/${this.#campaignId}/optimizations`,
       body,
       options,
     );
-    return response.json() as Promise<unknown>;
+    return parseResponse<T>(response);
   }
 }
 
@@ -66,19 +69,20 @@ export class AssetsResource {
    *
    * @param body - Request payload.
    * @param options - Per-call options such as a custom `correlationId`.
-   * @returns Parsed JSON response body.
+   * @returns `AgenticResult<T>` — never throws; switch on `result.type`.
+   *          Use `client.strict()` for exception-style handling.
    */
-  async generate(
+  async generate<T = Record<string, unknown>>(
     body: Record<string, unknown>,
     options?: RequestOptions,
-  ): Promise<unknown> {
+  ): Promise<AgenticResult<T>> {
     const response = await this.#client._request(
       "POST",
       `/campaigns/${this.#campaignId}/assets:generate`,
       body,
       options,
     );
-    return response.json() as Promise<unknown>;
+    return parseResponse<T>(response);
   }
 }
 

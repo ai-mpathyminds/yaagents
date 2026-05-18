@@ -9,7 +9,7 @@ ESM+CJS, zero runtime deps).
 
 ---
 
-### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [WIP]
+### WI-1yaa.TSC-1: `YaAgentsClient` + fluent resource accessors [DONE]
 service: yaagents/client-ts
 brief: `YaAgentsClient({ baseUrl, token, tenantId })`; `client.campaigns
 .byId(id)` → `CampaignResource`; `.optimizations().create(body)` →
@@ -22,7 +22,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [READY]
+### WI-1yaa.TSC-2: `AgenticResult<T>` discriminated union + `strict()` [WIP]
 service: yaagents/client-ts
 brief: `AgenticResult<T>` discriminated union over the response types
 (`created`→`resource:T`, `clarification_required`→`requiredInputs`,
