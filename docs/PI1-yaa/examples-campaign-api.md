@@ -21,7 +21,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (reference example)
 depends_on: [WI-1yaa.SDK-3]
 
-### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [WIP]
+### WI-1yaa.EX-2: Gateway `routes.yaml` for the example [DONE]
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/routes.yaml` mapping the §6.1 paths to
 `http://campaign-api:8121`, with `roles:` on the optimizations route (so a
@@ -33,7 +33,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001
 depends_on: [WI-1yaa.GW-5, WI-1yaa.EX-1]
 
-### WI-1yaa.EX-3: Docker Compose demo [READY] — Sprint 5
+### WI-1yaa.EX-3: Docker Compose demo [WIP] — Sprint 5
 service: yaagents/examples/campaign-api
 brief: `examples/campaign-api/docker-compose.yml` — `yaagents-gateway` (image
 or built; `8120:8080`) ↔ `campaign-api` (internal `8121`). HS256 demo token
