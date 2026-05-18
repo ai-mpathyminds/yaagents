@@ -1,0 +1,256 @@
+# .github/workflows/pypi-publish.yml
+# WI-1yaa.REL-3 — PyPI publish ×3 (OIDC Trusted Publisher)
+# ADR PI1-yaa-0003 — Hatch build; ADR PI1-yaa-0005 — OIDC; no API token
+#
+# Packages: yaagents-fastapi | yaagents-client | yaagents-cli
+# Flow:     build → TestPyPI publish (gate) → TestPyPI verify → PyPI publish
+# Auth:     PyPI Trusted Publisher OIDC (id-token: write); zero long-lived token
+#
+# External setup (Phase-B dependency, one per package):
+#   PyPI Trusted Publisher registration pointing to this workflow +
+#   environment "pypi" (and testpypi → "testpypi") must be configured by
+#   the repo owner on pypi.org / test.pypi.org before the prod publish step
+#   can succeed.  The workflow itself has no secrets to manage.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
+
+jobs:
+  # ── 1. Build all three packages ─────────────────────────────────────────────
+  build:
+    name: Build Python distributions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Hatch
+        run: pip install hatch==1.12.0
+
+      - name: Get version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build yaagents-fastapi
+        working-directory: sdk-fastapi
+        run: hatch build
+
+      - name: Build yaagents-client
+        working-directory: client-python
+        run: hatch build
+
+      - name: Build yaagents-cli
+        working-directory: cli
+        run: hatch build
+
+      - name: Upload sdk-fastapi dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-fastapi-dist
+          path: sdk-fastapi/dist/
+          if-no-files-found: error
+
+      - name: Upload client-python dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-python-dist
+          path: client-python/dist/
+          if-no-files-found: error
+
+      - name: Upload cli dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-dist
+          path: cli/dist/
+          if-no-files-found: error
+
+  # ── 2a. Publish to TestPyPI — yaagents-fastapi ─────────────────────────────
+  publish-testpypi-fastapi:
+    name: TestPyPI — yaagents-fastapi
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi   # env protection limits which refs can publish
+    permissions:
+      id-token: write       # OIDC Trusted Publisher; no API token
+
+    steps:
+      - name: Download sdk-fastapi dist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-fastapi-dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+          skip-existing: true   # idempotent re-runs
+
+  # ── 2b. Publish to TestPyPI — yaagents-client ──────────────────────────────
+  publish-testpypi-client:
+    name: TestPyPI — yaagents-client
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download client-python dist
+        uses: actions/download-artifact@v4
+        with:
+          name: client-python-dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+          skip-existing: true
+
+  # ── 2c. Publish to TestPyPI — yaagents-cli ─────────────────────────────────
+  publish-testpypi-cli:
+    name: TestPyPI — yaagents-cli
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download cli dist
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+          skip-existing: true
+
+  # ── 3. Verify TestPyPI installs ─────────────────────────────────────────────
+  # Gate: all three TestPyPI publishes must succeed before production publish.
+  # Dependencies pulled from pypi.org via --extra-index-url (TestPyPI only
+  # hosts the yaagents packages, not fastapi/httpx/jsonschema/pyyaml).
+  verify-testpypi:
+    name: Verify TestPyPI installs
+    needs:
+      - publish-testpypi-fastapi
+      - publish-testpypi-client
+      - publish-testpypi-cli
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Small delay — TestPyPI CDN may take a moment to propagate the upload.
+      - name: Wait for TestPyPI propagation
+        run: sleep 20
+
+      - name: Install from TestPyPI (with pypi.org for deps)
+        run: |
+          pip install \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            "yaagents-fastapi==${{ steps.ver.outputs.version }}" \
+            "yaagents-client==${{ steps.ver.outputs.version }}" \
+            "yaagents-cli==${{ steps.ver.outputs.version }}"
+
+      - name: Smoke-test profile declarations
+        run: |
+          python - <<'EOF'
+          from yaagents_fastapi import __version__ as fv, __profile__ as fp
+          from yaagents_client import __version__ as cv, __profile__ as cp
+          from yaagents_cli    import __version__ as lv, __profile__ as lp
+          assert fv == cv == lv, f"version mismatch: {fv} {cv} {lv}"
+          assert fp == cp == lp == "v0.1", f"profile mismatch: {fp} {cp} {lp}"
+          print(f"OK  version={fv}  profile={fp}")
+          EOF
+
+      - name: Smoke-test CLI entrypoint
+        run: yaagents --help
+
+  # ── 4a. Publish to production PyPI — yaagents-fastapi ──────────────────────
+  # Only runs after TestPyPI gate passes.  Uses a separate GH Actions
+  # environment "pypi" so protection rules enforce tag-only deploys.
+  publish-pypi-fastapi:
+    name: PyPI — yaagents-fastapi
+    needs: verify-testpypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download sdk-fastapi dist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-fastapi-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  # ── 4b. Publish to production PyPI — yaagents-client ───────────────────────
+  publish-pypi-client:
+    name: PyPI — yaagents-client
+    needs: verify-testpypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download client-python dist
+        uses: actions/download-artifact@v4
+        with:
+          name: client-python-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  # ── 4c. Publish to production PyPI — yaagents-cli ──────────────────────────
+  publish-pypi-cli:
+    name: PyPI — yaagents-cli
+    needs: verify-testpypi
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download cli dist
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
