@@ -43,7 +43,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.CLI-2, WI-1yaa.SDK-3]
 
-### WI-1yaa.CLI-4: `conformance-test <base-url>` [WIP] — Sprint 5 gate
+### WI-1yaa.CLI-4: `conformance-test <base-url>` [DONE] — Sprint 5 gate
 service: yaagents/cli
 brief: `yaagents conformance-test <base-url>`: exercise the mandatory response
 types against a live service (via the gateway), assert correct status +
@@ -71,7 +71,7 @@ depends_on: [WI-1yaa.CLI-1, WI-1yaa.EX-3]
 | [SUPPLY-CHAIN] reproducible builds (Hatch) | feature WI | REL-3 + ADR PI1-yaa-0003 |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI1-yaa |
 
-### WI-1yaa.NFR-CLI-1: CLI input-validation hardening [READY]
+### WI-1yaa.NFR-CLI-1: CLI input-validation hardening [DONE]
 service: yaagents/cli
 brief: [SEC] Harden all CLI entry points against malicious input.
 `validate-response <file>` and `validate-openapi <file>`: reject paths
