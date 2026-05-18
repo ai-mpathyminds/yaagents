@@ -2,31 +2,55 @@
   "name": "@aimpathyminds/yaagents-client",
   "version": "0.1.0",
   "description": "YAAgents TypeScript client — Agentic REST Profile v0.1",
-  "keywords": ["yaagents", "agentic", "REST", "client", "profile-v0.1"],
+  "keywords": [
+    "yaagents",
+    "agentic",
+    "REST",
+    "client",
+    "profile-v0.1"
+  ],
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsup",
     "lint": "eslint src tests",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "audit": "pnpm audit"
   },
   "devDependencies": {
+    "@types/node": "^25.8.0",
     "@typescript-eslint/eslint-plugin": "^7.10.0",
     "@typescript-eslint/parser": "^7.10.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^8.57.0",
+    "tsup": "^8.3.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0",
+      "vite": ">=6.4.2"
+    }
+  },
+  "yaagents": {
+    "profile": "v0.1"
   },
   "homepage": "https://github.com/ai-mpathyminds/yaagents",
   "license": "SEE LICENSE IN ../LICENSE"
