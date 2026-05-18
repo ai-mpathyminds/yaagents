@@ -1,0 +1,194 @@
+# .github/workflows/ci.yml
+# WI-1yaa.REL-6 — CI test/lint matrix + spec release archive
+#
+# Three language jobs (all must pass; each has ≥80% coverage gate):
+#   ci-go       Go  — golangci-lint + govulncheck + go test
+#   ci-python   Py  — ruff + mypy + pip-audit + pytest  (matrix: 3 packages)
+#   ci-ts       TS  — eslint + tsc --noEmit + pnpm audit + vitest
+#
+# spec-archive: on tag push only, after all CI green — attaches
+#   schemas/ + openapi/ zip to the GitHub Release (ADR PI1-yaa-0005 §6).
+
+on:
+  push:
+    branches: ['**']
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+
+permissions:
+  contents: read   # default for all jobs; spec-archive overrides to write
+
+# Cancel in-progress runs on the same branch/PR to save minutes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Go: golangci-lint + govulncheck + go test ─────────────────────────────
+  ci-go:
+    name: Go — lint + vuln + test (≥80% cov)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+
+      # golangci-lint runs the linter set declared in gateway/.golangci.yml
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64
+          working-directory: gateway
+
+      # govulncheck scans for known Go vulnerabilities (OSV database)
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: govulncheck
+        run: govulncheck ./...
+
+      # go test with race detector and coverage profiling
+      - name: go test
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      # Enforce ≥80% total statement coverage
+      - name: Enforce ≥80% coverage gate
+        run: |
+          TOTAL=$(go tool cover -func=coverage.out \
+            | grep '^total:' | awk '{gsub(/%/,"",$3); printf "%d\n", $3}')
+          echo "Go total coverage: ${TOTAL}%"
+          if [ "${TOTAL}" -lt 80 ]; then
+            echo "::error::Go coverage ${TOTAL}% is below the 80% gate"
+            exit 1
+          fi
+
+  # ── Python: ruff + mypy + pip-audit + pytest ─────────────────────────────
+  # Matrix over the three Python packages; fail-fast=false so all three report.
+  # Each package's pyproject.toml already carries --cov-fail-under=80.
+  ci-python:
+    name: Python — ${{ matrix.pkg }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: [sdk-fastapi, client-python, cli]
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.pkg }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ${{ matrix.pkg }}/pyproject.toml
+
+      - name: Install package + test dependencies
+        run: pip install ".[test]"
+
+      # ruff: fast linter (E, F, I, UP, B, SIM per pyproject.toml)
+      - name: ruff check
+        run: ruff check src
+
+      # mypy: strict type-checking (strict = true per pyproject.toml)
+      - name: mypy
+        run: mypy src
+
+      # pip-audit: vulnerability scan of the installed environment (OSV)
+      - name: pip-audit
+        run: pip-audit
+
+      # pytest: unit tests + coverage gate (--cov-fail-under=80 in pyproject.toml)
+      - name: pytest (≥80% coverage gate)
+        run: pytest
+
+  # ── TypeScript: eslint + tsc + pnpm audit + vitest ───────────────────────
+  ci-ts:
+    name: TypeScript — @aimpathyminds/yaagents-client
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: client-ts
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up pnpm 9
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # eslint: lint src + tests
+      - name: eslint
+        run: pnpm run lint
+
+      # tsc --noEmit: full type-check without emitting output files
+      - name: tsc --noEmit
+        run: pnpm run typecheck
+
+      # pnpm audit: vulnerability scan of the dependency graph (HIGH+)
+      - name: pnpm audit
+        run: pnpm audit --audit-level=high
+
+      # vitest: unit tests + coverage (≥80% gate in vitest.config.ts thresholds)
+      - name: vitest + coverage (≥80% gate)
+        run: pnpm run test
+
+  # ── Spec archive: schemas/ + openapi/ → GitHub Release ───────────────────
+  # Runs only on tag push, and only after all three language jobs are green.
+  # ADR PI1-yaa-0005 §6: schemas + OpenAPI attached as versioned archive;
+  # no separate spec registry in PI1-yaa.
+  spec-archive:
+    name: Attach spec archive to Release
+    needs: [ci-go, ci-python, ci-ts]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create/update GitHub Release + upload asset
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create versioned spec archive
+        id: archive
+        run: |
+          VERSION="${GITHUB_REF_NAME}"            # e.g. v0.1.0
+          ARCHIVE="yaagents-spec-${VERSION}.zip"
+          zip -r "${ARCHIVE}" schemas/ openapi/
+          echo "archive=${ARCHIVE}" >> "$GITHUB_OUTPUT"
+          echo "Created ${ARCHIVE} ($(du -sh "${ARCHIVE}" | cut -f1))"
+
+      - name: Attach spec archive to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.archive.outputs.archive }}
+          fail_on_unmatched_files: true
+          generate_release_notes: false   # gateway-image.yml handles release notes

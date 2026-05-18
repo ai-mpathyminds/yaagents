@@ -74,7 +74,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005
 depends_on: [WI-1yaa.GW-5]
 
-### WI-1yaa.REL-6: CI test/lint matrix + spec release archive [READY] — Sprint 5
+### WI-1yaa.REL-6: CI test/lint matrix + spec release archive [DONE] — Sprint 5
 service: yaagents/(ci)
 brief: GH Actions CI: Go (`golangci-lint`+`govulncheck`+test), Python
 (`ruff`+`mypy`+`pip-audit`+pytest), TS (`eslint`+`tsc --noEmit`+`npm
