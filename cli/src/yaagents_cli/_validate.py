@@ -75,13 +75,14 @@ class ValidateResult:
 
 
 def _safe_path(file_path: str) -> pathlib.Path:
-    """Resolve path; reject traversal attempts.
+    """Resolve path; reject ``..`` traversal components (NFR-CLI-1).
 
     Rejects any path component that is ``..`` (prevents directory traversal).
-    Absolute paths are permitted — the caller supplies an explicit path.
+    Absolute paths are permitted — callers pass explicit, fully-qualified
+    paths in legitimate use.  The ``..`` guard is the essential protection
+    against traversal attacks (e.g. ``../../../etc/passwd``).
     """
     p = pathlib.Path(file_path)
-    # Reject paths with '..' components
     if ".." in p.parts:
         raise ValidationError("path traversal not allowed")
     return p
@@ -93,10 +94,13 @@ def _load_json_file(file_path: str) -> Any:
     try:
         size = p.stat().st_size
     except FileNotFoundError as exc:
-        raise ValidationError(f"file not found: {file_path}") from exc
+        raise ValidationError(f"file not found: {file_path!r}") from exc
     if size > _MAX_FILE_BYTES:
         raise ValidationError("file exceeds 10 MB limit")
-    return json.loads(p.read_text(encoding="utf-8"))
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValidationError(f"invalid JSON: {exc}") from exc
 
 
 def _infer_schema(body: Any) -> tuple[str, str]:

@@ -117,12 +117,13 @@ class TestIdempotencyGuard:
 
 class TestGeneratedOpenapiPassesValidate:
     def test_openapi_yaml_passes_validate_openapi(
-        self, tmp_path: pathlib.Path
+        self, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        result = init_fastapi(str(tmp_path / "app"))
+        # chdir so the absolute tmp_path is within CWD (NFR-CLI-1 guard).
+        monkeypatch.chdir(tmp_path)
+        result = init_fastapi("app")
         assert result.succeeded
-        openapi_file = str(pathlib.Path(result.target_dir) / "openapi.yaml")
-        vr = validate_openapi(openapi_file)
+        vr = validate_openapi("app/openapi.yaml")
         assert vr.passed, (
             "Generated openapi.yaml FAILED validate-openapi:\n"
             + "\n".join(f"  [{f.pointer}] {f.message}" for f in vr.findings)

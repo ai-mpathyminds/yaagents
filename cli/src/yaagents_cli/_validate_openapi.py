@@ -32,11 +32,11 @@ _STATUS_TO_VENDOR_CT: dict[str, str] = {
 }
 
 # Reverse: vendor CT → set of valid HTTP statuses.
-_VENDOR_CT_TO_STATUSES: dict[str, frozenset[str]] = {}
+_VENDOR_CT_TO_STATUSES_BUILD: dict[str, set[str]] = {}
 for _status, _ct in _STATUS_TO_VENDOR_CT.items():
-    _VENDOR_CT_TO_STATUSES.setdefault(_ct, set()).add(_status)  # type: ignore[arg-type]
-_VENDOR_CT_TO_STATUSES = {
-    k: frozenset(v) for k, v in _VENDOR_CT_TO_STATUSES.items()
+    _VENDOR_CT_TO_STATUSES_BUILD.setdefault(_ct, set()).add(_status)
+_VENDOR_CT_TO_STATUSES: dict[str, frozenset[str]] = {
+    k: frozenset(v) for k, v in _VENDOR_CT_TO_STATUSES_BUILD.items()
 }
 
 _VENDOR_PREFIX = "application/vnd.yaagents."
@@ -104,14 +104,14 @@ def _walk_refs(
 
 
 def _load_yaml(file_path: str) -> Any:
-    """Load YAML from *file_path* with path-safety + size check."""
+    """Load YAML from *file_path* with path-safety + size check (NFR-CLI-1)."""
     p = pathlib.Path(file_path)
     if ".." in p.parts:
         raise ValidationError("path traversal not allowed")
     try:
         size = p.stat().st_size
     except FileNotFoundError as exc:
-        raise ValidationError(f"file not found: {file_path}") from exc
+        raise ValidationError(f"file not found: {file_path!r}") from exc
     if size > _MAX_FILE_BYTES:
         raise ValidationError("file exceeds 10 MB limit")
     return yaml.safe_load(p.read_text(encoding="utf-8"))
