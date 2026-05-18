@@ -162,9 +162,12 @@ def _http(
         req.add_header(k, v)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, dict(resp.headers), resp.read()
+            # Normalise header keys to lowercase so lookups are case-insensitive.
+            # Go's net/http canonicalises headers (e.g. "X-YAAgents-Profile" →
+            # "X-Yaagents-Profile"), which breaks exact-case dict.get() calls.
+            return resp.status, {k.lower(): v for k, v in resp.headers.items()}, resp.read()
     except urllib.error.HTTPError as e:
-        return e.code, dict(e.headers), e.read()
+        return e.code, {k.lower(): v for k, v in e.headers.items()}, e.read()
     except urllib.error.URLError as e:
         raise ConformanceError(f"connection failed: {e.reason}") from e
 
