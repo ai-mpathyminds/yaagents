@@ -6,7 +6,7 @@ reserved Compose-e2e + CLI-conformance gate). ADR: PI1-yaa-0002, PI1-yaa-0003.
 
 ---
 
-### WI-1yaa.CLI-1: CLI skeleton + `validate-response` [READY]
+### WI-1yaa.CLI-1: CLI skeleton + `validate-response` [WIP]
 service: yaagents/cli
 brief: `yaagents` CLI (Typer or argparse — zero heavy deps preferred).
 `yaagents validate-response <file.json>`: infer media type from the body's
