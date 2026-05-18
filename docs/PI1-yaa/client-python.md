@@ -26,7 +26,7 @@ acceptance:
 library_justify: novel; standalone OSS surface
 depends_on: [WI-1yaa.SPEC-1]
 
-### WI-1yaa.PYC-2: Typed exception mapping [READY]
+### WI-1yaa.PYC-2: Typed exception mapping [DONE]
 service: yaagents/client-python
 brief: Map response status+vendor content-type → typed exceptions:
 `ClarificationRequired` (`.required_inputs`), `ValidationFailed` (`.errors`),

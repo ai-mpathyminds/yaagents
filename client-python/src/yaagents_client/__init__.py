@@ -2,6 +2,13 @@
 
 from .__about__ import __profile__, __version__
 from ._client import PROFILE_VERSION, YaAgentsClient
+from ._exceptions import (
+    AgenticError,
+    AgenticForbidden,
+    ClarificationRequired,
+    FailedDependency,
+    ValidationFailed,
+)
 from ._resources import CampaignResource
 
 __all__ = [
@@ -10,4 +17,10 @@ __all__ = [
     "PROFILE_VERSION",
     "YaAgentsClient",
     "CampaignResource",
+    # exceptions
+    "AgenticError",
+    "AgenticForbidden",
+    "ClarificationRequired",
+    "FailedDependency",
+    "ValidationFailed",
 ]
