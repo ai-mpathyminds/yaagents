@@ -7,7 +7,7 @@ Ports: gateway `8120`, campaign-api `8121` (portfolio table).
 
 ---
 
-### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [READY]
+### WI-1yaa.EX-1: Campaign FastAPI server (uses `yaagents-fastapi`) [WIP]
 service: yaagents/examples/campaign-api
 brief: FastAPI app exposing PRD §6.1 endpoints (`POST /campaigns`,
 `GET /campaigns/{id}`, `POST /campaigns/{id}/optimizations`,
