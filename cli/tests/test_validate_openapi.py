@@ -301,6 +301,19 @@ class TestDanglingRef:
         ]
         assert not dangling
 
+    def test_http_ref_not_disk_checked(self, tmp_path: pathlib.Path) -> None:
+        """Absolute https:// $ref values are skipped (remote schemas)."""
+        doc = _minimal_agentic_op(
+            status="400",
+            content_type="application/vnd.yaagents.clarification+json",
+            ref="https://yaagents.io/schemas/v0.1/clarification-required.schema.json",
+        )
+        f = tmp_path / "http_ref.yaml"
+        f.write_text(yaml.dump(doc), encoding="utf-8")
+        result = validate_openapi(str(f))
+        dangling = [fi for fi in result.findings if "dangling" in fi.message]
+        assert not dangling
+
     def test_fragment_ref_not_flagged(self, tmp_path: pathlib.Path) -> None:
         """Internal #/... refs are never flagged as dangling."""
         doc: dict = {  # type: ignore[type-arg]

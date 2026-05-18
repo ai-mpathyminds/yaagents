@@ -230,6 +230,9 @@ def _check_refs(
         # Skip JSON-Pointer fragment refs (same-document)
         if ref_val.startswith("#"):
             continue
+        # Skip absolute HTTP/HTTPS URIs — remote schema refs are not disk-checked.
+        if ref_val.startswith(("http://", "https://")):
+            continue
         if _SCHEMA_PATH_FRAGMENT not in ref_val:
             continue
         # Resolve relative to the YAML file's directory
