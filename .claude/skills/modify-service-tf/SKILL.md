@@ -28,9 +28,9 @@ The skill enforces **correlated-edit coherence**: it knows the file set for each
 | 5 | `caller-file-list` | list[path] | The files the caller **intends** to touch. The skill compares this against the category's required correlated set. Mismatch → REFUSE. |
 | 6 | `wi-id` | string | Originating WI (e.g. `WI-15.IAM-N7`). Required for the AUDIT row + commit-trailer follow-up. |
 
-## Change categories — correlated-file sets (5 total)
+## Change categories — correlated-file sets (6 total)
 
-The skill encodes 5 change categories. Each carries a **mandatory correlated-file set**. Partial edits (caller's `caller-file-list` ⊊ correlated-set) are REFUSED; complete edits (caller's list ⊇ correlated-set) ACCEPTED.
+The skill encodes 6 change categories. Each carries a **mandatory correlated-file set**. Partial edits (caller's `caller-file-list` ⊊ correlated-set) are REFUSED; complete edits (caller's list ⊇ correlated-set) ACCEPTED.
 
 | # | Category | New-values shape | Correlated files (MUST all change) |
 |---|----------|------------------|-------------------------------------|
@@ -39,6 +39,7 @@ The skill encodes 5 change categories. Each carries a **mandatory correlated-fil
 | 3 | **Environment variable change** | `{mode: "plain"\|"secret", name: string, value_or_ssm_path: string}` | **Plain mode**: (a) `roots/compute/services_<svc>.tf` (`environment[]` array). **Secret mode**: (a) `roots/compute/services_<svc>.tf` (`secrets[]` array — `valueFrom` references the SSM ARN); (b) `roots/data/secrets.tf` or equivalent (new `aws_ssm_parameter` resource, `type = SecureString`); (c) `roots/compute/iam.tf` task role's inline SSM policy — REQUIRED only if the new SSM path is NOT already covered by the existing `/ampy/<product>/prod/<service>/*` scope; if the existing scope covers it, the skill emits a note ("no IAM perm change needed; existing scope covers the new path") and does NOT include the file in the correlated set |
 | 4 | **IAM permission change** | `{role: "task"\|"gha-deploy", statement_sid: string, action: list[string], resource: list[string]}` | (a) `roots/compute/iam.tf` (the named role's inline policy — `task_<svc>` or `gha_deploy_<svc>`). **Cross-service variant** (resource ARN belongs to a different service / bucket / topic): (b) the target resource's resource-policy file (e.g. `roots/data/s3_<bucket>.tf` `aws_s3_bucket_policy`; `roots/observability/sns.tf` `aws_sns_topic_policy`). The cross-service variant is detected by parsing `resource[]` ARNs — any ARN segment that does NOT match the caller's `service-name` triggers the additional file requirement. |
 | 5 | **Task size change (cpu/memory)** | `{cpu: int?, memory: int?}` | (a) `roots/compute/services_<svc>.tf` (`cpu`, `memory`); (b) `roots/observability/alarms.tf` (`aws_cloudwatch_metric_alarm.<svc>_memory_high.threshold` — IF a memory-utilization alarm exists for the service; if no alarm exists, this row is N/A and noted as such). **Cap**: `cpu > 1024` OR `memory > 1024` requires an architect ADR (intake constraint #2) — the skill halts and emits the ADR-requirement boilerplate, mirroring `add-new-service` pre-flight. |
+| 6 | **Service Connect toggle** | `{from: bool, to: bool}` | (a) `roots/compute/services_<svc>.tf` (`service_connect_enabled`, `service_connect_namespace_arn`). **`false → true` on existing service**: skill emits a service-replacement WARN (see below) before the commit plan — the destroy-then-create replacement will appear in `terraform plan`; caller must add `lifecycle { replace_triggered_by = [aws_ecs_service.this.service_connect_configuration] }` or run `terraform taint` first (§22 cloud-iac-conventions-aws.md). `true → false` is an in-place update (safe). New services (first deploy) are unaffected. |
 
 Change categories not listed are out-of-scope for this skill. Adding a new category requires updating this table + a fixture pair under `test/`.
 
@@ -116,6 +117,7 @@ Caller reviews + applies via standard `terraform plan` + GHA OIDC flow. The skil
    - Cat 3 (secret): `value_or_ssm_path` is a well-formed `arn:aws:ssm:<region>:<account>:parameter/ampy/...` ARN.
    - Cat 4: action verbs match `^[a-z][a-zA-Z0-9]+:[A-Z][a-zA-Z0-9*]+$` AWS pattern; resource ARNs are well-formed.
    - Cat 5: `cpu ≤ 1024` AND `memory ≤ 1024`; exceeding → halt + ADR-requirement boilerplate.
+   - Cat 6 (`false → true` SC toggle on existing service): emit WARN before commit plan — `"WARN: enabling Service Connect on an existing ECS service requires service replacement (destroy + re-create). terraform plan will show a replacement on module.ecs_<service>.aws_ecs_service.this. Add lifecycle { replace_triggered_by = [...] } per cloud-iac-conventions-aws.md §22, or run terraform taint before apply."` WARN does not block the commit plan.
 4. **Secrets hygiene** — emitted HCL contains no inline credential values (re-uses `secret-scanner`'s regex set; halt on match).
 
 ## Output format

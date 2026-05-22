@@ -14,7 +14,7 @@ Static lint of every Terraform file under `portfolio/infrastructure/`. Authority
 
 Excluded: `.terraform/`, `*.tfstate*`, anything matching `.gitignore`.
 
-## Checks (each PASS or FAIL — no warnings)
+## Checks (PASS / FAIL; WARNs noted in individual checks)
 
 ### 1. Terraform version pin
 `terraform { required_version = ">= 1.7.0" }` (or stricter) in every root and module.
@@ -64,6 +64,18 @@ PASS examples: `"Action": "SNS:Publish"`, `"Action": ["SNS:Publish", "SNS:Subscr
 FAIL examples: `"Action": "SNS:*"`, `"Action": ["SNS:*"]`, `"Action": ["SNS:Publish", "SNS:*"]`.
 Skip marker (requires governance-auditor approval + ADR citing why account-scope wildcard is needed despite AWS's documented rejection): `# tf-linter: skip-sns-wildcard — ADR-<id>`.
 Negative test fixture: `.claude/skills/terraform-conventions-linter/test_fixtures/sns_topic_policy_wildcard.tf` (replicates the WI-13.OBS-1 pre-fix shape — the `AllowAccountOwner` statement with `Action: "SNS:*"` that AWS rejected).
+
+### 13. ECS service image tag — TF variable, not literal (§20a)
+Any ECS service module call in `roots/compute/` whose `container_image` argument contains a literal tag (`:something` that is not `${var.*}` interpolation) FAILS. Required form: `container_image = "…:${var.{service}_image_tag}"`. Companion: `roots/compute/variables.tf` MUST declare `variable "{service}_image_tag" {}` for each such service; missing variable declaration FAILS.
+Skip marker: `# tf-linter: skip-image-tag-var — ADR-<id>` (bootstrap-only image never pipeline-pushed; ADR required).
+Evidence: WI-13.IAM-3 / F-LIVE-13 — `:bootstrap` literal decoupled TF state from GHA deploy.
+
+Deploy-workflow companion (WARN, not FAIL): grep every `.github/workflows/*-deploy.yml` (all product repos) for case-insensitive `"skipping push"`. Any match → WARN — silent skip-push path prohibited by §20c; `platform-engineer` applies fail-loud ECR tag-collision check. WARN does not block CI.
+
+### 14. Service Connect self-referential ingress prerequisite (§23)
+For each `module.ecs_<service>` call in `roots/compute/` where `service_connect_enabled = true`, verify `roots/network/security_groups.tf` contains an `aws_security_group_rule` with `self = true` and `from_port`/`to_port` matching that service's `container_port`. Missing → FAIL.
+Skip marker: `# tf-linter: skip-sc-self-ingress — ADR-<id>` (only valid if a blanket self-referential rule already covers all ports; ADR required).
+Evidence: PI15 `iam-api` → `notifications` — same-SG SC calls TCP-dropped at packet layer (SYN never reached container); 10s × 3 retries → ALB 502.
 
 ## Output format
 

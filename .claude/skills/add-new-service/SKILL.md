@@ -45,7 +45,10 @@ Source: `templates/01_ecs_service.tf.tmpl`. Module path `../../modules/ecs-farga
 Source: `templates/02_target_group.tf.tmpl` + `templates/02_listener_rule.tf.tmpl`. TG `ampy-<product-prefix>-prod-tg-<service>`, `port`, `target_type = ip`, HTTP, default health-check (path = `health-check-path`; `healthy_threshold=2`, `unhealthy_threshold=3`, `interval=30`, `timeout=5`, matcher `200`). Listener-rule priority auto-assigned to next-free integer in the product's band (oppor 20–29; platform-services 10–19; ai-platform 40–49; ui catch-alls 30); band exhaustion → halt. Path-based default `path_pattern = ["{base-path}", "{base-path}/*"]`. Host-header override available via input #10.
 
 ### Artifact 3 — `roots/network/security_groups.tf` (APPEND)
-Source: `templates/03_sg_rules.tf.tmpl`. Ingress on `sg_fargate`: tcp `port` from `sg_alb` only. No public ingress; no cross-service ingress (peer services use Service Connect, not direct ENI traffic). If `sg_fargate` already carries blanket ingress from `sg_alb` (the current PI13 shape per `roots/network/security_groups.tf`), the rule is a NO-OP and the idempotency check flags it — caller decides whether to skip (default) or emit for explicitness.
+Source: `templates/03_sg_rules.tf.tmpl`. Two rules emitted when `service_connect_enabled = true` (current default):
+
+1. **ALB ingress rule** — `aws_security_group_rule.fargate_ingress_<service>`: tcp `port` from `sg_alb`; no public or direct cross-ENI ingress. If `sg_fargate` already carries a blanket `sg_alb → sg_fargate` rule, this is a NO-OP and the idempotency check flags it — caller decides whether to skip (default) or emit for explicitness.
+2. **SC self-referential ingress rule** — `aws_security_group_rule.sc_self_<service>`: tcp `port`, `self = true`. Required by `cloud-iac-conventions-aws.md §23` — the Service Connect proxy routes intra-cluster calls to ENI IPs within the same SG; without this rule the SYN is silently dropped at the SG layer (10s × 3 retries → ALB 502). `terraform-conventions-linter` check #14 fails the PR if this rule is absent for any SC-enabled service.
 
 ### Artifact 4 — `roots/compute/ecr_<service>.tf` (NEW)
 Source: `templates/04_ecr_repo.tf.tmpl`. Module path `../../modules/ecr-repo`. Repo `ampy-<product-prefix>-prod-ecr-<service>`. Lifecycle policy inherits module defaults: keep last 10 semver-tagged (`v*`), expire untagged after 7 days, expire any remaining after 90 days. IMMUTABLE tags + scan-on-push + AES256 (all module defaults; not overridable here — modify-service-tf path for changes).
@@ -92,7 +95,7 @@ Decision matrix per artifact (state-check probe in parens):
 |---|---------------------|-----------|
 | 1 | `module.ecs_<service>` in compute state OR `services_<service>.tf` on disk | either present |
 | 2 | `aws_lb_target_group.<service>` OR `aws_lb_listener_rule.api_<service>` in compute state | either present |
-| 3 | `aws_security_group_rule.fargate_ingress_<service>` in network state OR blanket sg_alb→sg_fargate already covers | either present |
+| 3 | `aws_security_group_rule.fargate_ingress_<service>` in network state OR blanket sg_alb→sg_fargate already covers; AND `aws_security_group_rule.sc_self_<service>` in network state | all present |
 | 4 | `module.ecr_<service>` in compute state OR `ecr_<service>.tf` on disk | either present |
 | 5 | `aws_iam_role.task_<service>` OR `aws_iam_role.gha_deploy_<service>` in compute state | either present |
 | 6 | `<service-repo>/.github/workflows/deploy.yml` on disk | present |
