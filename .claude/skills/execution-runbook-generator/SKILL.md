@@ -24,12 +24,18 @@ If any input is missing — or any roadmap WI is not `[READY]` — **do not auth
 
 ## Pass-1 — WI roll-up (steps the skill performs)
 
-> **Two-pass** (PC-5-01, PI14-plt-aip-postmortem). Pass-1 below produces one entry
-> per `[READY]` WI exactly as before — **unchanged behaviour, zero quality change**.
-> Pass-2 (§ below) then *optionally* consolidates same-context entries to cut the
-> ~4–6K-token-per-session fixed tax of a high entry count. Pass-2 runs **after step 8,
-> before step 9 (render)**; if its cluster input is absent it is skipped and the flat
-> Pass-1 runbook is authored (graceful — never a regression).
+> **Two-pass** (PC-5-01; redesigned PC-5-18, PI15-plt-aip-postmortem). Pass-1 below produces
+> one entry per `[READY]` WI exactly as before — **mechanical, schema-validated, unchanged
+> behaviour, zero quality change**. Pass-2 (§ below) then consolidates same-context entries to
+> cut the ~4–6K-token-per-session fixed tax of a high entry count.
+> **Pass-2 is a SELF-DERIVING chief-architect judgment step that ALWAYS runs** (after step 8,
+> before step 9 render): the skill derives the clusters itself from the Pass-1 entry set. The
+> external `wi-context-clusterer` artifact is an **optional accelerator hint, not a
+> precondition** — **there is no silent flat-N fallback** (the PI15 failure: Pass-2 was lost
+> entirely → 49 flat entries because the clusterer wasn't run at A-3, AUDIT-1308). If the hint
+> is absent, Pass-2 self-derives and the runbook carries an explicit
+> `> note: Pass-2 self-derived; clusterer input absent` preamble. Pass-2 may legitimately
+> derive **zero** merges — but that is an explicit logged judgment, never a skipped step.
 
 1. **Load roadmap.** Parse the WI table; record dep order. WIs not at `[READY]` are blockers — abort with the list.
 2. **Walk each WI.** For each `[READY]` WI, read its body in `{service}.md` to extract: title, acceptance criteria summary (1 sentence), file paths touched, ADR refs.
@@ -47,28 +53,50 @@ If any input is missing — or any roadmap WI is not `[READY]` — **do not auth
 8. **Group into sprints; compute optional `sprint_preamble:` and per-entry `session_strategy:`.** Sprint grouping (consecutive same-agent same-cwd entries with shared cited references — see §sprint_preamble fill heuristic) drives both:
    - **(a) `sprint_preamble:`** (PROCESS.md 2026-04-26 [ADOPTED]; codified PC-5-02 of `pi7-postmortem.yml`). If no sprint has ≥2 same-agent entries, skip — emit the flat `entries:` form.
    - **(b) `session_strategy:`** (per `.claude/rules/agent-context-discipline.md` Layer 1, [ADOPTED] 2026-05-04). Assign per entry: `fresh` for the first entry of each new sprint OR any cross-product agent invocation (different `product:` than the previous entry); `compact-after` every K-th entry within a same-agent same-sprint cluster (K=4 default — i.e. on entries 4, 8, 12 of a long cluster); `continue` otherwise (default — `dispatch-entry.sh` uses `--resume <session-id>`, cache stays warm). Field is OPTIONAL on the entry — omit equals `continue`. Long clusters (>6 same-agent same-sprint entries) SHOULD prefer at least one `compact-after` insertion; warn (not halt) if absent.
-8.5 **Pass-2 — common-context consolidation** (§ "Pass-2" below). Runs here, on the
-   Pass-1 entry set, BEFORE render. Skipped (no-op, logged) if the cluster input is absent.
+8.5 **Pass-2 — self-derived common-context consolidation** (§ "Pass-2" below). ALWAYS runs
+   here, on the Pass-1 entry set, BEFORE render — chief-architect derives the clusters inline
+   (consuming the optional `wi-context-clusterer` hint if present). Never skipped; a zero-merge
+   outcome is an explicit logged judgment, not a no-op skip.
 9. **Render** the (Pass-1, or Pass-2-consolidated) entry set into `portfolio/RUNBOOKS/pi{n}-execution.yml` using `TEMPLATE.yml`.
 10. **Append** one line to `portfolio/AUDIT.md` with verb `runbook-written`.
 
-## Pass-2 — common-context consolidation (PC-5-01)
+## Pass-2 — self-derived common-context consolidation (PC-5-01 guardrail; PC-5-18 redesign)
 
-**Purpose**: reduce the *number of dispatch entries* (each session resume/fresh-start
-costs ~4–6K tokens regardless of work — PI14-plt-aip-user-input.md §2) by merging
-WIs that `wi-context-clusterer` (PC-5-02) flagged as sharing context. **It reduces
-entry count, never rigor.**
+**Purpose**: reduce the *number of dispatch entries* (each session resume/fresh-start costs
+~4–6K tokens regardless of work — PI14-plt-aip-user-input.md §2) by merging WIs that share
+context. **It reduces entry count, never rigor.**
 
-**Input**: `{product}/docs/PI{n}/wi-context-clusters.md` (the STABLE contract from
-`wi-context-clusterer`). Gate on its exit sentinel
-`WI-CONTEXT-CLUSTERER: COMPLETE — … validation=PASS|FAIL`:
-- sentinel absent / file absent → **skip Pass-2** (author the flat Pass-1 runbook;
-  log `> note: Pass-2 skipped — no wi-context-clusters.md`). Not a failure.
-- `validation=FAIL` → **skip Pass-2 + emit `> warn:`** (never consolidate on bad input).
-- `validation=PASS` → proceed.
+**Self-derivation (the default path — PC-5-18).** Pass-2 derives its own clusters from the
+Pass-1 entry set; it depends on no external artifact. The derivation reuses two signals the
+skill already computes:
+1. **Sprint signal** — the step-8 sprint grouping (consecutive entries sharing `agent` + `cwd`
+   + ≥1 cited reference; see §sprint_preamble fill heuristic). Entries in one sprint are merge
+   candidates.
+2. **Brief-similarity signal** — the rule-§12 first-paragraph token-Levenshtein primitive (now
+   in the `advisory-runbook-rules` companion skill): entries with similarity ≥0.7 after
+   service-name + stop-token stripping are merge candidates even across non-adjacency.
 
-**Procedure** — for each `clusters[]` entry with `recommend: merge-candidate` that the
-architect did **not** annotate `cluster_override:`:
+For each candidate cluster the skill reads the member WIs' acceptance criteria (already loaded
+in Pass-1 step 2) and computes `union_acceptance_criteria` itself. Clusters whose members
+would bloat one working-set beyond coherence, or whose members disagree on `agent`/`cwd`, are
+derived as **keep-separate** (one entry each). A derived **zero-merge** outcome is valid and
+logged — a judgment, not a skip.
+
+**Optional accelerator hint.** If `{product}/docs/PI{n}/wi-context-clusters.md` (the
+`wi-context-clusterer` artifact) is present, consume its `clusters[]` as a STARTING hint to
+save re-derivation, gated on its sentinel `WI-CONTEXT-CLUSTERER: COMPLETE — … validation=PASS|FAIL`:
+- `validation=PASS` → seed the candidate set from the hint, then **still** validate every merge
+  against P2-1..P2-4 + the architect's own judgment (the hint accelerates; it never authorizes a
+  merge the guardrails would reject).
+- `validation=FAIL` → **ignore the hint, self-derive**; emit `> warn: clusterer input FAIL — Pass-2 self-derived instead`.
+- absent → **self-derive**; emit `> note: Pass-2 self-derived; clusterer input absent`.
+
+**Under no condition does absence/failure of the hint produce a silent flat-N runbook** — that
+regression (AUDIT-1308: PI15 lost Pass-2 entirely, 49 flat entries, token-tax unmitigated,
+because the clusterer wasn't run at A-3) is exactly what this redesign removes.
+
+**Procedure** — for each derived (or hint-seeded) merge-candidate cluster that the architect did
+**not** annotate `cluster_override:`:
 1. Replace its member Pass-1 entries with **one** consolidated entry.
 2. `consolidates:` = the member WI ids (new field). The roadmap still tracks each
    member WI individually; the consolidated entry's close transitions all of them.
@@ -89,6 +117,8 @@ architect did **not** annotate `cluster_override:`:
 - **P2-2** no WI lost: every Pass-1 WI appears either as its own entry OR in exactly one `consolidates:` list. HARD FAIL (this is the rule §1 generalization).
 - **P2-3** consolidated members shared `agent:`+`cwd:` (else not merged).
 - **P2-4** architect `cluster_override:` on a cluster ⇒ Pass-2 leaves its members un-merged (documented choice; §12 `duplication_override` precedent).
+
+P2-1..P2-4 are what make the self-derived judgment **safe to keep inside the skill** rather than freehand: a self-derived merge that drops an AC, a test gate, or a WI fails P2-1/P2-2 at authorship — the same *drift-invisible-until-S3* guard that justifies this skill's existence (see asymmetry note) now bounds Pass-2's judgment. The judgment is the architect's; the mechanical floor is non-negotiable.
 
 ## `sprint_preamble:` fill heuristic (step 8)
 
@@ -167,7 +197,7 @@ Implementation note: rule §8 fires DURING runbook authorship (step 9 `Render`),
 | `library_justify` *(advisory rule §11)* | optional — one-line "no catalog entry applies because…" (mutually exclusive with `library_ref`) |
 | `duplication_override` *(advisory rule §12)* | optional — one line, present when architect accepts a §12 finding's duplicate WI as-is (rule-of-three or other rationale) |
 | `session_strategy` *(per `.claude/rules/agent-context-discipline.md`)* | optional — `continue` (default; omit field) \| `fresh` \| `compact-after`. Step 8b heuristic. |
-| `consolidates` *(Pass-2, PC-5-01)* | optional — list of member WI ids merged into this entry by Pass-2. Present ⇒ entry carries the cluster's full `union_acceptance_criteria` (P2-1). Absent ⇒ ordinary single-WI entry. |
+| `consolidates` *(Pass-2, PC-5-01/PC-5-18)* | optional — list of member WI ids merged into this entry by the self-derived Pass-2. Present ⇒ entry carries the cluster's full `union_acceptance_criteria` (P2-1). Absent ⇒ ordinary single-WI entry. |
 
 ## What this skill does NOT do
 
@@ -182,7 +212,7 @@ Implementation note: rule §8 fires DURING runbook authorship (step 9 `Render`),
 The skill's output is **complete** when:
 - Every roadmap WI is accounted for in dep order — its own entry or exactly one `consolidates:` list (rule §1 / Pass-2 P2-2).
 - All ten hard validation rules pass (rule §8 fires per-entry against the WI body's `**Agent**:` override; soft-warns on un-annotated WIs).
-- Pass-2 ran OR was explicitly skipped-logged; if it ran, P2-1..P2-4 all pass and the run prints `EXEC-RUNBOOK-GEN: COMPLETE — entries=<n> consolidated=<c> pass2=PASS|SKIPPED validation=PASS` (absence = hard stop, never silent flat fallback — PC-5-06 skill-execution contract).
+- Pass-2 ALWAYS ran (self-derived; PC-5-18) — P2-1..P2-4 all pass and the run prints `EXEC-RUNBOOK-GEN: COMPLETE — entries=<n> consolidated=<c> pass2=PASS(self-derived|clusterer-accelerated) validation=PASS`, where `consolidated=<c>` MAY be 0 (an explicit zero-merge judgment). `pass2=SKIPPED` is no longer a legal value; a flat-N runbook carrying no Pass-2 derivation note, OR sentinel absence, = hard stop (the AUDIT-1308 regression — never silent flat fallback — PC-5-06 skill-execution contract).
 - Advisory rules §11–§13 have been evaluated; any findings appear under `context.advisory_warnings:` + `context.duplication_findings:` and in the runbook's top comment block (advisory findings do NOT block authorship).
 - `exit_check:` block lists one assertion per WI ("`WI-N.X.Y` `[DONE]` with commit SHA on `main`").
 - `AUDIT.md` `runbook-written` line appended with the runbook path; if advisory findings exist, AUDIT also gains one `duplication-found` row per §12 finding (rule §12 explicitly requires the audit row even though authorship proceeds).
