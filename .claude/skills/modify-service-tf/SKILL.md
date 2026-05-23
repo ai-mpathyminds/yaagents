@@ -43,10 +43,24 @@ The skill encodes 6 change categories. Each carries a **mandatory correlated-fil
 
 Change categories not listed are out-of-scope for this skill. Adding a new category requires updating this table + a fixture pair under `test/`.
 
+### Cross-cutting rules baked into every category (PI15 G-gaps)
+
+These apply regardless of category and are checked in the behavior contract / pre-flight:
+
+- **CRLF strip on every SSM write (cat 3 secret mode) (G7).** Every emitted `aws ssm put-parameter` (and any value re-`put` after a `get`) MUST pipe the value through `tr -d '\r\n'`. A trailing CRLF from a Windows dev host silently corrupts the value — PI15 M6: a CRLF in the pg-url SSM value broke Go `net/url` parsing. The cat-3 commit plan emits the put command in the `printf %s "$V" | tr -d '\r\n' | …` form, never a bare `--value`.
+- **Config-name-sync (cat 3) — pointer to PC-5-15 / G4.** This skill edits the TF task-def `environment[]`/`secrets[]` env-var NAME; it does NOT today verify that name matches what the service's `internal/config` reads (G4 root class: `NOTIF_SES_FROM_EMAIL` wired in 3 disjoint places). The cat-3 commit plan emits a **config-name-sync reminder** citing the per-service config-contract (PC-5-15 `config-contract.yaml` / substrate inventory, when it lands): the env-var name in TF MUST equal the key the loader reads. Until the contract is machine-checked, this is a reviewer checklist line, not an auto-gate.
+- **Distroless health check (cat 2) (G6).** When the service runs a distroless image (no shell), the container `healthCheck` is `null` and the **ALB target-group** `health_check.path` (cat 2 row a) is the sole health source — do not propose a `CMD-SHELL` container probe. See `add-new-service §Distroless-aware health checks`.
+- **Image tag is `var.<service>_image_tag`, never a literal (G3 / §20a).** This skill NEVER edits a literal `:bootstrap`/`:latest`/`:rcN` image tag — the tag is a TF variable owned by the GHA deploy workflow. An image-tag change is a deploy-pipeline action, not a `modify-service-tf` category. If you find a literal tag in `services_<svc>.tf`, that is a G3 defect — fix it to `${var.<service>_image_tag}` (see `add-new-service` Artifact 1).
+- **Untaggable resources (G2).** Pre-flight tag preservation (§Pre-flight #2) EXEMPTS untaggable resource types — see the enumerated `add-new-service §Untaggable AWS resources` table. Do NOT add a `tags` block to `aws_ses_domain_identity` et al.; `terraform apply` fails on them.
+- **Adding an AWS dependency (SES/SQS/SNS/S3) to an existing service (G1).** That is a create-shaped add-on, not a config shift — route it through `add-new-service §Service AWS dependencies` (which emits the resource + task-role IAM + DNS/sandbox follow-ups). This skill's cat 4 (IAM permission change) handles only the IAM-statement side once the dependency resource exists.
+
 ## Behavior contract
 
 1. **Resolve the correlated-file set** for the input `category` (look up the table above).
-2. **Filter for N/A rows** based on substrate state — e.g. category 1's row (c) is N/A under blanket SG ingress; category 5's row (b) is N/A when no memory alarm exists. The skill consults Terraform state via `terraform state list` to compute N/A rows; if state is unavailable, it falls back to a filesystem grep and notes the limitation.
+2. **Filter for N/A rows** based on substrate state — e.g. category 1's row (c) is N/A under blanket SG ingress; category 5's row (b) is N/A when no memory alarm exists. The skill consults Terraform state via `terraform state list` to compute N/A rows. **TF state is REQUIRED — hard STOP if unavailable (G8).** If `terraform state list` fails (expired SSO needing relogin, lock held, no applied state), the skill emits the stop block below and does **NOT** fall back to a filesystem grep. A grep-degraded run mis-computes the N/A correlated rows precisely when we are most exposed (PI15 repeatedly blocked on SSO relogin / no applied state) — a wrong correlated set is worse than no answer. Restore state access and re-invoke:
+   ```
+   STOP: Terraform state unavailable for root <root> (<reason>). modify-service-tf computes correlated-file N/A rows from live state and refuses to guess from filesystem grep. Restore state access (terraform init / re-auth SSO / release lock) and re-invoke.
+   ```
 3. **Compare `caller-file-list` to the filtered correlated set**:
    - `caller-file-list ⊇ correlated-set` → ACCEPT; emit commit plan (§Output below).
    - `caller-file-list ⊊ correlated-set` → REFUSE with the partial-edit grammar (§Refusal grammar below).
@@ -111,10 +125,10 @@ Caller reviews + applies via standard `terraform plan` + GHA OIDC flow. The skil
 ## Pre-flight validations (halt on any fail; aggregate errors)
 
 1. **Service exists** — `module.ecs_<service-name>` appears in `roots/compute/terraform.tfstate` (or `services_<service>.tf` is on disk). If absent → halt with "service not found; if this is a NEW service, use `add-new-service`".
-2. **7-tag preservation** — any edited `resource` block retains the 4 per-resource tags (`product`, `owner`, `feature`, `wi_id`). The skill flags accidental deletion as a halt.
+2. **7-tag preservation** — any edited `resource` block retains the 4 per-resource tags (`product`, `owner`, `feature`, `wi_id`). The skill flags accidental deletion as a halt. **Untaggable resources are EXEMPT (G2)** — types in the `add-new-service §Untaggable AWS resources` table (`aws_ses_domain_identity`, `aws_security_group_rule`, `aws_iam_role_policy`, `aws_route53_record`, …) carry NO tag block; do not flag them and never add one (`terraform apply` fails on them).
 3. **Category-specific**:
    - Cat 1: target port unallocated per `portfolio-conventions.md §Port Allocation` AND within product band; halt with suggested next-free on collision.
-   - Cat 3 (secret): `value_or_ssm_path` is a well-formed `arn:aws:ssm:<region>:<account>:parameter/ampy/...` ARN.
+   - Cat 3 (secret): `value_or_ssm_path` is a well-formed `arn:aws:ssm:<region>:<account>:parameter/ampy/...` ARN; AND the emitted `put-parameter` command pipes the value through `tr -d '\r\n'` (G7 CRLF strip) — a bare `--value` for a secret is a halt.
    - Cat 4: action verbs match `^[a-z][a-zA-Z0-9]+:[A-Z][a-zA-Z0-9*]+$` AWS pattern; resource ARNs are well-formed.
    - Cat 5: `cpu ≤ 1024` AND `memory ≤ 1024`; exceeding → halt + ADR-requirement boilerplate.
    - Cat 6 (`false → true` SC toggle on existing service): emit WARN before commit plan — `"WARN: enabling Service Connect on an existing ECS service requires service replacement (destroy + re-create). terraform plan will show a replacement on module.ecs_<service>.aws_ecs_service.this. Add lifecycle { replace_triggered_by = [...] } per cloud-iac-conventions-aws.md §22, or run terraform taint before apply."` WARN does not block the commit plan.
@@ -158,6 +172,9 @@ Acceptance per WI-14.SKILL-2 NFR:
 - NOT a create-path tool — new services use `add-new-service`.
 - NOT a license to skip ADR escalation — cpu/memory > 1024 ALWAYS routes through the architect ADR gate, even when the caller files all correlated edits.
 - NOT a partial-edit override switch — there is no escape hatch, no `--allow-partial`, no soft mode. The refusal is total by design.
+- NOT an ECS-exec toggle (G9 / B-58) — there is no `enable-execute-command` category; ECS-exec is rejected for admin/realm bootstrap (use the admin REST API). The knob was removed from `add-new-service` too.
+- NOT an image-tag editor (G3 / §20a) — image tags are owned by `var.<service>_image_tag` + the GHA deploy workflow; never edit a literal `:bootstrap`/`:latest`/`:rcN` tag here. Finding one is a defect to fix toward the variable form, not a category.
+- NOT a TF-state-degrading tool (G8) — when state is unavailable it HARD STOPS; it never guesses the correlated set from a filesystem grep.
 
 ## Companion skills
 
