@@ -16,10 +16,13 @@
 #   3. Create GitHub Actions environment "npm" with tag-ref protection (v*.*.*)
 #      to prevent accidental publishes from branch pushes
 
+# PUBLISH PARKED 2026-05-24 — yaagents is private for now; do NOT auto-publish to
+# public npm. Re-enable the tag trigger below at public launch (PI-yaa public seed).
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
+  workflow_dispatch: {}   # manual-only; tag-push auto-publish disabled while private
+  # push:
+  #   tags:
+  #     - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
 
 permissions:
   id-token: write   # OIDC token for npm provenance attestation (--provenance)
