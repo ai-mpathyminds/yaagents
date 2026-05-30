@@ -3,7 +3,7 @@ Status: [READY]
 
 > Seeded by chief-architect. Expanded by product-manager 2026-05-30.
 Target product: yaagents
-Target services: yaagents/gateway (plugin system refactor + LLM-specialization), yaagents/client-go (NEW), yaagents/plugins/{token-validator,tenant-injector,license-check} (NEW; required), yaagents/plugins/{prompt-sanitize,otel-audit} (NEW; stubs/off-by-default), yaagents/examples/llm-gateway (NEW), yaagents top-level LICENSE + COMMERCIAL.md retire + copyright headers
+Target services: yaagents/gateway (plugin system refactor + LLM-specialization MOVE from ai-platform), yaagents/client-go (NEW), yaagents/plugins/{token-validator,tenant-injector,license-check} (NEW; required), yaagents/plugins/{prompt-sanitize,otel-audit} (NEW; stubs/off-by-default), yaagents/examples/llm-gateway (NEW), yaagents top-level LICENSE + COMMERCIAL.md retire + copyright headers · **cross-lane stretch (added 2026-05-30T19:30Z user-direct)**: ai-platform/services/ai-gateway (DELETE) + ai-platform/docker-compose.yml ai-gateway entry (DELETE) + ai-platform/.github/workflows/ai-gateway-deploy.yml (DELETE) + portfolio/infrastructure/roots/{compute,ci,observability}/ ai-gateway TF resources (TF-teardown: ECS module call + ALB target group + listener rule + ECR repo + SSM params + IAM role policy scopes)
 Owner: product-manager (yaagents)
 
 ## Problem
@@ -28,7 +28,7 @@ User-direct decision flip (2026-05-30): the original source-available stance is 
   - **ai-gateway absorption**: pull LLM-specific concerns (provider routing, streaming, model selection, prompt envelope) from `ai-platform/ai-gateway` into yaagents — architect-call at A-3 between (i) a `yaagents/gateway` LLM-specialization layer activated by config, or (ii) a sibling `yaagents/llm-gateway` component depending on `yaagents/gateway`. Reference example at `yaagents/examples/llm-gateway/` proving the abstraction has a consumer.
 
 - **Out**:
-  - **ai-platform/ai-gateway decommission + consumer migration** — service stays running this PI; cutover is a future plt-aip-lane PI.
+  - **Consumer migration to alternate LLM gateway** — N/A: user-verified 2026-05-30T19:30Z that **no production consumers exist on `ai-platform/services/ai-gateway`**; decommission proceeds without a migration WI. (Original out-of-scope row "ai-platform/ai-gateway decommission + consumer migration" SUPERSEDED 2026-05-30T19:30Z — ai-platform/ai-gateway decommission is now **IN scope**, see Target services line; only the consumer migration sub-item remains out, as trivially N/A.)
   - **Reference impls for sanitize + OTEL plugins** — interface ships; impls deferred to PI3-yaa or community.
   - **K8s/Helm/Cosign/SBOM-attestation hardening** — displaced from old-PI2-yaa scope to PI3-yaa.
   - **Plugin marketplace UI / discovery service** — registry contract only; no UI, no central registry server.
