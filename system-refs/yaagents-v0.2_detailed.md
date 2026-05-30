@@ -1105,13 +1105,13 @@ Cosign signing + SBOM attestation hardening: displaced to PI3-yaa; note only in 
 | prompt-sanitize reference implementation | PI3-yaa or community contribution |
 | otel-audit reference implementation | PI3-yaa or community contribution |
 | Plugin marketplace UI / discovery service | Not planned; registry is API-only |
-| ai-platform consumer migration off `ai-platform/ai-gateway` | Future plt-aip-lane PI (separate seed) |
+| ai-platform consumer migration off `ai-platform/ai-gateway` | **N/A — no production consumers exist** (ADR PI2-yaa-0002 Addendum 2026-05-30T19:30Z). `ai-platform/services/ai-gateway/` is **decommissioned in PI2-yaa** via cross-lane direction from chief-architect (ai-platform-architect + platform-engineer-portfolio lanes; outside yaa-lane writable paths). |
+| `ai-platform/ai-gateway` ECS service changes (IaC) | ~~Service runs unchanged this PI~~ — **SUPERSEDED** by ADR PI2-yaa-0002 Addendum 2026-05-30T19:30Z. ECS service + ALB rules + ECR repo + SSM params + IAM roles are deleted this PI by platform-engineer-portfolio; compose entry + deploy workflow deleted by ai-platform-architect. Both are cross-lane WIs seeded by chief-architect at A-3 handoff. |
 | Retroactive re-licensing of v0.1.x packages | Not in scope; v0.1.x stays Community License |
 | GTM content (demo videos, launch blog, social posts) | Not engineering scope |
 | v0.3+ adapters (Spring Boot, ASP.NET, LangGraph, SK) | Future PIs or community |
 | Async operation profile + approval-flow runtime | PI3-yaa or v0.3+ |
 | Frontend / UI of any kind | No UI surface in PI2-yaa |
-| `ai-platform/ai-gateway` ECS service changes | Service runs unchanged this PI |
 
 ---
 
