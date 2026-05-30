@@ -1,5 +1,7 @@
 # YAAgents v0.2 — Apache 2.0 + Plugin Middleware + Go Client + LLM Gateway Convergence (PI2-yaa) — PRD Seed
-Status: [DRAFT]
+Status: [READY]
+
+> Seeded by chief-architect. Expanded by product-manager 2026-05-30.
 Target product: yaagents
 Target services: yaagents/gateway (plugin system refactor + LLM-specialization), yaagents/client-go (NEW), yaagents/plugins/{token-validator,tenant-injector,license-check} (NEW; required), yaagents/plugins/{prompt-sanitize,otel-audit} (NEW; stubs/off-by-default), yaagents/examples/llm-gateway (NEW), yaagents top-level LICENSE + COMMERCIAL.md retire + copyright headers
 Owner: product-manager (yaagents)

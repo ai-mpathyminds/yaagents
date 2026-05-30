@@ -940,3 +940,63 @@ Expose it like a governed API.
 
 This GTM README includes a draft licensing strategy for product planning. It is not legal advice. Before publishing the license publicly or accepting external contributions, consult a qualified software licensing lawyer.
 
+---
+
+## Amendment — v0.2.0 Apache 2.0 Transition (2026-05-30)
+
+**Sections §12–§15 of this GTM README describe the v0.1.x source-available / dual-license
+model. The following amendment supersedes that model for v0.2.0 and later.**
+
+### §12 (Amended) — License Strategy for v0.2.0+
+
+**v0.2.0 ships under Apache 2.0.** The YAAgents Community License (§14) and COMMERCIAL.md
+commercial terms (§16) are retired with v0.2.0. The strategic rationale (user-direct,
+2026-05-30): the community-contribution gate imposed by the source-available license outweighs
+the commercial-paywall optionality; Apache 2.0 enables the community plugin flywheel that is
+the core value proposition of v0.2.0+.
+
+**Marketing / README MUST use:**
+- "Apache 2.0 open source" (OSI-approved)
+- No longer "source-available" or "fair-code" from v0.2.0 onward
+
+**Non-retroactive boundary:** v0.1.x packages already published to PyPI/npm/GHCR stay under
+the YAAgents Community License. Users who need Apache 2.0 must upgrade to v0.2.0.
+
+**Legal-review-pending disclaimer (verbatim, GTM README §Appendix):**
+
+> This GTM README includes a draft licensing strategy for product planning. It is not legal
+> advice. Before publishing the license publicly or accepting external contributions, consult
+> a qualified software licensing lawyer.
+
+Legal review gates the public re-announce and the removal of the `legal-review-pending` banner
+from `CONTRIBUTING.md`. It does **not** gate PI2-yaa close; the `LICENSE` file, copyright
+headers, and package metadata ship with the Apache 2.0 text before legal sign-off.
+
+### §13 (Superseded) — Thresholds
+
+The employee / revenue / funding thresholds defined in §13 (v0.1.x) no longer apply from
+v0.2.0 onward. Apache 2.0 has no usage thresholds.
+
+### §14 (Superseded) — Community License Text
+
+The "YAAgents Community License v0.1" draft in §14 applied to v0.1.x only. From v0.2.0, the
+`LICENSE` file in the repository root contains the Apache License, Version 2.0 text verbatim
+(source: `http://www.apache.org/licenses/LICENSE-2.0.txt`). See
+`yaagents/system-refs/yaagents-v0.2_detailed.md §8.2` for the verbatim text.
+
+### §15 (Superseded) — Alternative License Options
+
+The §15 alternative license analysis (PolyForm Noncommercial, Functional Source License,
+custom Community License) is superseded. No alternative license analysis is required for
+v0.2.0; the decision is Apache 2.0, locked.
+
+### §16 (Superseded) — Commercial Packaging
+
+The Community Edition / Commercial Edition split described in §16 is retired. From v0.2.0,
+all yaagents components ship under Apache 2.0 as a single unified edition. Commercial
+packaging (enterprise gateway, admin UI, OPA integration, hosted control plane) may be
+re-introduced in a future PI as a separate commercial product built atop the Apache 2.0 core;
+that is a separate business decision requiring a fresh GTM analysis.
+
+Full v0.2.0 PRD: `yaagents/system-refs/yaagents-v0.2_detailed.md` [READY]
+

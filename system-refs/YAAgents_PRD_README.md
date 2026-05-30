@@ -743,3 +743,29 @@ Kubernetes manifests
 The promise:
 
 > Build the agent however you want. Expose it like a governed API.
+
+---
+
+## Amendment — v0.2.0 License + Plugin Middleware (2026-05-30)
+
+**PI2-yaa introduces the following changes that supersede sections above:**
+
+- **License:** v0.2.0 ships under **Apache 2.0** (supersedes the Community + Commercial
+  dual-license described in §Roadmap). v0.1.x packages stay under the YAAgents Community
+  License (non-retroactive). `COMMERCIAL.md` is retired. See `yaagents/system-refs/yaagents-v0.2_detailed.md §8`.
+
+- **Plugin middleware system:** The hardcoded middleware chain in the Go gateway is replaced by
+  a typed `Plugin` interface + lifecycle system. Five first-party plugins (token-validator,
+  tenant-injector, license-check, prompt-sanitize stub, otel-audit stub) ship with v0.2.0.
+  Community plugins are supported via a published `plugin.Register()` contract.
+
+- **Go client SDK (`client-go/`):** Third SDK alongside `client-python` and `client-ts`;
+  published via Go modules at `github.com/ai-mpathyminds/yaagents/client-go@v0.2.0`.
+
+- **LLM gateway convergence:** LLM-specialisation concerns from `ai-platform/ai-gateway`
+  (SSE streaming, per-tenant SSE concurrency, execution timeout, CORS) absorbed into yaagents;
+  reference example at `examples/llm-gateway/`.
+
+- **K8s/Helm** displaced from v0.2 to **PI3-yaa** (not v0.2.0 scope).
+
+Full v0.2.0 PRD: `yaagents/system-refs/yaagents-v0.2_detailed.md` [READY]
