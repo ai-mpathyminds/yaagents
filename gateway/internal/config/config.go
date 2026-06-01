@@ -4,7 +4,10 @@
 // Package config loads gateway runtime configuration from environment variables.
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 // Config holds all gateway runtime settings.
 type Config struct {
@@ -28,23 +31,38 @@ type Config struct {
 	// (env: GATEWAY_JWT_JWKS_URL). Injected into token-validator plugin config
 	// when the plugins YAML block omits it (PRD §5.4.1).
 	JWTJWKSURL string
+	// ShutdownTimeoutS is the graceful-shutdown deadline in seconds
+	// (env: GATEWAY_SHUTDOWN_TIMEOUT_S, default: 30).
+	// The gateway drains in-flight requests and runs plugin.Shutdown within
+	// this window before exiting (PLG-6 / PRD §6.4).
+	ShutdownTimeoutS int
 }
 
 // Load reads gateway configuration from environment variables, applying defaults.
 func Load() Config {
 	return Config{
-		Port:        envOr("GATEWAY_PORT", "8120"),
-		RoutesFile:  envOr("GATEWAY_ROUTES_FILE", "routes.yaml"),
-		AuditLog:    envOr("GATEWAY_AUDIT_LOG", "stdout"),
-		PluginsFile: os.Getenv("GATEWAY_PLUGINS_FILE"),
-		JWTSecret:   os.Getenv("GATEWAY_JWT_SECRET"),
-		JWTJWKSURL:  os.Getenv("GATEWAY_JWT_JWKS_URL"),
+		Port:             envOr("GATEWAY_PORT", "8120"),
+		RoutesFile:       envOr("GATEWAY_ROUTES_FILE", "routes.yaml"),
+		AuditLog:         envOr("GATEWAY_AUDIT_LOG", "stdout"),
+		PluginsFile:      os.Getenv("GATEWAY_PLUGINS_FILE"),
+		JWTSecret:        os.Getenv("GATEWAY_JWT_SECRET"),
+		JWTJWKSURL:       os.Getenv("GATEWAY_JWT_JWKS_URL"),
+		ShutdownTimeoutS: envInt("GATEWAY_SHUTDOWN_TIMEOUT_S", 30),
 	}
 }
 
 func envOr(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
+	}
+	return fallback
+}
+
+func envInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
 	}
 	return fallback
 }

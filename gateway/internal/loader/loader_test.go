@@ -16,6 +16,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 	"github.com/ai-mpathyminds/yaagents/gateway/plugin"
 )
 
@@ -549,4 +550,215 @@ func TestShutdown_ContinuesPastErrors(t *testing.T) {
 func TestShutdown_Empty_NoPanic(t *testing.T) {
 	ldr := &Loader{log: noopLog(), ordered: nil}
 	ldr.Shutdown(context.Background()) // must not panic
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLG-6 tests — ChainFor + ValidateRouteOverrides
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── ChainFor: declaration order ───────────────────────────────────────────────
+
+func TestChainFor_DeclarationOrder_4Plugins(t *testing.T) {
+	// 4-plugin chain: token-validator → tenant-injector → license-check → community.
+	// Each plugin records its name in the shared order slice when Handler is called.
+	// invocation index = position in the slice.
+	var order []string
+	tv := &recorder{name: "token-validator", handOrder: &order}
+	ti := &recorder{name: "tenant-injector", handOrder: &order}
+	lc := &recorder{name: "license-check", handOrder: &order}
+	cm := &recorder{name: "community-plugin", handOrder: &order}
+
+	ldr := &Loader{
+		log:     noopLog(),
+		ordered: []plugin.Plugin{tv, ti, lc, cm},
+	}
+
+	var innerCalled bool
+	inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		innerCalled = true
+	})
+	h := ldr.ChainFor(nil, inner) // no per-route overrides
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+	if !innerCalled {
+		t.Error("inner handler not reached")
+	}
+	want := []string{"token-validator", "tenant-injector", "license-check", "community-plugin"}
+	if len(order) != len(want) {
+		t.Fatalf("invocation count: got %d, want %d; order=%v", len(order), len(want), order)
+	}
+	for i, name := range want {
+		if order[i] != name {
+			t.Errorf("invocation index %d: got %q, want %q", i, order[i], name)
+		}
+	}
+}
+
+// ── ChainFor: per-route override skips tenant-injector ────────────────────────
+
+func TestChainFor_PerRouteOverride_SkipsTenantInjector(t *testing.T) {
+	var order []string
+	tv := &recorder{name: "token-validator", handOrder: &order}
+	ti := &recorder{name: "tenant-injector", handOrder: &order}
+	lc := &recorder{name: "license-check", handOrder: &order}
+
+	ldr := &Loader{
+		log:     noopLog(),
+		ordered: []plugin.Plugin{tv, ti, lc},
+	}
+
+	overrides := map[string]map[string]any{
+		"tenant-injector": {"enabled": false},
+	}
+
+	h := ldr.ChainFor(overrides, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/resource", nil))
+
+	// tenant-injector must be absent; token-validator and license-check present.
+	for _, name := range order {
+		if name == "tenant-injector" {
+			t.Error("tenant-injector must be skipped for this route")
+		}
+	}
+	found := func(n string) bool {
+		for _, x := range order {
+			if x == n {
+				return true
+			}
+		}
+		return false
+	}
+	if !found("token-validator") {
+		t.Error("token-validator must still run")
+	}
+	if !found("license-check") {
+		t.Error("license-check must still run")
+	}
+}
+
+func TestChainFor_PerRouteOverride_OtherRoutesUnaffected(t *testing.T) {
+	// Route A disables tenant-injector; Route B (no overrides) runs all plugins.
+	var orderA, orderB []string
+	ti := &recorder{name: "tenant-injector"}
+	lc := &recorder{name: "license-check"}
+
+	ldr := &Loader{
+		log:     noopLog(),
+		ordered: []plugin.Plugin{ti, lc},
+	}
+
+	// Route A chain: tenant-injector disabled.
+	ti.handOrder = &orderA
+	lc.handOrder = &orderA
+	chainA := ldr.ChainFor(map[string]map[string]any{
+		"tenant-injector": {"enabled": false},
+	}, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	chainA.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/a", nil))
+
+	// Reset recorders for Route B.
+	ti.handOrder = &orderB
+	lc.handOrder = &orderB
+
+	// Route B chain: no overrides — all plugins run.
+	chainB := ldr.ChainFor(nil, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	chainB.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/b", nil))
+
+	// Route A: only license-check.
+	for _, n := range orderA {
+		if n == "tenant-injector" {
+			t.Error("route A: tenant-injector must be skipped")
+		}
+	}
+	// Route B: both plugins present.
+	tiInB, lcInB := false, false
+	for _, n := range orderB {
+		if n == "tenant-injector" {
+			tiInB = true
+		}
+		if n == "license-check" {
+			lcInB = true
+		}
+	}
+	if !tiInB {
+		t.Error("route B: tenant-injector must run (no override)")
+	}
+	if !lcInB {
+		t.Error("route B: license-check must run")
+	}
+}
+
+func TestChainFor_EmptyOverrides_AllPluginsRun(t *testing.T) {
+	var order []string
+	a := &recorder{name: "a", handOrder: &order}
+	b := &recorder{name: "b", handOrder: &order}
+
+	ldr := &Loader{log: noopLog(), ordered: []plugin.Plugin{a, b}}
+	ldr.ChainFor(map[string]map[string]any{}, // empty map, not nil
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).
+		ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/", nil))
+
+	if len(order) != 2 {
+		t.Errorf("all plugins should run for empty override map; got %v", order)
+	}
+}
+
+// ── ValidateRouteOverrides ────────────────────────────────────────────────────
+
+func TestValidateRouteOverrides_TokenValidatorDisabled_Error(t *testing.T) {
+	routeList := []routes.Route{
+		{
+			ID:     "api-route",
+			Method: "GET",
+			Path:   "/things",
+			Target: "http://upstream:8080",
+			Plugins: map[string]map[string]any{
+				tokenValidatorName: {"enabled": false},
+			},
+		},
+	}
+	err := ValidateRouteOverrides(routeList)
+	if err == nil {
+		t.Fatal("expected error when route disables token-validator")
+	}
+	if !strings.Contains(err.Error(), "api-route") {
+		t.Errorf("error should name the offending route; got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "token-validator") {
+		t.Errorf("error should mention token-validator; got: %v", err)
+	}
+}
+
+func TestValidateRouteOverrides_NoDisabledTV_NoError(t *testing.T) {
+	routeList := []routes.Route{
+		{
+			ID: "r1", Method: "GET", Path: "/a", Target: "http://svc:8080",
+			Plugins: map[string]map[string]any{
+				"tenant-injector": {"enabled": false},
+			},
+		},
+		{
+			ID: "r2", Method: "POST", Path: "/b", Target: "http://svc:8080",
+			Plugins: map[string]map[string]any{
+				tokenValidatorName: {"enabled": true}, // explicitly true — allowed
+			},
+		},
+	}
+	if err := ValidateRouteOverrides(routeList); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateRouteOverrides_NilPlugins_NoError(t *testing.T) {
+	routeList := []routes.Route{
+		{ID: "r1", Method: "GET", Path: "/a", Target: "http://svc:8080"},
+	}
+	if err := ValidateRouteOverrides(routeList); err != nil {
+		t.Errorf("unexpected error for route with nil Plugins: %v", err)
+	}
+}
+
+func TestValidateRouteOverrides_EmptyList_NoError(t *testing.T) {
+	if err := ValidateRouteOverrides(nil); err != nil {
+		t.Errorf("unexpected error for nil route list: %v", err)
+	}
 }

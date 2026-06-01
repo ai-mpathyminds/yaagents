@@ -31,7 +31,8 @@ import (
 const ProfileHeader = "X-YAAgents-Profile"
 
 // ProfileVersion is the current Agentic REST Profile version advertised on responses.
-const ProfileVersion = "v0.1"
+// Bumped to v0.2 per WI-2yaa.PLG-6 (PLG-6 + BUMP-3 profile bump).
+const ProfileVersion = "v0.2"
 
 // routeEntry pairs a validated Route with its pre-built HTTP handler.
 // The handler chain is: observe → EnforceTenant → RBAC → reverse-proxy.

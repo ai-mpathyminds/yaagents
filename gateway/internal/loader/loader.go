@@ -22,6 +22,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 	"github.com/ai-mpathyminds/yaagents/gateway/plugin"
 )
 
@@ -97,6 +98,41 @@ func (l *Loader) Chain(next http.Handler) http.Handler {
 		h = l.ordered[i].Handler(h)
 	}
 	return h
+}
+
+// ChainFor builds a per-route middleware chain in declaration order, skipping
+// any plugin whose entry in perRoutePlugins carries enabled: false (PLG-6
+// per-route override, PRD §5.4.2). next is the innermost handler.
+//
+// token-validator may not be disabled per-route; call ValidateRouteOverrides
+// at boot to enforce this invariant before building per-route chains.
+func (l *Loader) ChainFor(perRoutePlugins map[string]map[string]any, next http.Handler) http.Handler {
+	h := next
+	for i := len(l.ordered) - 1; i >= 0; i-- {
+		p := l.ordered[i]
+		if override, ok := perRoutePlugins[p.Name()]; ok {
+			if en, ok := override["enabled"].(bool); ok && !en {
+				continue // this plugin is disabled for this route
+			}
+		}
+		h = p.Handler(h)
+	}
+	return h
+}
+
+// ValidateRouteOverrides returns a fatal boot error if any route's plugins:
+// block disables token-validator. token-validator is the always-on security
+// floor (ADR PI2-yaa-0001 §5) and must run on every proxied request.
+func ValidateRouteOverrides(routeList []routes.Route) error {
+	for _, r := range routeList {
+		if override, ok := r.Plugins[tokenValidatorName]; ok {
+			if en, ok := override["enabled"].(bool); ok && !en {
+				return fmt.Errorf("route %q: token-validator cannot be disabled per-route "+
+					"(ADR PI2-yaa-0001 §5 always-on invariant)", r.ID)
+			}
+		}
+	}
+	return nil
 }
 
 // Shutdown calls each plugin's Shutdown in reverse declaration order
