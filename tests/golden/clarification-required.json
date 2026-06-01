@@ -1,0 +1,21 @@
+{
+  "status": 400,
+  "contentType": "application/vnd.yaagents.clarification+json",
+  "expectedType": "clarification_required",
+  "body": {
+    "type": "clarification_required",
+    "code": "CLARIFICATION_REQUIRED",
+    "message": "Additional information is required.",
+    "requiredInputs": [
+      {
+        "name": "successMetric",
+        "location": "body",
+        "type": "string",
+        "required": true,
+        "question": "Which success metric should be optimized?",
+        "allowedValues": ["ctr", "cpl", "conversion_rate", "lead_quality"]
+      }
+    ],
+    "trace": {"correlationId": "corr-001", "requestId": "req-001"}
+  }
+}

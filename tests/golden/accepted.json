@@ -1,0 +1,13 @@
+{
+  "status": 202,
+  "contentType": "application/vnd.yaagents.operation+json",
+  "expectedType": "accepted",
+  "body": {
+    "type": "operation_accepted",
+    "code": "OPERATION_ACCEPTED",
+    "message": "Operation accepted for asynchronous processing.",
+    "operationId": "op-camp-001-20260517-001",
+    "statusUrl": "/operations/op-camp-001-20260517-001/status",
+    "trace": {"correlationId": "corr-501", "requestId": "req-501"}
+  }
+}

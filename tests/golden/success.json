@@ -1,0 +1,6 @@
+{
+  "status": 200,
+  "contentType": "application/json",
+  "expectedType": "success",
+  "body": {"id": "cmp-001", "name": "Campaign 1", "status": "active", "budget": 5000}
+}

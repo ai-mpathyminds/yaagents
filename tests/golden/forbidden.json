@@ -1,0 +1,11 @@
+{
+  "status": 403,
+  "contentType": "application/vnd.yaagents.error+json",
+  "expectedType": "forbidden",
+  "body": {
+    "type": "forbidden",
+    "code": "PERMISSION_DENIED",
+    "message": "You do not have permission to create optimizations for this campaign.",
+    "trace": {"correlationId": "corr-401", "requestId": "req-401"}
+  }
+}

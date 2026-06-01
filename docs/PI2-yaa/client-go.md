@@ -90,7 +90,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only.
 depends_on: [WI-2yaa.GOC-1]
 
-### WI-2yaa.GOC-3: AgenticResult + typed errors [WIP] — Sprint 3
+### WI-2yaa.GOC-3: AgenticResult + typed errors [DONE] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Implement `AgenticResult` struct + typed-error types per PRD §5.9:
@@ -135,7 +135,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only.
 depends_on: [WI-2yaa.GOC-2]
 
-### WI-2yaa.GOC-4: Golden corpus conformance tests + idiomatic example [READY] — Sprint 3
+### WI-2yaa.GOC-4: Golden corpus conformance tests + idiomatic example [WIP] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Wire the shared golden corpus (PI1-yaa SPEC-5 — `tests/golden/`)
