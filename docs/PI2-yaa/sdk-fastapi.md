@@ -11,7 +11,7 @@ package `yaagents-fastapi`. ADR: PI2-yaa-0003 (Apache 2.0 supersession).
 
 ---
 
-### WI-2yaa.BUMP-1a: sdk-fastapi 0.2.0 (Apache 2.0 metadata + profile v0.2) [WIP] — Sprint 5
+### WI-2yaa.BUMP-1a: sdk-fastapi 0.2.0 (Apache 2.0 metadata + profile v0.2) [DONE] — Sprint 5
 service: yaagents/sdk-fastapi
 parent_feature: F-LICENSE
 brief: Bump `sdk-fastapi/pyproject.toml` to `version = "0.2.0"`. Update
