@@ -67,7 +67,7 @@ library_justify: portfolio/packages/go/auth-jwks/ extraction NOT yet landed (ver
 depends_on: [WI-2yaa.PLG-1, WI-2yaa.PLG-2]
 note: **EXTENDED (not superseded) by PLG-3b per ADR PI2-yaa-0007.** v1 is a valid single-issuer/single-audience foundation; PLG-3b is additive — multi-issuer, multi-audience, algorithm allowlist, RFC-correct 401 codes, propagate-claims contract, configurable token header, clock skew, required claims, token size cap. v1 code at `gateway/internal/plugins/token-validator/` and tests in `plugin_test.go` are preserved; PLG-3b extends the same package.
 
-### WI-2yaa.PLG-3b: Plugin (a) — `token-validator` hardening for generic OSS deployments [READY] — Sprint 2
+### WI-2yaa.PLG-3b: Plugin (a) — `token-validator` hardening for generic OSS deployments [WIP] — Sprint 2
 service: yaagents/gateway/internal/plugins/token-validator
 parent_feature: F-PLUGIN
 brief: Extend `token-validator` v1 (PLG-3, commit 442cece) per ADR
