@@ -93,7 +93,7 @@ depends_on: [WI-2yaa.LIC-1]
 | [SUPPLY] Apache-2.0 license metadata in pyproject.toml ×3, package.json, go.mod | feature WI | BUMP-1a/1b/1c (sdk-fastapi/client-python/cli), BUMP-2 (client-ts), LIC-1 (repo root LICENSE) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI2-yaa (no TF edits; license file change has zero AWS cost implication) |
 
-### WI-2yaa.NFR-LIC-1: Community-license grep CI gate [READY]
+### WI-2yaa.NFR-LIC-1: Community-license grep CI gate [DONE]
 service: yaagents/(ci)
 parent_feature: F-LICENSE
 brief: [SEC] Wire a pre-merge CI grep gate in `.github/workflows/ci.yml` (or
