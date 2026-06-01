@@ -135,6 +135,9 @@ func (tv *TokenValidator) Handler(next http.Handler) http.Handler {
 		if tid := claimStr(mc, "tenant_id"); tid != "" {
 			ctx = reqctx.WithTenantID(ctx, tid)
 		}
+		// Store full validated claims for downstream plugins that need
+		// arbitrary claim access (e.g. tenant-injector PLG-4b).
+		ctx = reqctx.WithJWTClaims(ctx, map[string]any(mc))
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
