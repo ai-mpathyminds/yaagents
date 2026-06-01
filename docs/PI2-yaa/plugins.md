@@ -12,7 +12,7 @@ interface contract + versioning + registration semantics), PI2-yaa-0005
 
 ---
 
-### WI-2yaa.PLG-1: Plugin interface + registry + PluginConfig accessor [WIP] — Sprint 1
+### WI-2yaa.PLG-1: Plugin interface + registry + PluginConfig accessor [DONE] — Sprint 1
 service: yaagents/gateway/plugin
 parent_feature: F-PLUGIN
 brief: Create Go package `github.com/ai-mpathyminds/yaagents/gateway/plugin`.
@@ -66,7 +66,7 @@ acceptance:
 library_justify: portfolio/packages/go/auth-jwks/ extraction NOT yet landed (verified at A-3 — portfolio/packages/go/ contains only README.md; LIBRARIES.md row re-targeted PI14-oppor; oppor/docs/PI14-oppor/ absent). Per ADR PI2-yaa-0005 re-implement minimally inline. Plugin Init signature stable so import-path can switch when extraction lands. Open extraction row tracked in LIBRARIES.md.
 depends_on: [WI-2yaa.PLG-1, WI-2yaa.PLG-2]
 
-### WI-2yaa.PLG-4: Plugin (b) — `tenant-injector` [READY] — Sprint 2
+### WI-2yaa.PLG-4: Plugin (b) — `tenant-injector` [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/tenant-injector
 parent_feature: F-PLUGIN
 brief: Implement `tenant-injector` plugin (PRD §6.5 plugin b). Read tenant
