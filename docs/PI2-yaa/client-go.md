@@ -135,7 +135,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only.
 depends_on: [WI-2yaa.GOC-2]
 
-### WI-2yaa.GOC-4: Golden corpus conformance tests + idiomatic example [WIP] — Sprint 3
+### WI-2yaa.GOC-4: Golden corpus conformance tests + idiomatic example [DONE] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Wire the shared golden corpus (PI1-yaa SPEC-5 — `tests/golden/`)
@@ -171,7 +171,7 @@ depends_on: [WI-2yaa.GOC-3]
 | [SUPPLY] go.mod module path matches PRD §5.9 | feature WI | GOC-1 (acceptance criterion: `go.mod` `module github.com/ai-mpathyminds/yaagents/client-go`) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; Go module proxy is free; zero cloud cost implication |
 
-### WI-2yaa.NFR-GOC-1: govulncheck + math/rand absence gate [READY]
+### WI-2yaa.NFR-GOC-1: govulncheck + math/rand absence gate [DONE]
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: [SEC] Two CI checks for the client-go module:
