@@ -53,7 +53,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0002
 depends_on: [WI-2yaa.LLM-4]
 
-### WI-2yaa.EX-LLM-2: docker-compose.yml + dual-network topology [READY] — Sprint 4
+### WI-2yaa.EX-LLM-2: docker-compose.yml + dual-network topology [DONE] — Sprint 4
 service: yaagents/examples/llm-gateway
 parent_feature: F-LLM
 brief: `examples/llm-gateway/docker-compose.yml` with two services:
@@ -150,7 +150,7 @@ table update ✓; named network `yaagents-llm-net` ✓).
 | [SEC] mock-llm-api non-root image | feature WI | EX-LLM-1 (Dockerfile: non-root, `CGO_ENABLED=0` Alpine multi-stage) |
 | [FIN] FinOps WI | **N/A** | dev-host only; no cloud resources; Docker Desktop/Podman local; zero cloud cost |
 
-### WI-2yaa.NFR-EX-LLM-1: Compose resource limits — llm-gateway demo [READY]
+### WI-2yaa.NFR-EX-LLM-1: Compose resource limits — llm-gateway demo [DONE]
 service: yaagents/examples/llm-gateway
 parent_feature: F-LLM
 brief: [SRE] `examples/llm-gateway/docker-compose.yml` (EX-LLM-2) MUST
@@ -168,7 +168,7 @@ acceptance:
 library_justify: novel; standalone OSS surface (llm-gateway demo).
 depends_on: [WI-2yaa.EX-LLM-2]
 
-### WI-2yaa.NFR-EX-LLM-2: Demo token discipline in llm-gateway compose [READY]
+### WI-2yaa.NFR-EX-LLM-2: Demo token discipline in llm-gateway compose [DONE]
 service: yaagents/examples/llm-gateway
 parent_feature: F-LLM
 brief: [SEC] The Compose demo MUST make explicit that `GATEWAY_JWT_SECRET`
