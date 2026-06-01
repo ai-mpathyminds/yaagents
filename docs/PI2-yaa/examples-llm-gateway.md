@@ -17,7 +17,7 @@ PRD §11 OQ-4). Platform-engineer confirms at A-4 compose-linter pass.
 
 ---
 
-### WI-2yaa.EX-LLM-1: Mock LLM backend + routes.yaml + plugins.yaml [READY] — Sprint 4
+### WI-2yaa.EX-LLM-1: Mock LLM backend + routes.yaml + plugins.yaml [WIP] — Sprint 4
 service: yaagents/examples/llm-gateway
 parent_feature: F-LLM
 brief: Create `examples/llm-gateway/` directory with:

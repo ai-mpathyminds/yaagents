@@ -1,0 +1,80 @@
+# yaagents LLM-gateway demo — plugin configuration (WI-2yaa.EX-LLM-1)
+# ADR: PI2-yaa-0001 (plugin chain), PI2-yaa-0002 (LLM specialisation)
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET / jwt_secret below are DEMO-ONLY hardcoded
+# values. Never use in production. For production, set GATEWAY_JWT_JWKS_URL
+# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+#
+# Plugin chain (declaration order = execution order):
+#   1. token-validator  — HS256 test mode; validates the demo JWT
+#   2. tenant-injector  — resolves principal → tenant via mock-iam-api
+#   3. cors             — CORS preflight + ACAO header injection
+#
+# Disabled (commented-out) plugins:
+#   license-check  — requires an external license server (not included in demo)
+#   prompt-sanitize — stub; full implementation deferred to PI3-yaa
+#   otel-audit      — stub; OTel export deferred to PI3-yaa
+
+plugins:
+  # ── 1. token-validator ────────────────────────────────────────────────────
+  # Always-on per ADR PI2-yaa-0001 §5 (gateway exits 1 if enabled: false).
+  # test_mode: true activates HS256 validation against jwt_secret below.
+  # For production: remove test_mode + jwt_secret; set GATEWAY_JWT_JWKS_URL.
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: "demo-secret-not-for-production"   # DEMO ONLY — see SECURITY NOTE
+
+  # ── 2. tenant-injector ────────────────────────────────────────────────────
+  # Resolves the JWT sub claim to a tenant ID via the mock-iam-api lookup
+  # service (ADR PI2-yaa-0006 Decision 2).
+  # allowlist restricts to demo tenants only; remove in production.
+  - name: tenant-injector
+    enabled: true
+    principal:
+      claim: sub
+    lookup:
+      url: "http://mock-iam-api:8122/api/v1/principals/{principal}/tenant"
+      method: GET
+      timeout_ms: 500
+      response:
+        mode: single
+        tenant_id_field: tenant_id
+      cache:
+        ttl_seconds: 60
+        max_entries: 100
+    inject:
+      tenant_header: X-Tenant-ID
+    allowlist:
+      - tenant-001
+      - tenant-002
+
+  # ── 3. cors ───────────────────────────────────────────────────────────────
+  # Handles CORS preflight (OPTIONS) and injects Access-Control-Allow-Origin
+  # for the demo front-end at http://localhost:3000.
+  # allowed_origins: [] disables the plugin; add origins to enable.
+  - name: cors
+    enabled: true
+    allowed_origins:
+      - "http://localhost:3000"
+
+  # ── Disabled plugins ──────────────────────────────────────────────────────
+
+  # license-check: requires an external license server; disabled for demo.
+  # Uncomment and set license_url to enable in a licensed deployment.
+  # - name: license-check
+  #   enabled: true
+  #   license_url: http://license-server:8099/verify
+  #   header: X-License-Token
+  #   cache_ttl_seconds: 300
+
+  # prompt-sanitize: stub — passes all requests through (PI3-yaa full impl).
+  # Uncomment to include the stub in the chain (no functional effect today).
+  # - name: prompt-sanitize
+  #   enabled: false
+
+  # otel-audit: stub — OTel span export deferred to PI3-yaa.
+  # Uncomment and set endpoint to wire up a real exporter.
+  # - name: otel-audit
+  #   enabled: false
+  #   endpoint: ""
