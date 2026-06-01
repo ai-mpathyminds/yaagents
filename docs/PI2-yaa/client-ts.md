@@ -15,7 +15,7 @@ supersession).
 
 ---
 
-### WI-2yaa.BUMP-2: client-ts 0.2.0 (Apache 2.0 metadata + profile v0.2) [WIP] — Sprint 5
+### WI-2yaa.BUMP-2: client-ts 0.2.0 (Apache 2.0 metadata + profile v0.2) [DONE] — Sprint 5
 service: yaagents/client-ts
 parent_feature: F-LICENSE
 brief: Bump `client-ts/package.json`:
