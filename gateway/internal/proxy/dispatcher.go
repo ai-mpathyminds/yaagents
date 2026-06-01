@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/llm"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/reqctx"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/response"
@@ -198,13 +199,34 @@ func (d *RouteDispatcher) observeHandler(h http.Handler, route routes.Route) htt
 // makeRouteHandler constructs the per-route handler chain:
 //
 //	EnforceTenant(route.TenantRequired) → RBAC check → reverse-proxy
+//
+// When route.Mode == llm.ModeSSE the downstream proxy is an SSE pipe-and-flush
+// handler (LLM-1) rather than httputil.ReverseProxy. The X-YAAgents-Profile
+// header is injected before the SSE handler writes response headers so it is
+// included in both SSE and standard proxied responses.
 func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error) {
 	targetURL, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("parsing target %q: %w", route.Target, err)
 	}
 
-	rp := buildProxy(targetURL, route, log)
+	var rp http.Handler
+	if route.Mode == llm.ModeSSE {
+		// SSE-aware pipe-and-flush proxy (LLM-1).
+		sseHandler, sseErr := llm.NewProxy(targetURL)
+		if sseErr != nil {
+			return nil, fmt.Errorf("building SSE proxy for route %q: %w", route.ID, sseErr)
+		}
+		// Inject X-YAAgents-Profile before the SSE handler writes response
+		// headers (equivalent to ModifyResponse in buildProxy for standard routes).
+		rp = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(ProfileHeader, ProfileVersion)
+			sseHandler.ServeHTTP(w, r)
+		})
+	} else {
+		// Standard httputil.ReverseProxy (GW-4 path — default, mode == "").
+		rp = buildProxy(targetURL, route, log)
+	}
 
 	// Inner handler: RBAC then proxy.
 	rbacAndProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

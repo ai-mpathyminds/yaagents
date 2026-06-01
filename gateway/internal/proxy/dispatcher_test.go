@@ -534,3 +534,75 @@ func TestResponseRecorder_DefaultsTo200OnWrite(t *testing.T) {
 		t.Error("wroteHeader should be true after Write")
 	}
 }
+
+// TestDispatcher_SSEMode_ReachesUpstream is the regression gate for LLM-1:
+// a route with mode: sse is proxied and the upstream is reachable via the
+// dispatcher (the SSE proxy path in makeRouteHandler does not break routing).
+func TestDispatcher_SSEMode_ReachesUpstream(t *testing.T) {
+	reached := false
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		reached = true
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer upstream.Close()
+
+	route := routes.Route{
+		ID:     "sse-route",
+		Method: "POST",
+		Path:   "/completions",
+		Target: upstream.URL,
+		Mode:   "sse",
+	}
+	d := makeDispatcher(t, upstream, route)
+
+	req := ctxRequest("POST", "/completions", nil, []string{}, "")
+	w := httptest.NewRecorder()
+	d.ServeHTTP(w, req)
+
+	if !reached {
+		t.Fatal("upstream was not reached for mode:sse route")
+	}
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get(ProfileHeader); got != ProfileVersion {
+		t.Errorf("X-YAAgents-Profile: want %q, got %q", ProfileVersion, got)
+	}
+}
+
+// TestDispatcher_SSEMode_StandardRouteUnchanged verifies that a standard route
+// (mode == "") still proxies correctly after the SSE-mode branch was added to
+// makeRouteHandler (PI1-yaa GW-4 regression gate for LLM-1).
+func TestDispatcher_SSEMode_StandardRouteUnchanged(t *testing.T) {
+	const respBody = `{"status":"ok"}`
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, respBody)
+	}))
+	defer upstream.Close()
+
+	route := routes.Route{
+		ID:     "std-route",
+		Method: "GET",
+		Path:   "/items",
+		Target: upstream.URL,
+		// Mode is intentionally empty — standard proxy path.
+	}
+	d := makeDispatcher(t, upstream, route)
+
+	req := ctxRequest("GET", "/items", nil, []string{}, "")
+	w := httptest.NewRecorder()
+	d.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Body.String(); got != respBody {
+		t.Errorf("body: want %q, got %q", respBody, got)
+	}
+	if got := w.Header().Get(ProfileHeader); got != ProfileVersion {
+		t.Errorf("X-YAAgents-Profile: want %q, got %q", ProfileVersion, got)
+	}
+}

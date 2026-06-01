@@ -45,6 +45,11 @@ type Route struct {
 	TenantRequired bool     `yaml:"tenantRequired"`
 	Audit          bool     `yaml:"audit"`
 
+	// Mode specifies the proxy mode for this route.
+	// "" (empty, default) = standard httputil.ReverseProxy (GW-4 path).
+	// "sse" = SSE-aware pipe-and-flush proxy (LLM-1; activates internal/llm).
+	Mode string `yaml:"mode"`
+
 	// Plugins holds per-route plugin overrides (PRD §5.4.2). A plugin listed
 	// here may set enabled: false to bypass it for this route only. Disabling
 	// token-validator per-route is a fatal boot error (ADR PI2-yaa-0001 §5).
