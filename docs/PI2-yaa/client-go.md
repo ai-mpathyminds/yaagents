@@ -56,7 +56,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only (zero non-stdlib runtime deps per PRD §5.9).
 depends_on: [WI-2yaa.LIC-1]
 
-### WI-2yaa.GOC-2: Resource accessors (Campaigns / ByID / Optimizations / Assets) [WIP] — Sprint 3
+### WI-2yaa.GOC-2: Resource accessors (Campaigns / ByID / Optimizations / Assets) [DONE] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Implement the resource-accessor chain per PRD §5.9 API surface:
@@ -90,7 +90,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only.
 depends_on: [WI-2yaa.GOC-1]
 
-### WI-2yaa.GOC-3: AgenticResult + typed errors [READY] — Sprint 3
+### WI-2yaa.GOC-3: AgenticResult + typed errors [WIP] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Implement `AgenticResult` struct + typed-error types per PRD §5.9:

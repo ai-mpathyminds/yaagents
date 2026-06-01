@@ -92,11 +92,8 @@ func newUUID() string {
 }
 
 // do executes an HTTP request against path (relative to baseURL) with the
-// standard header set applied. body may be nil for GET/DELETE; non-nil
-// triggers "Content-Type: application/json".
-//
-// GOC-2: returns a stub AgenticResult carrying only the HTTP status code.
-// GOC-3 replaces the stub body with full Content-Type → field parsing.
+// standard header set applied, then delegates response parsing to parseResponse.
+// body may be nil for GET/DELETE; non-nil triggers "Content-Type: application/json".
 func (c *Client) do(ctx context.Context, method, path string, body io.Reader) (*AgenticResult, error) {
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
 	if err != nil {
@@ -127,6 +124,5 @@ func (c *Client) do(ctx context.Context, method, path string, body io.Reader) (*
 		return nil, err
 	}
 	defer resp.Body.Close()
-	// GOC-3 replaces this stub with full response parsing.
-	return &AgenticResult{Status: resp.StatusCode}, nil
+	return parseResponse(resp)
 }
