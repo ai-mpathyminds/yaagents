@@ -161,6 +161,29 @@ jobs:
       - name: vitest + coverage (≥80% gate)
         run: pnpm run test
 
+  # ── License clean scan: no Community License string in source ────────────
+  # Blocks regression to the v0.1.x "YAAgents Community License" identifier.
+  # Runs on push events only (not pull_request) — advisory, to avoid blocking
+  # external fork contributors who cannot easily run the check locally.
+  # Also invoked by bin/pi2-yaa-gate.sh step 7. ADR: PI2-yaa-0003.
+  license-clean-scan:
+    name: License clean scan — no Community License strings
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: license-clean-scan
+        run: |
+          if grep -rn "YAAgents Community License" \
+               --include='*.go' --include='*.py' --include='*.ts' .; then
+            echo "::error::Community License string found in source — see grep output above"
+            exit 1
+          fi
+          echo "license-clean-scan: PASS — no Community License strings found"
+
   # ── Spec archive: schemas/ + openapi/ → GitHub Release ───────────────────
   # Runs only on tag push, and only after all three language jobs are green.
   # ADR PI1-yaa-0005 §6: schemas + OpenAPI attached as versioned archive;
