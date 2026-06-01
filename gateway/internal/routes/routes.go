@@ -50,6 +50,13 @@ type Route struct {
 	// "sse" = SSE-aware pipe-and-flush proxy (LLM-1; activates internal/llm).
 	Mode string `yaml:"mode"`
 
+	// ExecutionTimeoutSeconds caps the upstream call duration (LLM-3).
+	// 0 (default) = no timeout.
+	// SSE routes: deadline = now + ExecutionTimeoutSeconds + 30 s (PRD §7.1 SSEReadTimeout).
+	// Non-SSE routes: deadline = now + ExecutionTimeoutSeconds.
+	// Exceeded → 500 application/vnd.yaagents.error+json code: "EXECUTION_TIMEOUT".
+	ExecutionTimeoutSeconds int `yaml:"executionTimeoutSeconds"`
+
 	// Plugins holds per-route plugin overrides (PRD §5.4.2). A plugin listed
 	// here may set enabled: false to bypass it for this route only. Disabling
 	// token-validator per-route is a fatal boot error (ADR PI2-yaa-0001 §5).

@@ -148,7 +148,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0002
 depends_on: [WI-2yaa.LLM-1]
 
-### WI-2yaa.LLM-3: Execution timeout + CORS plugin [READY] — Sprint 4
+### WI-2yaa.LLM-3: Execution timeout + CORS plugin [WIP] — Sprint 4
 service: yaagents/gateway/{internal/llm,internal/plugins/cors}
 parent_feature: F-LLM
 brief: **Execution timeout**: per-route field `executionTimeoutSeconds`

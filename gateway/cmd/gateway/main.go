@@ -38,6 +38,7 @@ import (
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 
 	// Plugin side-effect registrations (ADR PI2-yaa-0001 §3).
+	_ "github.com/ai-mpathyminds/yaagents/gateway/internal/plugins/cors"
 	_ "github.com/ai-mpathyminds/yaagents/gateway/internal/plugins/tokenvalidator"
 )
 

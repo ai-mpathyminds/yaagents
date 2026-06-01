@@ -307,6 +307,26 @@ routes:
 	}
 }
 
+func TestLoad_ExecutionTimeoutSeconds_Parsed(t *testing.T) {
+	y := `
+routes:
+  - id: timed
+    method: POST
+    path: /completions
+    target: http://llm-api:8123
+    mode: sse
+    executionTimeoutSeconds: 30
+`
+	f := writeTempYAML(t, y)
+	rs, err := routes.Load(f)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rs[0].ExecutionTimeoutSeconds != 30 {
+		t.Errorf("executionTimeoutSeconds: want 30, got %d", rs[0].ExecutionTimeoutSeconds)
+	}
+}
+
 func TestLoad_ModeDefault_Empty(t *testing.T) {
 	f := writeTempYAML(t, validYAML)
 	rs, err := routes.Load(f)

@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/llm"
@@ -641,5 +642,50 @@ func TestDispatcher_SSEMode_StandardRouteUnchanged(t *testing.T) {
 	}
 	if got := w.Header().Get(ProfileHeader); got != ProfileVersion {
 		t.Errorf("X-YAAgents-Profile: want %q, got %q", ProfileVersion, got)
+	}
+}
+
+// TestDispatcher_NonSSEExecutionTimeout_Returns500 is the LLM-3 non-SSE AC:
+// a route with executionTimeoutSeconds=1 and an upstream that stalls → 500
+// vendor-error with code: "EXECUTION_TIMEOUT" at ~1 s.
+func TestDispatcher_NonSSEExecutionTimeout_Returns500(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(10 * time.Second): // outlasts the 1 s timeout
+		}
+	}))
+	defer upstream.Close()
+
+	route := routes.Route{
+		ID:                      "timeout-route",
+		Method:                  "GET",
+		Path:                    "/slow",
+		Target:                  upstream.URL,
+		ExecutionTimeoutSeconds: 1, // fires at 1 s; upstream stalls 10 s
+	}
+	d := makeDispatcher(t, upstream, route)
+
+	start := time.Now()
+	req := ctxRequest("GET", "/slow", nil, nil, "")
+	w := httptest.NewRecorder()
+	d.ServeHTTP(w, req)
+	elapsed := time.Since(start)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status: want 500, got %d", w.Code)
+	}
+	var body struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v\nraw: %s", err, w.Body.String())
+	}
+	if body.Code != "EXECUTION_TIMEOUT" {
+		t.Errorf("code: want EXECUTION_TIMEOUT, got %q", body.Code)
+	}
+	// Verify it fired at ~1 s (not 10 s).
+	if elapsed > 3*time.Second {
+		t.Errorf("expected timeout at ~1s, took %v", elapsed)
 	}
 }
