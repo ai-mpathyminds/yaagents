@@ -1,8 +1,14 @@
 # yaagents-fastapi
 
-FastAPI SDK for the **YAAgents Agentic REST Profile v0.1**.
+FastAPI SDK for the **YAAgents Agentic REST Profile v0.2**.
 
-Supports YAAgents Profile v0.1 — see `spec/agentic-rest-profile.md`.
+Supports YAAgents Profile v0.2 — see `spec/agentic-rest-profile.md`.
+
+## Install
+
+```
+pip install yaagents-fastapi==0.2.0
+```
 
 ## Quick start
 

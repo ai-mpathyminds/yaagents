@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""yaagents-fastapi — FastAPI SDK for the YAAgents Agentic REST Profile v0.1.
+"""yaagents-fastapi — FastAPI SDK for the YAAgents Agentic REST Profile v0.2.
 
-Supports YAAgents Profile v0.1 (spec/agentic-rest-profile.md).
+Supports YAAgents Profile v0.2 (spec/agentic-rest-profile.md).
 """
 
-from yaagents_fastapi.__about__ import __profile__, __version__
+from yaagents_fastapi.__about__ import PROFILE_VERSION, __profile__, __version__
 from yaagents_fastapi.context import AgenticContext, RequiredInput
 from yaagents_fastapi.decorator import (
     AgenticResponses,
@@ -20,6 +20,7 @@ from yaagents_fastapi.response import AgenticResponse
 __all__ = [
     "__version__",
     "__profile__",
+    "PROFILE_VERSION",
     "AgenticContext",
     "AgenticResponse",
     "AgenticResponses",

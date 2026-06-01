@@ -3,7 +3,11 @@
 
 """Package metadata for yaagents-fastapi."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-# Profile version literal — spec/VERSION = 0.1 (ADR PI1-yaa-0003 §4)
-__profile__ = "v0.1"
+# Profile version literal — spec/VERSION = 0.2 (ADR PI2-yaa-0003 §5)
+__profile__ = "v0.2"
+
+#: Public alias used by acceptance-criterion check:
+#: ``python -c "import yaagents_fastapi; print(yaagents_fastapi.PROFILE_VERSION)"``
+PROFILE_VERSION = "v0.2"
