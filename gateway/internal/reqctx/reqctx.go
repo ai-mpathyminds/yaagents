@@ -26,6 +26,7 @@ const (
 	tenantIDKey
 	actorSubjectKey
 	actorRolesKey
+	jwtClaimsKey
 )
 
 // NewUUID generates a random UUID v4 string.
@@ -91,4 +92,20 @@ func WithActorRoles(ctx context.Context, roles []string) context.Context {
 func ActorRoles(ctx context.Context) []string {
 	r, _ := ctx.Value(actorRolesKey).([]string)
 	return r
+}
+
+// WithJWTClaims stores the full set of validated JWT claims in ctx.
+// This is populated by the token-validator plugin after successful JWT
+// validation and consumed by downstream plugins (e.g. tenant-injector)
+// that need access to arbitrary claim names.
+func WithJWTClaims(ctx context.Context, claims map[string]any) context.Context {
+	return context.WithValue(ctx, jwtClaimsKey, claims)
+}
+
+// JWTClaims retrieves validated JWT claims from ctx (nil if absent).
+// Returns nil when the token-validator plugin has not yet run or the
+// validation was skipped.
+func JWTClaims(ctx context.Context) map[string]any {
+	m, _ := ctx.Value(jwtClaimsKey).(map[string]any)
+	return m
 }

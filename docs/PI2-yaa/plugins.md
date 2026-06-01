@@ -65,6 +65,134 @@ acceptance:
 - ≥85% line coverage on `token-validator` package
 library_justify: portfolio/packages/go/auth-jwks/ extraction NOT yet landed (verified at A-3 — portfolio/packages/go/ contains only README.md; LIBRARIES.md row re-targeted PI14-oppor; oppor/docs/PI14-oppor/ absent). Per ADR PI2-yaa-0005 re-implement minimally inline. Plugin Init signature stable so import-path can switch when extraction lands. Open extraction row tracked in LIBRARIES.md.
 depends_on: [WI-2yaa.PLG-1, WI-2yaa.PLG-2]
+note: **EXTENDED (not superseded) by PLG-3b per ADR PI2-yaa-0007.** v1 is a valid single-issuer/single-audience foundation; PLG-3b is additive — multi-issuer, multi-audience, algorithm allowlist, RFC-correct 401 codes, propagate-claims contract, configurable token header, clock skew, required claims, token size cap. v1 code at `gateway/internal/plugins/token-validator/` and tests in `plugin_test.go` are preserved; PLG-3b extends the same package.
+
+### WI-2yaa.PLG-3b: Plugin (a) — `token-validator` hardening for generic OSS deployments [READY] — Sprint 2
+service: yaagents/gateway/internal/plugins/token-validator
+parent_feature: F-PLUGIN
+brief: Extend `token-validator` v1 (PLG-3, commit 442cece) per ADR
+PI2-yaa-0007 with 9 production-grade configuration surfaces. PLG-3b is
+**additive** — v1 code at `gateway/internal/plugins/token-validator/` is
+preserved and existing tests must continue to pass. The amendments make
+the plugin generic for multi-IdP OSS deployments and close
+algorithm-confusion attack vectors at the plugin level.
+
+The 9 amendments:
+
+1. **Multi-issuer + multi-JWKS** — replace singular `jwks_url` with an
+   `issuers: [{issuer, jwks_url, jwks_cache_ttl_seconds}]` list. Validator
+   reads `iss` from the token (unverified pre-check), matches against the
+   list, validates with the matched entry's JWKS. Empty list with
+   `test_mode: false` is an Init error.
+2. **Algorithm allowlist** — `algorithms: [RS256, ES256]` default. `none`
+   forbidden; Init refuses to start if `none` appears. HS256 only when
+   `test_mode: true`.
+3. **Multi-audience** — `audiences: ["a", "b"]` list (was single string).
+   Token's `aud` must match at least one. Empty list = audience validation
+   skipped (v1 behaviour preserved).
+4. **Clock skew tolerance** — `clock_skew_seconds: 60` default; applied
+   to `exp` / `nbf` / `iat` validation.
+5. **Required claims** — `required_claims: ["sub"]` default. Listed
+   claims MUST be present and non-empty.
+6. **Propagate-claims contract** — `propagate_claims.mode: all | allowlist`.
+   Explicit contract for which validated claims land in request context
+   for downstream plugins (PLG-4b depends on this).
+7. **Configurable token header** — `token.header: "Authorization"` +
+   `token.scheme: "Bearer"`. Default unchanged; configurable for
+   `X-API-Token` / `X-Auth-Token` / gateway-to-gateway flows.
+8. **RFC-correct status codes** — `on_failure.*` map; defaults flip from
+   `403` to `401` for every credential-validation failure (per RFC 7235).
+   Operators can override to preserve v1's `403` if downstream depends on it.
+9. **Token size cap** — `max_token_bytes: 8192` default. Refuse oversized
+   tokens with `400` BEFORE parse, preventing memory-amplification.
+
+Extended plugin YAML schema:
+
+```yaml
+token-validator:
+  enabled: true                                # REQUIRED true (v1 invariant)
+
+  # (1) multi-issuer
+  issuers:
+    - issuer: "https://iam.aimpathyminds.com"
+      jwks_url: "https://iam.aimpathyminds.com/.well-known/jwks.json"
+      jwks_cache_ttl_seconds: 600
+    - issuer: "https://login.microsoftonline.com/tenant-id/v2.0"
+      jwks_url: "https://login.microsoftonline.com/tenant-id/discovery/v2.0/keys"
+      jwks_cache_ttl_seconds: 3600
+
+  # (2) algorithm allowlist — "none" FORBIDDEN; HS256 only in test_mode
+  algorithms: [RS256, ES256]
+
+  # (3) multi-audience
+  audiences: ["yaagents-gateway"]              # empty = skip audience check
+
+  # (4) clock skew
+  clock_skew_seconds: 60
+
+  # (5) required claims
+  required_claims: ["sub"]
+
+  # (6) propagate-claims contract
+  propagate_claims:
+    mode: all                                  # all | allowlist
+    claims: []                                 # required when mode: allowlist
+
+  # (7) configurable token header
+  token:
+    header: "Authorization"
+    scheme: "Bearer"                           # "" = no prefix to strip
+
+  # (8) RFC-correct status codes
+  on_failure:
+    missing_token:           401
+    invalid_signature:       401
+    expired:                 401
+    not_yet_valid:           401
+    unknown_issuer:          401
+    audience_mismatch:       401
+    required_claim_missing:  401
+    disallowed_algorithm:    401
+    oversized_token:         400
+    jwks_unavailable:        503               # cold-start: all JWKS unreachable
+
+  # (9) token size cap
+  max_token_bytes: 8192
+
+  # test-mode HS256 (v1 — preserved)
+  test_mode: false
+  jwt_secret: ""                               # required when test_mode: true
+```
+
+Init validation (additions on top of v1 — return non-nil error → gateway exit 1):
+
+1. `issuers` non-empty when `test_mode: false`.
+2. Every `issuers[].issuer` non-empty AND `issuers[].jwks_url` parseable URL.
+3. `algorithms` non-empty AND does NOT contain `none`.
+4. `clock_skew_seconds` >= 0 AND <= 600.
+5. `propagate_claims.mode` ∈ {all, allowlist}; when `allowlist`, `claims` non-empty.
+6. `token.header` non-empty.
+7. `max_token_bytes` > 0 AND <= 65536.
+8. v1 invariants preserved: `enabled: true` required; `test_mode: true` requires non-empty `jwt_secret`.
+
+**Backwards compatibility**: a v1 config (`jwks_url` + `audience` singular) MUST continue to load — PLG-3b interprets singular `jwks_url` as `issuers: [{issuer: "", jwks_url: <val>, jwks_cache_ttl_seconds: cache_ttl_seconds}]` and singular `audience` as `audiences: [audience]` when non-empty. This shim emits `WARN: token-validator config uses v1 single-issuer form; please migrate to issuers: list per ADR PI2-yaa-0007` at boot.
+
+acceptance:
+- Multi-issuer: 3 issuers configured; token with `iss` matching #1 → validated against #1's JWKS; token with `iss` matching #2 → validated against #2's JWKS; token with `iss` matching none → 401
+- Algorithm allowlist: token with `alg: none` → 401; token with `alg: HS256` outside test_mode → 401; Init returns error when `algorithms: [none, RS256]` configured
+- Multi-audience: token `aud: ["a","b"]` matches configured `audiences: ["b","c"]` → pass; token `aud: ["x"]` against `audiences: ["a","b"]` → 401
+- Clock skew: token with `exp` 30s in the past + `clock_skew_seconds: 60` → pass; same token with `clock_skew_seconds: 10` → 401 (expired)
+- Required claims: `required_claims: ["sub", "tenant_id"]`; token missing `tenant_id` → 401
+- Propagate claims: `mode: allowlist`, `claims: ["sub", "email"]`; downstream context contains only `sub` + `email`; other claims (if present in JWT) NOT propagated
+- Configurable header: `token.header: "X-Auth-Token"`, `scheme: ""`; request with `X-Auth-Token: <raw-jwt>` (no Bearer prefix) → validated
+- Status codes: every failure mode returns the configured code; default suite returns 401 for all credential failures; oversized token returns 400; cold-start JWKS-unavailable returns 503
+- Token size cap: 9000-byte token with `max_token_bytes: 8192` → 400 BEFORE JWT parse (verified: no parse-time log entry; no JWT lib invocation in trace)
+- v1 backwards compat: existing config with `jwks_url: "..."` + `audience: "..."` loads cleanly + WARN line emitted; behaviour matches v1
+- Cold start: ALL `issuers[].jwks_url` unreachable at first request → 503; subsequent successful JWKS fetch → next request 200
+- All v1 tests in `plugin_test.go` continue to pass unchanged
+- New tests added for each of the 9 amendments; ≥85% line coverage on extended package
+library_justify: extending v1 inline (matches PLG-3 v1's library_justify clause). Adds NO new external dependencies (uses stdlib `time` + the existing JWKS HTTP client + the existing JWT lib already in v1).
+depends_on: [WI-2yaa.PLG-3]
 
 ### WI-2yaa.PLG-4: Plugin (b) — `tenant-injector` v1 (SUPERSEDED by PLG-4b) [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/tenantinjector
@@ -83,7 +211,7 @@ acceptance: (superseded — see PLG-4b)
 library_justify: superseded — see PLG-4b
 depends_on: [WI-2yaa.PLG-1]
 
-### WI-2yaa.PLG-4b: Plugin (b) — `tenant-injector` v2 (JWT-derived + HTTP lookup) [READY] — Sprint 2
+### WI-2yaa.PLG-4b: Plugin (b) — `tenant-injector` v2 (JWT-derived + HTTP lookup) [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/tenantinjector
 parent_feature: F-PLUGIN
 brief: Re-implement `tenant-injector` per ADR PI2-yaa-0006. **Replace**
