@@ -22,7 +22,7 @@ Design constraints (PRD §5.9):
 
 ---
 
-### WI-2yaa.GOC-1: Client + options + headers [READY] — Sprint 3
+### WI-2yaa.GOC-1: Client + options + headers [WIP] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Create `client-go/` Go module (`client-go/go.mod` with module path
