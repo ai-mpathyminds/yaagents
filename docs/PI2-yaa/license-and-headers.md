@@ -12,7 +12,7 @@ every subsequent SPDX-bearing artefact.
 
 ---
 
-### WI-2yaa.LIC-1: `LICENSE` → Apache 2.0 verbatim + `COMMERCIAL.md` retirement [READY]
+### WI-2yaa.LIC-1: `LICENSE` → Apache 2.0 verbatim + `COMMERCIAL.md` retirement [DONE]
 service: yaagents/(root)
 parent_feature: F-LICENSE
 brief: Replace `LICENSE` (currently YAAgents Community License v0.1) with the
@@ -31,7 +31,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0003
 depends_on: []
 
-### WI-2yaa.LIC-2: SPDX header sweep — all source dirs (single commit) [READY]
+### WI-2yaa.LIC-2: SPDX header sweep — all source dirs (single commit) [DONE]
 service: yaagents/(root cross-cutting — go-developer + python-developer + frontend-developer lanes)
 parent_feature: F-LICENSE
 brief: Add the SPDX header (PRD §8.4) to **every source file** in:

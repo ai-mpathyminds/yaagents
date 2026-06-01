@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Package metadata for yaagents-cli."""
 
 __version__ = "0.1.0"

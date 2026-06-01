@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package main — NFR-GW-1 static checks for secret hygiene.
 //
 // These tests run as part of the normal `go test ./...` suite.  They enforce

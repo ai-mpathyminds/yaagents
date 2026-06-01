@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """AgenticResponse — factory for YAAgents Agentic REST Profile v0.1 typed responses.
 
 Status codes and Content-Type values are taken verbatim from the normative table in

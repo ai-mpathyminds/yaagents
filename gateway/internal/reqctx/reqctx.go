@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package reqctx provides typed context keys and accessors for per-request
 // values propagated through the yaagents gateway middleware chain:
 // correlation ID, request ID, tenant ID, actor subject, and actor roles.

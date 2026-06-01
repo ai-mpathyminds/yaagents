@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """init_fastapi — scaffold generator for `yaagents init fastapi` (WI-1yaa.CLI-3).
 
 Generates a minimal FastAPI starter wired to the YAAgents Profile v0.1:

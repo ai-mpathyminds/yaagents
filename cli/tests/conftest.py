@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """pytest configuration — points tests at the shared conformance corpus."""
 
 from __future__ import annotations

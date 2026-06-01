@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 /**
  * Tests for WI-1yaa.TSC-1 — YaAgentsClient + fluent resource accessors.
  *

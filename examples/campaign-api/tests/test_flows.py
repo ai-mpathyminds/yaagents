@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Tests for the four PRD §6.2 demo flows + endpoint smoke tests.
 
 Covers:

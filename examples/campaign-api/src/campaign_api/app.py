@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Campaign API FastAPI application — YAAgents Agentic REST Profile v0.1.
 
 Five PRD §6.1 endpoints, four §6.2 demo flows.

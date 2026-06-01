@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """NFR-CLI-1 cross-cutting hardening tests.
 
 Covers acceptance criteria from WI-1yaa.NFR-CLI-1:

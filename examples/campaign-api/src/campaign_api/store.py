@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Deterministic in-memory state store for the campaign-api reference example.
 
 Intentionally simple: plain dicts protected by a single module-level lock.

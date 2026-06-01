@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Response mapper: content-type + status → payload dict or typed exception.
 
 This module is the single translation layer between raw ``httpx.Response``

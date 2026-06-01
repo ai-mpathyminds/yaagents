@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """WI-1yaa.PYC-3 — Client conformance tests against the golden corpus.
 
 Drives ``YaAgentsClient`` against a fixture HTTP server that replays every

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Validate examples/campaign-api/routes.yaml against WI-1yaa.EX-2 AC.
 
 These tests do NOT require the gateway binary — they parse the YAML

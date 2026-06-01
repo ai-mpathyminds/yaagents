@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Tests for AgenticResponse factory — WI-1yaa.SDK-1.
 
 Verifies that each of the 10 factory methods emits the exact HTTP status code

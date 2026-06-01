@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package logger provides a structured JSON logger for the yaagents gateway.
 //
 // Per-request fields (request_id, correlation_id) are added by callers via

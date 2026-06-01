@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package routes parses and validates the gateway route configuration (routes.yaml).
 //
 // Schema (PRD §5.4):

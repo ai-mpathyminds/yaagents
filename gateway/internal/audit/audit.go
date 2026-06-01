@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package audit writes per-request structured JSON audit events to a configured
 // sink (stdout or file). One JSON line per event; thread-safe.
 //

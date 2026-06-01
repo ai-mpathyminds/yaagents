@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package tenant provides middleware for tenant/actor context propagation
 // and per-route tenant enforcement per the Agentic REST Profile (ADR PI1-yaa-0001).
 //

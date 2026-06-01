@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 /**
  * Tests for WI-1yaa.TSC-2 — AgenticResult<T> discriminated union + strict().
  *

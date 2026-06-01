@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Tests for `yaagents init fastapi` scaffold command (WI-1yaa.CLI-3)."""
 
 from __future__ import annotations

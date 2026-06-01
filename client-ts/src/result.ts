@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 /**
  * `AgenticResult<T>` — discriminated union over every YAAgents Profile v0.1 response type.
  *

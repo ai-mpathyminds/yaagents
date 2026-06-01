@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Tests for AgenticContext and RequiredInput — WI-1yaa.SDK-2.
 
 AC:
