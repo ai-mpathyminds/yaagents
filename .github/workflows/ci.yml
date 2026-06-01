@@ -58,6 +58,14 @@ jobs:
       - name: govulncheck
         run: govulncheck ./...
 
+      # govulncheck focused on plugin packages — NFR-PLG-1 explicit gate (SEC).
+      # The ./... step above is the whole-module gate; this named step makes the
+      # plugin-specific acceptance criterion directly traceable to NFR-PLG-1.
+      # Covers token-validator JWKS fetch / TLS paths (the only plugin with
+      # outbound HTTP dependency).  CI fails on any finding affecting the code.
+      - name: govulncheck-plugins
+        run: govulncheck ./internal/plugins/...
+
       # go test with race detector and coverage profiling
       - name: go test
         run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
@@ -160,6 +168,36 @@ jobs:
       # vitest: unit tests + coverage (≥80% gate in vitest.config.ts thresholds)
       - name: vitest + coverage (≥80% gate)
         run: pnpm run test
+
+  # ── No dynamic plugin loading gate ──────────────────────────────────────────
+  # ADR PI2-yaa-0001 §3 forbids plugin.Open() and dlopen at any call site.
+  # Community plugins are compiled-in via Go module imports; no dynamic loading.
+  # NFR-PLG-1: grep exits 0 on clean code; exits 1 when plugin.Open appears in
+  # non-comment source (verified: inject plugin.Open into a test file → FAIL).
+  # Comment-only lines (doc references like "no plugin.Open / dlopen") are
+  # excluded via the second grep filter to avoid false positives from ADR docs.
+  no-dynamic-load-scan:
+    name: No dynamic plugin loading (plugin.Open / dlopen)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: no-dynamic-load-scan
+        run: |
+          # Strip comment-only lines from matches: grep output is
+          # "file:linenum:content"; exclude lines where content starts with //.
+          HITS=$(grep -rn --include="*.go" \
+                 "plugin\.Open\|dlopen" \
+                 gateway/internal/plugins/ gateway/plugin/ \
+                 | grep -v ':[0-9]*:[[:space:]]*//')
+          if [ -n "$HITS" ]; then
+            echo "${HITS}"
+            echo "::error::Dynamic plugin loading detected — ADR PI2-yaa-0001 §3 forbids plugin.Open/dlopen. Community plugins must be compiled in via Go module imports."
+            exit 1
+          fi
+          echo "no-dynamic-load-scan: PASS — no dynamic loading calls found"
 
   # ── License clean scan: no Community License string in source ────────────
   # Blocks regression to the v0.1.x "YAAgents Community License" identifier.
