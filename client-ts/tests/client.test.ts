@@ -8,7 +8,7 @@
  *   - Authorization / X-Tenant-ID / X-Correlation-ID headers injected on every request
  *   - X-Correlation-ID auto-generated (UUID) and overridable per call
  *   - Resource accessors build the correct method + path + body
- *   - PROFILE_VERSION exported as "v0.1"
+ *   - PROFILE_VERSION exported as "v0.2"
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -295,7 +295,7 @@ describe("resource types", () => {
 // ---------------------------------------------------------------------------
 
 describe("package metadata", () => {
-  it("PROFILE_VERSION is 'v0.1'", () => {
-    expect(PROFILE_VERSION).toBe("v0.1");
+  it("PROFILE_VERSION is 'v0.2'", () => {
+    expect(PROFILE_VERSION).toBe("v0.2");
   });
 });

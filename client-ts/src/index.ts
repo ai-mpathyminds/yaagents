@@ -4,7 +4,7 @@
 /**
  * @aimpathyminds/yaagents-client
  *
- * TypeScript client for the YAAgents Agentic REST Profile v0.1.
+ * TypeScript client for the YAAgents Agentic REST Profile v0.2.
  * Uses the global `fetch` API — zero runtime dependencies.
  *
  * @example
