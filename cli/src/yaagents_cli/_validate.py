@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Core validation logic for yaagents-cli validate-response."""
 
 from __future__ import annotations

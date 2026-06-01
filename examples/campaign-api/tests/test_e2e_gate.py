@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """PI1-yaa acceptance gate — WI-1yaa.EX-4.
 
 Runs against the live Compose demo (yaagents-gateway at http://localhost:8120).

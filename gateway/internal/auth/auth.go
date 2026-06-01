@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package auth provides JWT bearer validation middleware for the yaagents gateway.
 //
 // Two validation modes per ADR PI1-yaa-0001 §3:

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """@agentic_operation decorator, AgenticResponses, and AgenticRouter — WI-1yaa.SDK-3.
 
 ``@agentic_operation`` decorates an endpoint function with two effects:

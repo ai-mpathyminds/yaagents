@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package proxy implements the yaagents gateway route dispatcher:
 // per-route RBAC enforcement, typed-response passthrough via
 // httputil.ReverseProxy, X-YAAgents-Profile header injection, and optional

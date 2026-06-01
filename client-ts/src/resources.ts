@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 /**
  * Fluent resource accessors for the YAAgents Agentic REST Profile v0.1.
  *

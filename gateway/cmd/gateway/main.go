@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Command gateway is the yaagents API gateway — a lightweight reverse proxy
 // that adds authn, tenant/actor context, RBAC, typed-response passthrough,
 // audit logging, and Prometheus metrics for the Agentic REST Profile

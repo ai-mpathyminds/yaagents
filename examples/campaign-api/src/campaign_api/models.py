@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Pydantic request/response models for the campaign-api example.
 
 Uses Pydantic v2 model syntax (FastAPI >=0.111 ships Pydantic v2).

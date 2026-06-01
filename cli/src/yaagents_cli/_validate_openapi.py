@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """validate-openapi logic for yaagents-cli.
 
 Three checks per WI-1yaa.CLI-2:

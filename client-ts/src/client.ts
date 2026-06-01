@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 /**
  * YaAgentsClient — fetch-based HTTP client for the YAAgents Agentic REST Profile v0.1.
  *

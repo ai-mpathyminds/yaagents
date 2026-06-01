@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """conformance-test for WI-1yaa.CLI-4.
 
 Exercises the live YAAgents gateway at ``<base-url>``, asserts mandatory

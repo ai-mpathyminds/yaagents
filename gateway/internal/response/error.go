@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package response provides shared vendor media-type helpers for the yaagents gateway.
 //
 // Every agentic vendor-typed response body MUST include a trace object per

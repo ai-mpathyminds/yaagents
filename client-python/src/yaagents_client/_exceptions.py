@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Typed exception hierarchy for the YAAgents Agentic REST Profile v0.1.
 
 Exception classes map the vendor content-types declared in the normative

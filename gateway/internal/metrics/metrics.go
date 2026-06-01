@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2026 AimpathyMinds
+
 // Package metrics accumulates per-route request counts and latency sums,
 // exposing them in Prometheus text format on GET /metrics.
 //

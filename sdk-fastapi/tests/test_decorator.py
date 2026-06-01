@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Tests for @agentic_operation, AgenticResponses, AgenticRouter — WI-1yaa.SDK-3.
 
 AC:

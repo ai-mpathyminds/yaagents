@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 AimpathyMinds
+
 """Shared fixtures for campaign-api tests (WI-1yaa.EX-4 gate)."""
 
 from __future__ import annotations
