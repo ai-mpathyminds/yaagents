@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/reqctx"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/response"
 )
 
 // sseTransport is a clone of http.DefaultTransport with DisableCompression=true.
@@ -65,10 +66,23 @@ func NewSSEProxy(upstream *url.URL) http.HandlerFunc {
 
 		resp, err := sseTransport.RoundTrip(outReq)
 		if err != nil {
-			if r.Context().Err() != nil {
-				return // client disconnected; no response to write
+			switch r.Context().Err() {
+			case context.DeadlineExceeded:
+				// Execution timeout fired before upstream responded (LLM-3).
+				response.WriteError(w, http.StatusInternalServerError, response.ErrorBody{
+					Type:    "error",
+					Code:    "EXECUTION_TIMEOUT",
+					Message: "execution timeout exceeded",
+					Trace: response.Trace{
+						CorrelationID: reqctx.CorrelationID(r.Context()),
+						RequestID:     reqctx.RequestID(r.Context()),
+					},
+				})
+			case context.Canceled:
+				// Client disconnected; no response to write.
+			default:
+				http.Error(w, "upstream_error", http.StatusBadGateway)
 			}
-			http.Error(w, "upstream_error", http.StatusBadGateway)
 			return
 		}
 		defer resp.Body.Close()

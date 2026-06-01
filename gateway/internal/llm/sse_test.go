@@ -6,6 +6,7 @@ package llm
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -456,5 +457,78 @@ func TestNewProxy_ProxiesRequest(t *testing.T) {
 func TestModeSSE_Constant(t *testing.T) {
 	if ModeSSE != "sse" {
 		t.Errorf("ModeSSE: want %q, got %q", "sse", ModeSSE)
+	}
+}
+
+// --- Execution timeout tests (LLM-3) ---
+
+// TestNewSSEProxy_DeadlineExceeded_Returns500ExecutionTimeout is the primary
+// LLM-3 SSE AC: a context deadline firing before the upstream responds causes
+// the handler to write 500 application/vnd.yaagents.error+json with
+// code: "EXECUTION_TIMEOUT" instead of silently returning.
+//
+// The test uses a pre-cancelled (deadline exceeded) context to simulate the
+// executionTimeoutSeconds + 30 s budget enforced by makeRouteHandler.
+func TestNewSSEProxy_DeadlineExceeded_Returns500ExecutionTimeout(t *testing.T) {
+	// Upstream that blocks indefinitely (simulates upstream stall).
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(10 * time.Second):
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	u, _ := url.Parse(upstream.URL)
+	handler := NewSSEProxy(u)
+
+	// Use a short deadline to simulate a fired execution timeout without
+	// actually waiting executionTimeoutSeconds+30s in the test suite.
+	ctx, cancel := context.WithTimeout(context.Background(), 80*time.Millisecond)
+	defer cancel()
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/stream", nil).WithContext(ctx)
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("status: want 500, got %d", w.Code)
+	}
+	var body struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal body: %v\nraw: %s", err, w.Body.String())
+	}
+	if body.Code != "EXECUTION_TIMEOUT" {
+		t.Errorf("code: want EXECUTION_TIMEOUT, got %q", body.Code)
+	}
+}
+
+// TestNewSSEProxy_ClientCanceled_SilentReturn verifies that context.Canceled
+// (client disconnect) still results in a silent return — no error body written —
+// distinct from context.DeadlineExceeded (execution timeout → 500).
+func TestNewSSEProxy_ClientCanceled_SilentReturn(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case <-r.Context().Done():
+		case <-time.After(5 * time.Second):
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	u, _ := url.Parse(upstream.URL)
+	handler := NewSSEProxy(u)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Canceled (not DeadlineExceeded)
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/stream", nil).WithContext(ctx)
+	handler.ServeHTTP(w, req)
+
+	// Silent return: no error body written (recorder stays at 200 default, body empty).
+	if w.Body.Len() != 0 {
+		t.Errorf("expected no body on client cancel, got %q", w.Body.String())
 	}
 }

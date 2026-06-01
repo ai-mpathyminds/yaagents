@@ -10,6 +10,7 @@
 package proxy
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -232,6 +233,22 @@ func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter) (h
 		rp = buildProxy(targetURL, route, log)
 	}
 
+	// Wrap proxy with execution-timeout context if configured (LLM-3).
+	// SSE routes: deadline = executionTimeoutSeconds + 30 s (PRD §7.1 SSEReadTimeout).
+	// Non-SSE routes: deadline = executionTimeoutSeconds exactly.
+	if route.ExecutionTimeoutSeconds > 0 {
+		base := time.Duration(route.ExecutionTimeoutSeconds) * time.Second
+		if route.Mode == llm.ModeSSE {
+			base += 30 * time.Second
+		}
+		inner := rp
+		rp = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), base)
+			defer cancel()
+			inner.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+
 	// Inner handler: RBAC then proxy.
 	rbacAndProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := enforceRoles(r, route.Roles); err != nil {
@@ -279,6 +296,16 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 			return nil
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			if r.Context().Err() == context.DeadlineExceeded {
+				// Execution timeout fired before upstream responded (LLM-3).
+				response.WriteError(w, http.StatusInternalServerError, response.ErrorBody{
+					Type:    "error",
+					Code:    "EXECUTION_TIMEOUT",
+					Message: "execution timeout exceeded",
+					Trace:   traceFromReq(r),
+				})
+				return
+			}
 			log.Error("upstream proxy error",
 				slog.String("route_id", route.ID),
 				slog.String("target", targetURL.String()),
