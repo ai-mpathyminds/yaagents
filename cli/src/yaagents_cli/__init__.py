@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""yaagents-cli — Agentic REST Profile v0.1 validator CLI.
+"""yaagents-cli — Agentic REST Profile v0.2 validator CLI.
 
-Supports-YAAgents-Profile: v0.1
+Supports-YAAgents-Profile: v0.2
 """
 
 from yaagents_cli.__about__ import __version__

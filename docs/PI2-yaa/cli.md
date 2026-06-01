@@ -12,7 +12,7 @@ ADR: PI2-yaa-0003 (Apache 2.0 supersession).
 
 ---
 
-### WI-2yaa.BUMP-1c: cli 0.2.0 (Apache 2.0 metadata) [READY] — Sprint 5
+### WI-2yaa.BUMP-1c: cli 0.2.0 (Apache 2.0 metadata) [WIP] — Sprint 5
 service: yaagents/cli
 parent_feature: F-LICENSE
 brief: Bump `cli/pyproject.toml` to `version = "0.2.0"`. License metadata

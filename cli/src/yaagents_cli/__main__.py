@@ -16,6 +16,7 @@ import argparse
 import json
 import sys
 
+from yaagents_cli.__about__ import __version__
 from yaagents_cli._conformance import DEMO_JWT_SECRET, conformance_test
 from yaagents_cli._init_fastapi import init_fastapi
 from yaagents_cli._validate import validate_response
@@ -25,13 +26,18 @@ from yaagents_cli._validate_openapi import validate_openapi
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="yaagents",
-        description="YAAgents CLI — Agentic REST Profile v0.1 validator.",
+        description="YAAgents CLI — Agentic REST Profile v0.2 validator.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     sub = parser.add_subparsers(dest="command", metavar="<command>")
 
     vr = sub.add_parser(
         "validate-response",
-        help="Validate a response body JSON file against the v0.1 schema.",
+        help="Validate a response body JSON file against the v0.2 schema.",
     )
     vr.add_argument(
         "file",
