@@ -1,5 +1,31 @@
 # PI2-yaa — Component: Re-publish at 0.2.0 + repo scaffolding updates (`release-and-publish`)
 
+> **SCOPE AMENDMENT 2026-06-02 (user-direct, chief-architect-proxied).**
+> Prod public-registry publish stages for REL-1 (PyPI ×3) / REL-2 (npm) /
+> REL-3 (GHCR public) / REL-4 (Go module tag) **AND** the un-park step in
+> REL-PRECHECK and PI-GATE acceptance criteria #1-4 (the
+> `pip install`/`npm install`/`docker pull`/`go get` from prod public
+> registries) are **DEFERRED to PI3-yaa** per the public-launch scope
+> consolidation. PI2-yaa source repo stays PRIVATE through close;
+> PI3-yaa is the public-launch PI (sdk-go + repo restructure + portfolio
+> scrub + Pages site at yaagents.dev + prod publish + repo public-flip).
+> See `yaagents/system-refs/yaagents-v0.3.seed.md` + `portfolio/INTAKE/PI3-yaa-intake.md`.
+>
+> **What PI2-yaa REL-* WIs still do**: build the artifacts; publish to
+> TestPyPI (REL-1 sub-step) as a packaging-validation gate; publish to
+> GHCR with **private** package visibility under `ai-mpathyminds` org
+> (REL-3 sub-step; verifies multi-arch build + SBOM attachment); skip
+> REL-4 entirely (Go module proxy publish requires public repo).
+> REL-PRECHECK runs the **5 automated checks + manual checklist**
+> verifying account-side readiness for PI3-yaa launch, but DOES NOT
+> un-park the publish workflows (workflows remain in `workflow_dispatch:
+> {}` only mode through PI2-yaa close).
+>
+> **PI-GATE PI2-yaa acceptance amended**: steps 1-4 (prod public-registry
+> install from PyPI/npm/Docker Hub/Go proxy) become STAGED in PI3-yaa
+> close gate; steps 5-7 (compose demos + license-clean scan) still
+> execute as PI2-yaa close criteria.
+
 Owner lane: **platform-engineer** (supply-chain / NFR / publishing
 pipelines). Sprints 1 + 5. ADRs: PI2-yaa-0003 (Apache 2.0 license
 metadata everywhere), PI1-yaa-0005 (OIDC trusted publishing carries
@@ -37,6 +63,89 @@ acceptance:
 - Issue template wording updated
 - Sprint-1 timing: lands BEFORE LIC-2 sweep so the new README example snippets are part of the sweep
 library_ref: ADR PI2-yaa-0003
+depends_on: [WI-2yaa.LIC-1]
+
+### WI-2yaa.REL-PRECHECK: Publish-account & workflow-park readiness audit [BLOCKED] — Sprint 5 (gates REL-1 + REL-2)
+> blocked by: (1) operator — create GH environments `pypi`/`testpypi`/`npm` on `ai-mpathyminds/yaagents` (Settings → Environments, tag-ref protection `v*.*.*`); (2) operator — add `NODE_AUTH_TOKEN` Granular Access Token secret (Settings → Secrets → Actions); (3) scope-amendment-2026-06-02 — workflow un-park deferred to PI3-yaa (check #5 PARKED intentionally). PyPI names FREE ✓, npm FREE ✓.
+service: yaagents/(ci)
+parent_feature: F-LICENSE
+brief: Before REL-1 (PyPI ×3) and REL-2 (npm) fire in Sprint 5, run a
+5-item readiness audit that converts the previously-undocumented
+"external setup carries forward from PI1-yaa" assumption into a tracked
+gate. The PI1-yaa-era publish setup was never re-verified after the
+PI2-yaa scope-amendment (2026-05-30 added Apache 2.0 license flip +
+cross-lane ai-gateway absorption); a Sprint-5 dispatch of REL-1/REL-2
+without this gate risks hitting "Trusted Publisher not configured" /
+"NODE_AUTH_TOKEN missing" failures only at publish time. Run
+`bin/pi2-yaa-publish-precheck.sh` (platform-engineer authors at A-4
+dispatch; chief-architect committed at A-6 amendment) — exits 0 iff all
+5 items pass.
+
+The 5 items:
+
+1. **PyPI package name status** (3 packages: `yaagents-fastapi`,
+   `yaagents-client`, `yaagents-cli`) — HTTP GET `pypi.org/pypi/<name>/json`
+   to determine whether each name is FREE (first publish will claim it),
+   CLAIMED-BY-YOU (Trusted Publisher must be configured on owning
+   account), or CLAIMED-BY-OTHER (name-squatting; escalate before
+   proceeding). Same check repeated for `test.pypi.org` (TestPyPI is a
+   separate registry; the gate WI also requires TestPyPI publish to
+   succeed before prod stage).
+2. **npm package + scope status** — HTTP GET
+   `registry.npmjs.org/@aimpathyminds/yaagents-client`. Verify
+   `@aimpathyminds` scope is owned by an organisation account, NOT a
+   personal account (bus-factor risk — captured in `risks.npm_scope_org`
+   addendum to planning runbook context). Operator runs `npm org ls
+   aimpathyminds` locally to confirm.
+3. **GitHub Environments configured** — `pypi`, `testpypi`, `npm` all
+   exist on `ai-mpathyminds/yaagents` repo with tag-ref protection
+   (deployments restricted to refs matching `v*.*.*`). Verified via
+   `gh api repos/ai-mpathyminds/yaagents/environments/<env>`.
+4. **GitHub repo secret `NODE_AUTH_TOKEN` present** — verified via
+   `gh secret list --repo ai-mpathyminds/yaagents | grep NODE_AUTH_TOKEN`.
+   The script CANNOT verify the token's scope or expiration (npm doesn't
+   expose either via API); operator confirms manually that the token is
+   a Granular Access Token scoped to ONLY
+   `@aimpathyminds/yaagents-client` with `publish` permission, expiration
+   ≤ 90 days. Operator MUST also verify `NPM_TOKEN` (the misnamed legacy
+   secret) is ABSENT — REL-2 acceptance criterion explicitly rejects it.
+5. **Publish workflow un-park status** — `grep "^# PUBLISH PARKED"` on
+   `pypi-publish.yml` and `npm-publish.yml`. Both files carry a PARKED
+   comment dated 2026-05-24 (yaagents was private). Sprint 5 MUST un-park
+   them — remove the comment block, uncomment the tag trigger
+   (`push.tags: ['v[0-9]+.[0-9]+.[0-9]+']`) — committed as part of this
+   WI (in the same PR as the script).
+
+**Manual checklist** (printed by the script; operator confirms via
+`PRECHECK_MANUAL_OK=1` env var before the script exits 0):
+
+- PyPI Trusted Publisher configured for each of the 3 packages → repo
+  `ai-mpathyminds/yaagents`, workflow `pypi-publish.yml`, env `pypi`
+  (and `testpypi` for TestPyPI). Configuration done on pypi.org → Account
+  → Publishing → "Add a new pending publisher".
+- npm `@aimpathyminds` scope owned by an org account (`npm org ls
+  aimpathyminds` shows operator as admin/owner).
+- `NODE_AUTH_TOKEN` value is a Granular Access Token, NOT a
+  publish-everything legacy token.
+- Repo visibility intent matches Sprint 5 plan (private now → public at
+  Apache 2.0 launch, or stay private with workflows explicitly un-parked
+  for manual `workflow_dispatch`).
+
+acceptance:
+- `bin/pi2-yaa-publish-precheck.sh` exits 0 with `PRECHECK_MANUAL_OK=1`
+  set, after operator confirms the manual checklist items.
+- All 5 automated checks PASS (PyPI name status logged as FREE or
+  CLAIMED-BY-YOU; npm package status logged; 3 GH environments present;
+  `NODE_AUTH_TOKEN` present; `# PUBLISH PARKED` comment absent from both
+  workflows).
+- Workflow un-park commit included in the same PR as the script — tag
+  trigger uncommented on both `pypi-publish.yml` and `npm-publish.yml`.
+- AUDIT row `publish-precheck-passed` appended on success; row cites
+  GH-environments + PyPI-name + npm-scope evidence per STATUS-CLAIM
+  DISCIPLINE.
+- B-31 (REL-1) and B-32 (REL-2) `depends_on:` are updated to include
+  this WI's runbook entry id.
+library_justify: PI gate; no library import (operator script + manual checklist for external-registry account configuration).
 depends_on: [WI-2yaa.LIC-1]
 
 ### WI-2yaa.REL-1: PyPI re-publish ×3 @ 0.2.0 (OIDC) [READY] — Sprint 5
