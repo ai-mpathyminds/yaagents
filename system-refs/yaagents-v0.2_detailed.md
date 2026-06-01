@@ -652,7 +652,10 @@ SIGTERM:
 
 ### 6.6 Community Plugin Authoring Contract
 
-A community developer creates a new Go module (e.g. `github.com/my-org/yaagents-my-plugin`):
+All AimpathyMinds packages live under `github.com/ai-mpathyminds/yaagents/`.
+
+A community developer creates a new Go module (e.g. `github.com/<your-github-org>/yaagents-my-plugin`)
+— replace `<your-github-org>` with your own GitHub organisation; do **not** use `ai-mpathyminds`:
 
 ```go
 package myplugin
