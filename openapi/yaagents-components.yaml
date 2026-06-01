@@ -1,11 +1,12 @@
 openapi: "3.1.0"
 info:
   title: YAAgents Reusable Components
-  version: "0.1.0"
+  version: "0.2.0"
   description: >
     Reusable OpenAPI 3.1 components for the YAAgents Agentic REST Response
-    Profile v0.1. Import via $ref into any service OpenAPI document.
+    Profile v0.2. Import via $ref into any service OpenAPI document.
     Authoritative source: spec/agentic-rest-profile.md (ADR PI1-yaa-0002).
+    v0.2 adds SSE streaming contract (§11) and updates schema refs to schemas/v0.2/.
 
 components:
 
@@ -43,54 +44,54 @@ components:
     X-YAAgents-Profile:
       description: >
         Identifies the YAAgents Agentic REST Response Profile version
-        implemented by the gateway. Value is always "v0.1" for this release.
+        implemented by the gateway. Value is "v0.2" for this release.
         Clients MAY inspect this header for version negotiation.
       schema:
         type: string
         enum:
-          - v0.1
+          - v0.2
       required: false
 
   # -----------------------------------------------------------------------
-  # Schemas — one per vendor media type; each $ref to schemas/v0.1/
+  # Schemas — one per vendor media type; each $ref to schemas/v0.2/
   # -----------------------------------------------------------------------
   schemas:
     ClarificationRequired:
       description: >
         Body for application/vnd.yaagents.clarification+json (HTTP 400).
-        Source schema: schemas/v0.1/clarification-required.schema.json
-      $ref: "../schemas/v0.1/clarification-required.schema.json"
+        Source schema: schemas/v0.2/clarification-required.schema.json
+      $ref: "../schemas/v0.2/clarification-required.schema.json"
 
     ValidationFailed:
       description: >
         Body for application/vnd.yaagents.validation-error+json (HTTP 422).
-        Source schema: schemas/v0.1/validation-failed.schema.json
-      $ref: "../schemas/v0.1/validation-failed.schema.json"
+        Source schema: schemas/v0.2/validation-failed.schema.json
+      $ref: "../schemas/v0.2/validation-failed.schema.json"
 
     ApprovalRequired:
       description: >
         Body for application/vnd.yaagents.approval-required+json (HTTP 412).
-        Source schema: schemas/v0.1/approval-required.schema.json
-      $ref: "../schemas/v0.1/approval-required.schema.json"
+        Source schema: schemas/v0.2/approval-required.schema.json
+      $ref: "../schemas/v0.2/approval-required.schema.json"
 
     Conflict:
       description: >
         Body for application/vnd.yaagents.conflict+json (HTTP 409).
-        Source schema: schemas/v0.1/conflict.schema.json
-      $ref: "../schemas/v0.1/conflict.schema.json"
+        Source schema: schemas/v0.2/conflict.schema.json
+      $ref: "../schemas/v0.2/conflict.schema.json"
 
     AgenticError:
       description: >
         Body for application/vnd.yaagents.error+json (HTTP 403/424/500).
         Covers forbidden, failed_dependency, and error response types.
-        Source schema: schemas/v0.1/agentic-error.schema.json
-      $ref: "../schemas/v0.1/agentic-error.schema.json"
+        Source schema: schemas/v0.2/agentic-error.schema.json
+      $ref: "../schemas/v0.2/agentic-error.schema.json"
 
     OperationAccepted:
       description: >
         Body for application/vnd.yaagents.operation+json (HTTP 202).
-        Source schema: schemas/v0.1/operation-accepted.schema.json
-      $ref: "../schemas/v0.1/operation-accepted.schema.json"
+        Source schema: schemas/v0.2/operation-accepted.schema.json
+      $ref: "../schemas/v0.2/operation-accepted.schema.json"
 
   # -----------------------------------------------------------------------
   # Responses — keyed by the §4 normative table response types

@@ -1,11 +1,12 @@
 # Agentic REST Response Profile
 
-**Profile version:** v0.1
-**Profile header literal:** `X-YAAgents-Profile: v0.1`
+**Profile version:** v0.2
+**Profile header literal:** `X-YAAgents-Profile: v0.2`
 **Authoritative source:** `spec/` (ADR PI1-yaa-0002 §1 — sole table source; no other
 component may redefine or paraphrase the normative table below)
-**Version file:** `spec/VERSION` = `0.1`
-**Date adopted:** 2026-05-17
+**Version file:** `spec/VERSION` = `0.2`
+**Date adopted:** 2026-06-01 (v0.2 profile bump; SSE streaming addendum — see §11)
+**Prior version:** v0.1 adopted 2026-05-17; frozen schemas at `schemas/v0.1/`
 
 ---
 
@@ -26,17 +27,18 @@ the CLI validator (`cli/`), and the reference example (`examples/campaign-api/`)
 Every published package MUST carry the following declaration in its metadata:
 
 ```text
-Supports YAAgents Profile v0.1
+Supports YAAgents Profile v0.2
 ```
 
 The HTTP request / response header that identifies profile compliance is:
 
 ```text
-X-YAAgents-Profile: v0.1
+X-YAAgents-Profile: v0.2
 ```
 
 This header MUST be emitted on every agentic response served through the yaagents
-gateway. Clients MAY inspect it for version negotiation.
+gateway, including SSE streaming responses (see §11). Clients MAY inspect it for
+version negotiation.
 
 ---
 
@@ -72,7 +74,7 @@ implement and honour it. Paraphrasing or diverging from these media types is pro
 | `error` | `500` | `application/vnd.yaagents.error+json` |
 
 **Profile versioning:** Every published package MUST declare the profile version it supports,
-e.g., `Supports YAAgents Profile v0.1`.
+e.g., `Supports YAAgents Profile v0.2`.
 
 ### 4.1 Clarification Required — canonical body shape
 
@@ -231,7 +233,7 @@ Internal server error. The body MUST include:
 
 ## 8. Conformance Acceptance Criteria
 
-A component is **conformant** with YAAgents Profile v0.1 if and only if:
+A component is **conformant** with YAAgents Profile v0.2 if and only if:
 
 1. **Table fidelity** — the component maps every one of the 10 response types to the
    exact HTTP status code and Content-Type string listed in §4. No aliases, no
@@ -245,14 +247,15 @@ A component is **conformant** with YAAgents Profile v0.1 if and only if:
    returned, the body matches §4.1 exactly: `type`, `code`, `message`, `requiredInputs`
    (array, ≥1 element, each element matching the shape in §6), and `trace`.
 
-4. **Profile header** — the gateway emits `X-YAAgents-Profile: v0.1` on every agentic
-   response.
+4. **Profile header** — the gateway emits `X-YAAgents-Profile: v0.2` on every agentic
+   response, including SSE streaming responses (§11).
 
-5. **Package declaration** — every published package carries `Supports YAAgents Profile v0.1`
+5. **Package declaration** — every published package carries `Supports YAAgents Profile v0.2`
    in its metadata (`pyproject.toml`, `package.json`, or equivalent).
 
 6. **Schema conformance** — every vendor-typed response body validates against its
-   corresponding JSON schema in `schemas/v0.1/` (ADR PI1-yaa-0002 §2).
+   corresponding JSON schema in `schemas/v0.2/` (ADR PI1-yaa-0002 §2). The frozen
+   backward-compat schemas at `schemas/v0.1/` remain valid for v0.1.x consumers.
 
 7. **No table redefinition** — no component file contains a copy or paraphrase of the
    10-row table in §4. The grep command below is the EX-4 gate check:
@@ -268,17 +271,21 @@ A component is **conformant** with YAAgents Profile v0.1 if and only if:
    or `openapi/yaagents-components.yaml` is a conformance violation. References
    (import paths, `$ref` strings, `Content-Type` header values) are permitted.
 
-8. **Golden corpus** — every valid fixture in `spec/examples/v0.1/*.valid.json` passes
-   its corresponding schema; every invalid fixture fails. This corpus is the
-   cross-component contract test (ADR PI1-yaa-0002 §5).
+8. **Golden corpus** — every valid fixture in the versioned example corpus
+   (`spec/examples/{version}/*.valid.json`) passes its corresponding schema in
+   `schemas/{version}/`; every invalid fixture fails. This corpus is the
+   cross-component contract test (ADR PI1-yaa-0002 §5). The frozen backward-compat
+   corpus validates against `schemas/v0.1/`.
 
 ---
 
 ## 9. Versioning Policy
 
-- This document is versioned at `spec/VERSION` = `0.1`.
-- Future profile bumps produce a new `spec/agentic-rest-profile-vX.Y.md` and a sibling
-  `schemas/vX.Y/` path; this file (`v0.1`) is never mutated after publication.
+- This document is versioned at `spec/VERSION` = `0.2`.
+- Profile bumps produce a sibling `schemas/vX.Y/` path containing updated schemas with
+  bumped `$id` values; the prior version's schemas are frozen and never deleted.
+- This document is updated in-place to the current canonical version; prior version
+  history is preserved in git. The frozen v0.1 schemas live at `schemas/v0.1/`.
 - A profile bump requires an ADR under `docs/adr/` recording the delta, migration
   path, and affected components.
 
@@ -292,4 +299,90 @@ the §4 table. This rule is enforced at:
 
 - PR review (manual) and the EX-4 grep gate (§8 criterion 7).
 - `yaagents-cli validate --conformance` output references this file on failure.
-- The golden corpus in `spec/examples/v0.1/` is owned by this component (WI-1yaa.SPEC-5).
+- The golden corpus under `spec/examples/` is owned by this component (WI-1yaa.SPEC-5);
+  fixtures are organised by profile version subdirectory.
+
+---
+
+## 11. SSE Streaming Contract (v0.2 normative addition)
+
+Profile v0.2 adds Server-Sent Events (SSE) streaming through the plugin chain as a
+normative gateway feature (PRD §5.1, §7 LLM Gateway; WI-2yaa.BUMP-3).
+
+### 11.1 Activation
+
+SSE streaming is **config-driven**. A route opts in by declaring `mode: sse` in
+`routes.yaml`. Routes without `mode: sse` are unaffected; the SSE code path is dormant.
+
+```yaml
+routes:
+  - id: completions
+    method: POST
+    path: /llm/completions
+    target: http://upstream:8080
+    mode: sse
+```
+
+### 11.2 Request matching
+
+The gateway activates SSE pipe-and-flush when **both** conditions hold:
+
+1. The matched route declares `mode: sse`.
+2. The inbound request carries `Accept: text/event-stream`.
+
+When only condition 1 holds (no `Accept: text/event-stream`), the route falls back to
+the standard JSON reverse-proxy path.
+
+### 11.3 Response contract
+
+| Property | Value |
+|---|---|
+| `Content-Type` | `text/event-stream` |
+| `X-YAAgents-Profile` | `v0.2` (mandatory — same as all agentic responses) |
+| `Cache-Control` | `no-cache` |
+| Flush semantics | Per upstream chunk; gateway does not buffer |
+
+The plugin chain (token-validator, tenant-injector, etc.) runs **before** the SSE proxy
+path executes. `X-YAAgents-Profile: v0.2` is injected by the profile-header middleware
+on the response before any chunk is flushed to the client.
+
+### 11.4 Error responses on SSE routes
+
+Error responses on SSE routes use the standard `application/vnd.yaagents.error+json`
+body (§7.10). Two SSE-specific error codes are defined:
+
+| Condition | HTTP Status | `code` field |
+|---|---|---|
+| Per-tenant concurrency limit exceeded | 429 | `LIMIT_EXCEEDED` |
+| Execution timeout | 500 | `EXECUTION_TIMEOUT` |
+
+The `retryAfter` field (integer seconds) SHOULD be set on 429 responses (`retryAfter: 60`
+is the gateway default).
+
+### 11.5 Per-tenant concurrency
+
+The gateway enforces a per-tenant SSE concurrency ceiling configured via
+`gateway.llm.max_sse_connections_per_tenant` (default: 10). The tenant is identified
+from the `X-Tenant-ID` header injected by the `tenant-injector` plugin.
+
+### 11.6 Execution timeout
+
+Per-route field `executionTimeoutSeconds` (integer, default 0 = no timeout). When set:
+
+- SSE routes: `context.WithDeadline(ctx, now + N*s + 30s)` — the 30 s surplus is the
+  SSE read-budget (PRD §7.1).
+- Non-SSE routes: `context.WithDeadline(ctx, now + N*s)`.
+
+On deadline exceeded the gateway returns `500 application/vnd.yaagents.error+json` with
+`code: EXECUTION_TIMEOUT`.
+
+### 11.7 Metrics
+
+Profile v0.2 adds two SSE-specific Prometheus metrics on `/metrics`:
+
+| Metric | Type | Labels |
+|---|---|---|
+| `yaagents_gateway_sse_connections_active` | Gauge | `tenant_id`, `route_id` |
+| `yaagents_gateway_sse_errors_total` | Counter | `tenant_id`, `route_id`, `error_kind` |
+
+`error_kind` ∈ `client_disconnect` / `upstream_error` / `timeout` / `limit_exceeded`.
