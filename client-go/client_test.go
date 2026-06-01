@@ -37,11 +37,9 @@ func TestHeaders_AllFourPresent(t *testing.T) {
 		WithToken("t"),
 		WithTenantID("tn"),
 	)
-	resp, err := c.do(context.Background(), http.MethodPost, "/test", strings.NewReader(`{}`))
-	if err != nil {
+	if _, err := c.do(context.Background(), http.MethodPost, "/test", strings.NewReader(`{}`)); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
 
 	if v := got.Get("Authorization"); v != "Bearer t" {
 		t.Errorf("Authorization = %q; want \"Bearer t\"", v)
@@ -69,12 +67,9 @@ func TestWithCorrelationID_Override(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL, WithCorrelationID("custom-corr"))
-	resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-	if err != nil {
+	if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
-
 	if v := got.Get("X-Correlation-ID"); v != "custom-corr" {
 		t.Errorf("X-Correlation-ID = %q; want \"custom-corr\"", v)
 	}
@@ -103,12 +98,9 @@ func TestWithHTTPClient_ReplacesTransport(t *testing.T) {
 	custom := &http.Client{Timeout: 5 * time.Second, Transport: rt}
 
 	c := New(srv.URL, WithHTTPClient(custom))
-	resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-	if err != nil {
+	if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
-
 	if !rt.called {
 		t.Error("custom transport was not invoked")
 	}
@@ -121,13 +113,10 @@ func TestNoAuthorizationHeader_WhenTokenEmpty(t *testing.T) {
 	srv := httptest.NewServer(captureHandler(&got))
 	defer srv.Close()
 
-	c := New(srv.URL) // no token
-	resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-	if err != nil {
+	c := New(srv.URL)
+	if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
-
 	if v := got.Get("Authorization"); v != "" {
 		t.Errorf("Authorization = %q; want empty", v)
 	}
@@ -141,12 +130,9 @@ func TestNoXTenantID_WhenTenantEmpty(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-	if err != nil {
+	if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
-
 	if v := got.Get("X-Tenant-ID"); v != "" {
 		t.Errorf("X-Tenant-ID = %q; want empty", v)
 	}
@@ -159,12 +145,9 @@ func TestNoContentType_WhenBodyNil(t *testing.T) {
 	defer srv.Close()
 
 	c := New(srv.URL)
-	resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-	if err != nil {
+	if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 		t.Fatalf("do: %v", err)
 	}
-	resp.Body.Close()
-
 	if v := got.Get("Content-Type"); v != "" {
 		t.Errorf("Content-Type = %q; want empty for nil body", v)
 	}
@@ -198,13 +181,10 @@ func TestAutoCorrelationID_UniquePerRequest(t *testing.T) {
 
 	c := New(srv.URL)
 	for i := 0; i < 2; i++ {
-		resp, err := c.do(context.Background(), http.MethodGet, "/test", nil)
-		if err != nil {
+		if _, err := c.do(context.Background(), http.MethodGet, "/test", nil); err != nil {
 			t.Fatalf("do[%d]: %v", i, err)
 		}
-		resp.Body.Close()
 	}
-
 	if len(ids) != 2 {
 		t.Fatalf("expected 2 captured IDs; got %d", len(ids))
 	}

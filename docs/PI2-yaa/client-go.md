@@ -22,7 +22,7 @@ Design constraints (PRD §5.9):
 
 ---
 
-### WI-2yaa.GOC-1: Client + options + headers [WIP] — Sprint 3
+### WI-2yaa.GOC-1: Client + options + headers [DONE] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Create `client-go/` Go module (`client-go/go.mod` with module path
@@ -56,7 +56,7 @@ acceptance:
 library_justify: novel Go client; idiomatic Go analog to client-python/client-ts; stdlib net/http only (zero non-stdlib runtime deps per PRD §5.9).
 depends_on: [WI-2yaa.LIC-1]
 
-### WI-2yaa.GOC-2: Resource accessors (Campaigns / ByID / Optimizations / Assets) [READY] — Sprint 3
+### WI-2yaa.GOC-2: Resource accessors (Campaigns / ByID / Optimizations / Assets) [WIP] — Sprint 3
 service: yaagents/client-go
 parent_feature: F-GOCLIENT
 brief: Implement the resource-accessor chain per PRD §5.9 API surface:
