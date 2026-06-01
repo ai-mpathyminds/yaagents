@@ -129,7 +129,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0002
 depends_on: [WI-2yaa.PLG-6]
 
-### WI-2yaa.LLM-2: Per-tenant SSE concurrency limiter [WIP] — Sprint 4
+### WI-2yaa.LLM-2: Per-tenant SSE concurrency limiter [DONE] — Sprint 4
 service: yaagents/gateway/internal/llm
 parent_feature: F-LLM
 brief: Per-tenant counter (sync.Map[string]*atomic.Int64 keyed by tenantID
