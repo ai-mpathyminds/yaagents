@@ -36,6 +36,11 @@ type Config struct {
 	// The gateway drains in-flight requests and runs plugin.Shutdown within
 	// this window before exiting (PLG-6 / PRD §6.4).
 	ShutdownTimeoutS int
+	// LLMMaxSSEPerTenant is the maximum concurrent SSE connections allowed per
+	// tenant (env: GATEWAY_LLM_MAX_SSE_PER_TENANT, default: 10; LLM-2).
+	// Excess connections receive 429 application/vnd.yaagents.error+json with
+	// retryAfter: 60. Values ≤ 0 are clamped to the default.
+	LLMMaxSSEPerTenant int
 }
 
 // Load reads gateway configuration from environment variables, applying defaults.
@@ -47,7 +52,8 @@ func Load() Config {
 		PluginsFile:      os.Getenv("GATEWAY_PLUGINS_FILE"),
 		JWTSecret:        os.Getenv("GATEWAY_JWT_SECRET"),
 		JWTJWKSURL:       os.Getenv("GATEWAY_JWT_JWKS_URL"),
-		ShutdownTimeoutS: envInt("GATEWAY_SHUTDOWN_TIMEOUT_S", 30),
+		ShutdownTimeoutS:   envInt("GATEWAY_SHUTDOWN_TIMEOUT_S", 30),
+		LLMMaxSSEPerTenant: envInt("GATEWAY_LLM_MAX_SSE_PER_TENANT", 10),
 	}
 }
 

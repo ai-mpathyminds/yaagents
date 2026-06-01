@@ -33,7 +33,10 @@ type ErrorBody struct {
 	Type    string `json:"type"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
-	Trace   Trace  `json:"trace"`
+	// RetryAfter is the number of seconds the caller should wait before
+	// retrying. Present only on 429 responses (e.g. SSE concurrency limit).
+	RetryAfter int   `json:"retryAfter,omitempty"`
+	Trace      Trace `json:"trace"`
 }
 
 // WriteError writes body as application/vnd.yaagents.error+json with the given

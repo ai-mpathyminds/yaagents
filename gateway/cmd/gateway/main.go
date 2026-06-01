@@ -29,6 +29,7 @@ import (
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/llm"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/loader"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
@@ -84,8 +85,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Per-tenant SSE concurrency limiter (LLM-2).
+	sseLimit := llm.NewLimiter(cfg.LLMMaxSSEPerTenant)
+
 	// Route dispatcher: RBAC + typed-response passthrough + audit + metrics (GW-4/GW-5).
-	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg)
+	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg, sseLimit)
 	if dispErr != nil {
 		log.Error("failed to build route dispatcher — cannot start", "error", dispErr.Error())
 		os.Exit(1)
