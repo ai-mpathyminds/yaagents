@@ -12,7 +12,7 @@ interface contract + versioning + registration semantics), PI2-yaa-0005
 
 ---
 
-### WI-2yaa.PLG-1: Plugin interface + registry + PluginConfig accessor [READY] — Sprint 1
+### WI-2yaa.PLG-1: Plugin interface + registry + PluginConfig accessor [WIP] — Sprint 1
 service: yaagents/gateway/plugin
 parent_feature: F-PLUGIN
 brief: Create Go package `github.com/ai-mpathyminds/yaagents/gateway/plugin`.
