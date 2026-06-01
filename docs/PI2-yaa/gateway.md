@@ -173,7 +173,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0002
 depends_on: [WI-2yaa.LLM-1, WI-2yaa.PLG-1]
 
-### WI-2yaa.LLM-4: SSE Prometheus metrics [READY] — Sprint 4
+### WI-2yaa.LLM-4: SSE Prometheus metrics [WIP] — Sprint 4
 service: yaagents/gateway/internal/llm
 parent_feature: F-LLM
 brief: **MOVE** `ai-platform/services/ai-gateway/internal/metrics/sse_proxy.go`

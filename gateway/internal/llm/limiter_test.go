@@ -180,7 +180,7 @@ func TestNewProxy_11thSSE_Returns429(t *testing.T) {
 
 	lim := NewLimiter(10)
 	u, _ := url.Parse(upstream.URL)
-	h, _ := NewProxy(u, lim)
+	h, _ := NewProxy(u, "", lim, nil)
 	gw := httptest.NewServer(h)
 	t.Cleanup(gw.Close)
 
@@ -247,7 +247,7 @@ func TestNewProxy_ClientDisconnect_DecrementsCounter(t *testing.T) {
 
 	lim := NewLimiter(1) // limit=1 for easy single-slot testing
 	u, _ := url.Parse(upstream.URL)
-	h, _ := NewProxy(u, lim)
+	h, _ := NewProxy(u, "", lim, nil)
 	gw := httptest.NewServer(h)
 	t.Cleanup(gw.Close)
 	t.Cleanup(func() { close(release) })
@@ -309,7 +309,7 @@ func TestNewProxy_NilLimiter_NoLimit(t *testing.T) {
 	t.Cleanup(upstream.Close)
 
 	u, _ := url.Parse(upstream.URL)
-	h, _ := NewProxy(u, nil)
+	h, _ := NewProxy(u, "", nil, nil)
 	gw := httptest.NewServer(h)
 	t.Cleanup(gw.Close)
 

@@ -49,9 +49,9 @@ func makeDispatcherWithObs(t *testing.T, upstream *httptest.Server, routeDef rou
 	if upstream != nil {
 		routeDef.Target = upstream.URL
 	}
-	// nil limiter: LLM-2 concurrency limiting disabled in unit tests unless
-	// the test explicitly constructs a dispatcher with a real Limiter.
-	d, err := New([]routes.Route{routeDef}, nullLog(), auditLog, reg, nil)
+	// nil limiter + nil met: LLM-2/4 disabled in unit tests unless the test
+	// explicitly constructs a dispatcher with a real Limiter / SSEMetrics.
+	d, err := New([]routes.Route{routeDef}, nullLog(), auditLog, reg, nil, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -595,7 +595,7 @@ func TestDispatcher_NonSSERoute_DoesNotTouchLimiter(t *testing.T) {
 		Target: upstream.URL,
 		// Mode is empty — standard httputil.ReverseProxy, limiter not touched.
 	}
-	d, err := New([]routes.Route{route}, nullLog(), nil, nil, lim)
+	d, err := New([]routes.Route{route}, nullLog(), nil, nil, lim, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
