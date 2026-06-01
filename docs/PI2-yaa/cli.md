@@ -31,7 +31,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0003
 depends_on: [WI-2yaa.LIC-2]
 
-### WI-2yaa.CLI-CONF: `yaagents conformance-test` v0.2 (plugin chain + profile header) [READY] — Sprint 5
+### WI-2yaa.CLI-CONF: `yaagents conformance-test` v0.2 (plugin chain + profile header) [WIP] — Sprint 5
 service: yaagents/cli
 parent_feature: F-LICENSE
 brief: Extend `yaagents conformance-test <base-url>` to validate the v0.2

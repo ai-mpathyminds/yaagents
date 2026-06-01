@@ -135,6 +135,17 @@ def _build_parser() -> argparse.ArgumentParser:
         help="X-Tenant-ID value to use in test requests (default: t-conformance).",
     )
     ct.add_argument(
+        "--require-plugin",
+        dest="require_plugins",
+        action="append",
+        default=[],
+        metavar="PLUGIN",
+        help=(
+            "Assert that a named plugin is active (repeatable). "
+            "Supported: token-validator, tenant-injector."
+        ),
+    )
+    ct.add_argument(
         "--json",
         dest="json_output",
         action="store_true",
@@ -212,6 +223,7 @@ def _cmd_conformance_test(args: argparse.Namespace) -> int:
         args.base_url,
         jwt_secret=args.jwt_secret,
         tenant_id=args.tenant_id,
+        require_plugins=args.require_plugins or [],
     )
 
     if args.json_output:
@@ -231,6 +243,30 @@ def _cmd_conformance_test(args: argparse.Namespace) -> int:
         if not check.passed and check.detail:
             line += f" — {check.detail}"
         print(line)
+
+    # ── Content-Type matrix summary table (PRD §4, 10 rows) ──────────────────
+    if result.matrix:
+        print()
+        print("Content-Type matrix (PRD §4):")
+        col_w = [8, 48, 48, 6]
+        hdr = (
+            f"  {'status':<{col_w[0]}} | {'requested':<{col_w[1]}} | "
+            f"{'observed':<{col_w[2]}} | pass"
+        )
+        sep = (
+            "  " + "-" * col_w[0] + "-+-"
+            + "-" * col_w[1] + "-+-"
+            + "-" * col_w[2] + "-+------"
+        )
+        print(hdr)
+        print(sep)
+        for row in result.matrix:
+            pass_str = "PASS" if row.passed else "FAIL"
+            print(
+                f"  {row.status:<{col_w[0]}} | {row.requested:<{col_w[1]}} | "
+                f"{row.observed:<{col_w[2]}} | {pass_str}"
+            )
+
     print()
     overall = "PASS" if result.passed else "FAIL"
     print(f"Overall: {overall}")
