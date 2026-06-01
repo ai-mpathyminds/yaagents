@@ -47,27 +47,30 @@ type routeEntry struct {
 // them to the upstream target with RBAC enforcement and typed-response passthrough.
 // auditLog and reg are optional (nil disables the feature).
 // lim is the per-tenant SSE concurrency limiter (LLM-2); nil disables limiting.
+// met is the SSE Prometheus metrics instance (LLM-4); nil disables SSE metrics.
 type RouteDispatcher struct {
 	entries  []routeEntry
 	log      *slog.Logger
 	auditLog *audit.Logger
 	reg      *metrics.Registry
 	lim      *llm.Limiter
+	met      *llm.SSEMetrics
 }
 
 // New builds a RouteDispatcher from a validated route list.
-// auditLog, reg, and lim may be nil to disable the respective feature.
+// auditLog, reg, lim, and met may be nil to disable the respective feature.
 // Returns an error if any route's target URL cannot be parsed.
-func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry, lim *llm.Limiter) (*RouteDispatcher, error) {
+func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry, lim *llm.Limiter, met *llm.SSEMetrics) (*RouteDispatcher, error) {
 	d := &RouteDispatcher{
 		entries:  make([]routeEntry, 0, len(routeList)),
 		log:      log,
 		auditLog: auditLog,
 		reg:      reg,
 		lim:      lim,
+		met:      met,
 	}
 	for _, r := range routeList {
-		handler, err := makeRouteHandler(r, log, lim)
+		handler, err := makeRouteHandler(r, log, lim, met)
 		if err != nil {
 			return nil, fmt.Errorf("building handler for route %q: %w", r.ID, err)
 		}
@@ -205,10 +208,10 @@ func (d *RouteDispatcher) observeHandler(h http.Handler, route routes.Route) htt
 //	EnforceTenant(route.TenantRequired) → RBAC check → reverse-proxy
 //
 // When route.Mode == llm.ModeSSE the downstream proxy is an SSE pipe-and-flush
-// handler (LLM-1 + LLM-2 limiter) rather than httputil.ReverseProxy.
+// handler (LLM-1 + LLM-2 limiter + LLM-4 metrics) rather than httputil.ReverseProxy.
 // The X-YAAgents-Profile header is injected before the SSE handler writes
 // response headers so it is included in both SSE and standard proxied responses.
-func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter) (http.Handler, error) {
+func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter, met *llm.SSEMetrics) (http.Handler, error) {
 	targetURL, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("parsing target %q: %w", route.Target, err)
@@ -216,8 +219,8 @@ func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter) (h
 
 	var rp http.Handler
 	if route.Mode == llm.ModeSSE {
-		// SSE-aware pipe-and-flush proxy with per-tenant concurrency limiter (LLM-1+2).
-		sseHandler, sseErr := llm.NewProxy(targetURL, lim)
+		// SSE-aware pipe-and-flush proxy with per-tenant concurrency limiter and metrics (LLM-1+2+4).
+		sseHandler, sseErr := llm.NewProxy(targetURL, route.ID, lim, met)
 		if sseErr != nil {
 			return nil, fmt.Errorf("building SSE proxy for route %q: %w", route.ID, sseErr)
 		}

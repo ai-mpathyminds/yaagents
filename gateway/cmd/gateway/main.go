@@ -89,8 +89,11 @@ func main() {
 	// Per-tenant SSE concurrency limiter (LLM-2).
 	sseLimit := llm.NewLimiter(cfg.LLMMaxSSEPerTenant)
 
+	// SSE Prometheus metrics (LLM-4).
+	sseMet := llm.NewSSEMetrics()
+
 	// Route dispatcher: RBAC + typed-response passthrough + audit + metrics (GW-4/GW-5).
-	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg, sseLimit)
+	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg, sseLimit, sseMet)
 	if dispErr != nil {
 		log.Error("failed to build route dispatcher — cannot start", "error", dispErr.Error())
 		os.Exit(1)
@@ -106,7 +109,13 @@ func main() {
 	// and are always reachable (PRD §10 [SEC] Gateway; PLG-6 AC).
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
-	mux.HandleFunc("GET /metrics", reg.Handler())
+	// Combined /metrics: PI1-yaa request/latency histograms + LLM-4 SSE metrics.
+	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		reg.WritePrometheus(w)
+		sseMet.WritePrometheus(w)
+	})
 	// Catch-all: shutdown gate → plugin chain → route dispatcher.
 	mux.Handle("/", chainWithGate)
 

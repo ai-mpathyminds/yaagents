@@ -31,11 +31,14 @@ var sseTransport = func() *http.Transport {
 // client immediately (pipe-and-flush semantics). For non-SSE upstream responses
 // the handler falls through to a standard io.Copy.
 //
+// routeID is the route identifier used to label SSE error metrics (LLM-4).
+// met records error events; nil disables metrics.
 // Request-id and correlation-id are propagated from the request context via
 // reqctx (yaagents-canonical; no ai-platform imports).
 // Accept-Encoding is stripped before forwarding to prevent gzip-encoded SSE.
-func NewSSEProxy(upstream *url.URL) http.HandlerFunc {
+func NewSSEProxy(upstream *url.URL, routeID string, met *SSEMetrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		tenantID := reqctx.TenantID(r.Context())
 		// Build the outbound URL: preserve path + query from the inbound request.
 		target := *upstream
 		target.Path = r.URL.Path
@@ -69,6 +72,9 @@ func NewSSEProxy(upstream *url.URL) http.HandlerFunc {
 			switch r.Context().Err() {
 			case context.DeadlineExceeded:
 				// Execution timeout fired before upstream responded (LLM-3).
+				if met != nil {
+					met.Error(tenantID, routeID, "timeout")
+				}
 				response.WriteError(w, http.StatusInternalServerError, response.ErrorBody{
 					Type:    "error",
 					Code:    "EXECUTION_TIMEOUT",
@@ -79,8 +85,14 @@ func NewSSEProxy(upstream *url.URL) http.HandlerFunc {
 					},
 				})
 			case context.Canceled:
-				// Client disconnected; no response to write.
+				// Client disconnected; no response to write (LLM-4 records disconnect).
+				if met != nil {
+					met.Error(tenantID, routeID, "client_disconnect")
+				}
 			default:
+				if met != nil {
+					met.Error(tenantID, routeID, "upstream_error")
+				}
 				http.Error(w, "upstream_error", http.StatusBadGateway)
 			}
 			return

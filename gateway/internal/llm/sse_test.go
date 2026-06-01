@@ -43,7 +43,7 @@ func TestNewSSEProxy_SSEStream_ProgressiveChunks(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	req, _ := http.NewRequest("GET", gw.URL+"/events", nil)
@@ -94,7 +94,7 @@ func TestNewSSEProxy_SSEHeaders_SetCorrectly(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	resp, err := http.DefaultClient.Get(gw.URL + "/stream")
@@ -129,7 +129,7 @@ func TestNewSSEProxy_NonSSEResponse(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	resp, err := http.DefaultClient.Get(gw.URL + "/api/v1/items")
@@ -158,7 +158,7 @@ func TestNewSSEProxy_NonSSEResponse_NoSSEHeaders(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	resp, err := http.DefaultClient.Get(gw.URL + "/")
@@ -183,7 +183,7 @@ func TestNewSSEProxy_UpstreamError_502(t *testing.T) {
 	dead.Close()
 
 	u, _ := url.Parse(deadURL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	resp, err := http.DefaultClient.Get(gw.URL + "/test")
@@ -207,7 +207,7 @@ func TestNewSSEProxy_ClientDisconnect_NoErrorBody(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	handler := NewSSEProxy(u)
+	handler := NewSSEProxy(u, "", nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // pre-cancel so RoundTrip sees a cancelled context immediately
@@ -237,7 +237,7 @@ func TestNewSSEProxy_NonFlushableWriter_FallsBackToioCopy(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	handler := NewSSEProxy(u)
+	handler := NewSSEProxy(u, "", nil)
 
 	rec := httptest.NewRecorder()
 	nfw := &nonFlushable{rec}
@@ -269,7 +269,7 @@ func TestNewSSEProxy_CorrelationHeadersPropagated(t *testing.T) {
 	gw := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := reqctx.WithRequestID(r.Context(), "req-test-123")
 		ctx = reqctx.WithCorrelationID(ctx, "corr-test-456")
-		NewSSEProxy(u).ServeHTTP(w, r.WithContext(ctx))
+		NewSSEProxy(u, "", nil).ServeHTTP(w, r.WithContext(ctx))
 	}))
 	defer gw.Close()
 
@@ -299,7 +299,7 @@ func TestNewSSEProxy_AcceptEncodingStripped(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	req, _ := http.NewRequest("GET", gw.URL+"/", nil)
@@ -325,7 +325,7 @@ func TestNewSSEProxy_UpstreamHeadersForwarded(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	gw := httptest.NewServer(NewSSEProxy(u))
+	gw := httptest.NewServer(NewSSEProxy(u, "", nil))
 	defer gw.Close()
 
 	resp, err := http.DefaultClient.Get(gw.URL + "/")
@@ -414,7 +414,7 @@ func TestNewProxy_NilError(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	h, err := NewProxy(u, nil)
+	h, err := NewProxy(u, "", nil, nil)
 	if err != nil {
 		t.Fatalf("NewProxy returned unexpected error: %v", err)
 	}
@@ -434,7 +434,7 @@ func TestNewProxy_ProxiesRequest(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	h, _ := NewProxy(u, nil)
+	h, _ := NewProxy(u, "", nil, nil)
 
 	gw := httptest.NewServer(h)
 	defer gw.Close()
@@ -480,7 +480,7 @@ func TestNewSSEProxy_DeadlineExceeded_Returns500ExecutionTimeout(t *testing.T) {
 	t.Cleanup(upstream.Close)
 
 	u, _ := url.Parse(upstream.URL)
-	handler := NewSSEProxy(u)
+	handler := NewSSEProxy(u, "", nil)
 
 	// Use a short deadline to simulate a fired execution timeout without
 	// actually waiting executionTimeoutSeconds+30s in the test suite.
@@ -518,7 +518,7 @@ func TestNewSSEProxy_ClientCanceled_SilentReturn(t *testing.T) {
 	t.Cleanup(upstream.Close)
 
 	u, _ := url.Parse(upstream.URL)
-	handler := NewSSEProxy(u)
+	handler := NewSSEProxy(u, "", nil)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Canceled (not DeadlineExceeded)

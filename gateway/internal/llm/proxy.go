@@ -28,19 +28,26 @@ const ModeSSE = "sse"
 // pipe-and-flush when the upstream responds with Content-Type: text/event-stream,
 // falling back to io.Copy for standard (non-SSE) upstream responses.
 //
+// routeID is used to label metrics; passing "" disables label population.
 // lim controls per-tenant SSE concurrency (LLM-2). When lim is nil no
 // limiting is applied. When the limit is exceeded the handler returns
 // 429 application/vnd.yaagents.error+json with retryAfter: 60.
+// met records SSE metrics (LLM-4); nil disables metrics.
 //
-// The decrement (Release) runs in a sync.Once-guarded defer so it fires
-// exactly once regardless of whether the stream ended server-side or
-// via client disconnect — preventing double-decrement (LLM-2 AC).
-func NewProxy(upstream *url.URL, lim *Limiter) (http.Handler, error) {
-	rawSSE := NewSSEProxy(upstream)
+// The active gauge is incremented after a successful acquire and decremented
+// when the stream ends or the client disconnects. The limiter Release and
+// gauge Dec both run in a sync.Once-guarded defer to prevent double-decrement.
+func NewProxy(upstream *url.URL, routeID string, lim *Limiter, met *SSEMetrics) (http.Handler, error) {
+	rawSSE := NewSSEProxy(upstream, routeID, met)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tenantID := reqctx.TenantID(r.Context())
+
 		if lim != nil {
-			tenantID := reqctx.TenantID(r.Context())
 			if !lim.TryAcquire(tenantID) {
+				// LLM-2 rejection: record limit_exceeded error metric (LLM-4).
+				if met != nil {
+					met.Error(tenantID, routeID, "limit_exceeded")
+				}
 				response.WriteError(w, http.StatusTooManyRequests, response.ErrorBody{
 					Type:       "error",
 					Code:       "SSE_CONCURRENCY_LIMIT_EXCEEDED",
@@ -53,11 +60,20 @@ func NewProxy(upstream *url.URL, lim *Limiter) (http.Handler, error) {
 				})
 				return
 			}
-			// sync.Once ensures Release is called exactly once even if
-			// both server-side stream end and client disconnect race.
-			var once sync.Once
+		}
+
+		// Increment active-connections gauge AFTER acquiring the concurrency slot
+		// (LLM-4). Both Release and Dec are guarded by sync.Once so each fires
+		// exactly once regardless of stream-end vs client-disconnect race.
+		var once sync.Once
+		if lim != nil {
 			defer func() { once.Do(func() { lim.Release(tenantID) }) }()
 		}
+		if met != nil {
+			met.Inc(tenantID, routeID)
+			defer met.Dec(tenantID, routeID)
+		}
+
 		rawSSE(w, r)
 	}), nil
 }
