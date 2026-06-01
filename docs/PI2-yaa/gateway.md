@@ -47,7 +47,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001, ADR PI2-yaa-0001
 depends_on: [WI-2yaa.PLG-1]
 
-### WI-2yaa.PLG-6: Plugin chain handler + per-route overrides + reverse-Shutdown [WIP] — Sprint 2
+### WI-2yaa.PLG-6: Plugin chain handler + per-route overrides + reverse-Shutdown [DONE] — Sprint 2
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: Implement the request-time plugin chain composition (PRD §6.4 per
@@ -101,7 +101,7 @@ Activation is **config-driven**: a route declares `mode: sse` in
 cost (the SSE code path is dormant when no route activates it — PRD §7.1
 Option A trade-off accepted).
 
-### WI-2yaa.LLM-1: SSE proxy (pipe-and-flush) [READY] — Sprint 4
+### WI-2yaa.LLM-1: SSE proxy (pipe-and-flush) [WIP] — Sprint 4
 service: yaagents/gateway/internal/llm
 parent_feature: F-LLM
 brief: **MOVE** (not copy) `ai-platform/services/ai-gateway/internal/proxy/sse.go`

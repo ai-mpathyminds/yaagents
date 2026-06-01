@@ -287,3 +287,34 @@ func TestLoad_RolesAndFlags(t *testing.T) {
 		t.Error("audit should be true")
 	}
 }
+
+func TestLoad_ModeSSE_Parsed(t *testing.T) {
+	y := `
+routes:
+  - id: completions
+    method: POST
+    path: /completions
+    target: http://llm-api:8123
+    mode: sse
+`
+	f := writeTempYAML(t, y)
+	rs, err := routes.Load(f)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if rs[0].Mode != "sse" {
+		t.Errorf("mode: want %q, got %q", "sse", rs[0].Mode)
+	}
+}
+
+func TestLoad_ModeDefault_Empty(t *testing.T) {
+	f := writeTempYAML(t, validYAML)
+	rs, err := routes.Load(f)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Routes without mode field default to empty string (standard proxy path).
+	if rs[0].Mode != "" {
+		t.Errorf("mode: want empty string, got %q", rs[0].Mode)
+	}
+}
