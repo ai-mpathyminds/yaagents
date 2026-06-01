@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""yaagents-client — Python client for the YAAgents Agentic REST Profile v0.1."""
+"""yaagents-client — Python client for the YAAgents Agentic REST Profile v0.2."""
 
 from .__about__ import __profile__, __version__
 from ._client import PROFILE_VERSION, YaAgentsClient

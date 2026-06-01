@@ -263,10 +263,10 @@ def test_base_url_trailing_slash_stripped() -> None:
 
 
 def test_profile_version_exposed() -> None:
-    """PROFILE_VERSION constant is 'v0.1'."""
+    """PROFILE_VERSION constant is 'v0.2'."""
     from yaagents_client import PROFILE_VERSION
 
-    assert PROFILE_VERSION == "v0.1"
+    assert PROFILE_VERSION == "v0.2"
 
 
 def test_package_version_present() -> None:
