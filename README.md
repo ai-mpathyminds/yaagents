@@ -208,12 +208,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-YAAgents is **source-available** / **fair-code**. It is free for individuals, academics, and small organisations. Larger organisations require a commercial licence.
-
-- Community use: [LICENSE](LICENSE)
-- Commercial licensing: [COMMERCIAL.md](COMMERCIAL.md)
-
-> **Legal disclaimer:** This includes a draft licensing strategy for product planning. It is not legal advice. Before publishing the license publicly or accepting external contributions, consult a qualified software licensing lawyer.
+> **License:** Apache 2.0 — see `LICENSE`. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). For questions about historical v0.1.x usage, contact bhaskar@aimpathyminds.com.
 
 ---
 
