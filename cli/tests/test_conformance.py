@@ -1,14 +1,17 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""Tests for WI-1yaa.CLI-4: yaagents conformance-test.
+"""Tests for WI-2yaa.CLI-CONF: yaagents conformance-test v0.2.
 
-AC:
-  - Run against Compose demo → Overall: PASS, exit 0      (live test, skipped in CI)
-  - Report text matches PRD §5.8 format (✓ lines + Overall: PASS/FAIL)
-  - Deliberately broken route → FAIL exit 1
-  - Non-http/https URL → exit 1 with clear error
-  - --json mode emits machine-readable JSON
+Covers:
+  - Profile header assertion (v0.2 enforced; v0.1 gateway → profile-mismatch FAIL)
+  - --require-plugin token-validator PASS / FAIL
+  - --require-plugin tenant-injector PASS / FAIL
+  - Always-on token-validator assertion (10/10 probes → 403)
+  - 10-row Content-Type matrix in ConformanceResult.matrix
+  - Summary table rendered in CLI output
+  - All PI1-yaa SPEC-5 regression checks (5 existing checks preserved)
+  - ≥85% coverage on the conformance command path
 """
 
 from __future__ import annotations
@@ -23,19 +26,26 @@ from yaagents_cli._conformance import (
     _CORR_ID_SENTINEL,
     _CT_CLARIFICATION,
     _CT_ERROR,
+    _CT_JSON,
     _PROFILE_HEADER,
     _PROFILE_VERSION,
+    _TEN_PROBES,
     DEMO_JWT_SECRET,
+    MATRIX_ROWS,
+    _check_always_on,
     _check_clarification_ct,
     _check_clarification_schema,
     _check_correlation_id,
+    _check_plugin_tenant_injector,
+    _check_plugin_token_validator,
     _check_profile_header,
     _check_tenant_required,
+    _make_invalid_jwt,
     conformance_test,
     make_jwt,
 )
 
-# ── JWT helper ────────────────────────────────────────────────────────────────
+# ── JWT helpers ───────────────────────────────────────────────────────────────
 
 
 class TestMakeJwt:
@@ -49,7 +59,6 @@ class TestMakeJwt:
 
         token = make_jwt("secret")
         header_b64 = token.split(".")[0]
-        # add padding
         padded = header_b64 + "=" * (-len(header_b64) % 4)
         header = json.loads(base64.urlsafe_b64decode(padded))
         assert header["alg"] == "HS256"
@@ -72,6 +81,29 @@ class TestMakeJwt:
         padded = payload_b64 + "=" * (-len(payload_b64) % 4)
         payload = json.loads(base64.urlsafe_b64decode(padded))
         assert "campaign:optimize" in payload["roles"]
+
+
+class TestMakeInvalidJwt:
+    def test_is_valid_jwt_shape(self) -> None:
+        token = _make_invalid_jwt()
+        assert len(token.split(".")) == 3
+
+    def test_uses_different_secret_than_demo(self) -> None:
+        # The invalid JWT should NOT verify with the demo secret
+        import base64
+        import hashlib
+        import hmac as _hmac
+
+        token = _make_invalid_jwt()
+        parts = token.split(".")
+        signing_input = f"{parts[0]}.{parts[1]}"
+        expected_sig = _hmac.new(
+            DEMO_JWT_SECRET.encode(),
+            signing_input.encode(),
+            hashlib.sha256,
+        ).digest()
+        expected_b64 = base64.urlsafe_b64encode(expected_sig).rstrip(b"=").decode()
+        assert parts[2] != expected_b64  # signature mismatch → invalid for demo gateway
 
 
 # ── URL scheme validation ──────────────────────────────────────────────────────
@@ -144,7 +176,7 @@ def _clarification_body() -> bytes:
 def _valid_201_headers() -> dict[str, str]:
     return {
         _PROFILE_HEADER: _PROFILE_VERSION,
-        "Content-Type": "application/json",
+        "Content-Type": _CT_JSON,
         "X-Correlation-ID": _CORR_ID_SENTINEL,
         "X-Request-ID": "req-1",
     }
@@ -166,7 +198,22 @@ def _forbidden_headers() -> dict[str, str]:
     }
 
 
-_SIDE_EFFECTS_PASS = [
+def _forbidden_body() -> bytes:
+    return json.dumps({
+        "type": "forbidden",
+        "code": "TOKEN_INVALID",
+        "message": "x",
+        "trace": {"correlationId": "c1", "requestId": "r1"},
+    }).encode()
+
+
+def _forbidden_response() -> MagicMock:
+    return _make_mock_response(403, _forbidden_headers(), _forbidden_body())
+
+
+# 6 mock responses for the 6 checks (profile, clarif-ct, corr-id, tenant, always-on×10)
+# plus plugin checks when needed.
+_SIDE_EFFECTS_BASE = [
     # Check 1: POST /campaigns (full) → 201 with profile header
     _make_mock_response(201, _valid_201_headers(), b'{"campaign":{}}'),
     # Check 2: POST /campaigns (no successMetric) → 400 clarification
@@ -174,26 +221,32 @@ _SIDE_EFFECTS_PASS = [
     # Check 4: POST /campaigns (with X-Correlation-ID) → 201 with echoed header
     _make_mock_response(
         201,
-        {
-            **_valid_201_headers(),
-            "X-Correlation-ID": _CORR_ID_SENTINEL,
-        },
+        {**_valid_201_headers(), "X-Correlation-ID": _CORR_ID_SENTINEL},
         b'{"campaign":{}}',
     ),
     # Check 5: POST /campaigns (no X-Tenant-ID) → 403 error
-    _make_mock_response(
-        403,
-        _forbidden_headers(),
-        b'{"type":"forbidden","code":"TENANT_REQUIRED","message":"x","trace":{}}',
-    ),
+    _make_mock_response(403, _forbidden_headers(), _forbidden_body()),
 ]
 
+# Always-on 10 probes: all return 403 (invalid JWT intercepted)
+_ALWAYS_ON_403 = [_forbidden_response() for _ in range(10)]
 
-# ── individual-check unit tests ───────────────────────────────────────────────
+
+def _make_pass_side_effects(
+    extra_plugin_responses: list[MagicMock] | None = None,
+) -> list[MagicMock]:
+    return (
+        list(_SIDE_EFFECTS_BASE)
+        + list(_ALWAYS_ON_403)
+        + (extra_plugin_responses or [])
+    )
+
+
+# ── individual-check unit tests (PI1-yaa regression) ─────────────────────────
 
 
 class TestCheckProfileHeader:
-    def test_pass_when_header_present(self) -> None:
+    def test_pass_when_v02_header_present(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
                 201, _valid_201_headers(), b"{}"
@@ -204,19 +257,30 @@ class TestCheckProfileHeader:
     def test_fail_when_header_absent(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
-                201, {"Content-Type": "application/json"}, b"{}"
+                201, {"Content-Type": _CT_JSON}, b"{}"
             )
             result = _check_profile_header("http://gw", "tok", "t1")
         assert not result.passed
-        assert _PROFILE_HEADER in result.detail or "expected" in result.detail
+        assert "header-absent" in result.detail
 
-    def test_fail_when_wrong_version(self) -> None:
+    def test_fail_when_v01_gateway(self) -> None:
+        """A v0.1 gateway returns X-YAAgents-Profile: v0.1 → profile-mismatch."""
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
                 201, {_PROFILE_HEADER: "v0.1"}, b"{}"
             )
             result = _check_profile_header("http://gw", "tok", "t1")
         assert not result.passed
+        assert "profile-mismatch" in result.detail
+        assert "v0.1" in result.detail
+
+    def test_check_name_contains_v02(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                201, _valid_201_headers(), b"{}"
+            )
+            result = _check_profile_header("http://gw", "tok", "t1")
+        assert "v0.2" in result.name
 
 
 class TestCheckClarificationCt:
@@ -231,7 +295,7 @@ class TestCheckClarificationCt:
     def test_fail_when_wrong_status(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
-                200, {"Content-Type": "application/json"}, b"{}"
+                200, {"Content-Type": _CT_JSON}, b"{}"
             )
             check, _ = _check_clarification_ct("http://gw", "tok", "t1")
         assert not check.passed
@@ -239,7 +303,7 @@ class TestCheckClarificationCt:
     def test_fail_when_wrong_ct(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
-                400, {"Content-Type": "application/json"}, b"{}"
+                400, {"Content-Type": _CT_JSON}, b"{}"
             )
             check, _ = _check_clarification_ct("http://gw", "tok", "t1")
         assert not check.passed
@@ -264,7 +328,7 @@ class TestCheckClarificationSchema:
         bad = json.dumps({"type": "clarification_required"}).encode()
         result = _check_clarification_schema(bad)
         assert not result.passed
-        assert result.detail  # has error detail
+        assert result.detail
 
     def test_fail_on_non_json(self) -> None:
         result = _check_clarification_schema(b"not json")
@@ -276,10 +340,7 @@ class TestCheckCorrelationId:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
                 201,
-                {
-                    **_valid_201_headers(),
-                    "X-Correlation-ID": _CORR_ID_SENTINEL,
-                },
+                {**_valid_201_headers(), "X-Correlation-ID": _CORR_ID_SENTINEL},
                 b"{}",
             )
             result = _check_correlation_id("http://gw", "tok", "t1")
@@ -305,16 +366,14 @@ class TestCheckCorrelationId:
 class TestCheckTenantRequired:
     def test_pass_when_403_vendor_error(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.return_value = _make_mock_response(
-                403, _forbidden_headers(), b"{}"
-            )
+            mock_open.return_value = _forbidden_response()
             result = _check_tenant_required("http://gw", "tok")
         assert result.passed
 
     def test_fail_when_200_returned(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
-                200, {"Content-Type": "application/json"}, b"{}"
+                200, {"Content-Type": _CT_JSON}, b"{}"
             )
             result = _check_tenant_required("http://gw", "tok")
         assert not result.passed
@@ -328,25 +387,142 @@ class TestCheckTenantRequired:
         assert not result.passed
 
 
+# ── v0.2 new checks ───────────────────────────────────────────────────────────
+
+
+class TestCheckAlwaysOn:
+    def test_pass_when_all_10_return_403(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = [_forbidden_response() for _ in range(10)]
+            result = _check_always_on("http://gw", "t1")
+        assert result.passed
+        assert "10/10" in result.name
+
+    def test_fail_when_one_returns_200(self) -> None:
+        responses = [_forbidden_response() for _ in range(9)]
+        responses.insert(2, _make_mock_response(200, {"Content-Type": _CT_JSON}, b"{}"))
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = responses
+            result = _check_always_on("http://gw", "t1")
+        assert not result.passed
+        assert result.detail  # has failure detail
+
+    def test_fail_when_one_returns_403_wrong_ct(self) -> None:
+        responses = [_forbidden_response() for _ in range(9)]
+        responses.insert(0, _make_mock_response(
+            403, {"Content-Type": "text/plain"}, b"forbidden"
+        ))
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = responses
+            result = _check_always_on("http://gw", "t1")
+        assert not result.passed
+
+    def test_issues_exactly_10_probes(self) -> None:
+        assert len(_TEN_PROBES) == 10
+
+    def test_connection_error_in_probe_counts_as_fail(self) -> None:
+        import urllib.error
+
+        responses: list[MagicMock | Exception] = [
+            _forbidden_response() for _ in range(9)
+        ]
+        responses.insert(0, urllib.error.URLError("refused"))
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = responses
+            result = _check_always_on("http://gw", "t1")
+        assert not result.passed
+
+
+class TestCheckPluginTokenValidator:
+    def test_pass_when_403_vendor_error(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _forbidden_response()
+            result = _check_plugin_token_validator("http://gw", "t1")
+        assert result.passed
+        assert result.name == "plugin:token-validator"
+
+    def test_fail_when_200_returned(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                200, {"Content-Type": _CT_JSON}, b"{}"
+            )
+            result = _check_plugin_token_validator("http://gw", "t1")
+        assert not result.passed
+        assert "token-validator" in result.detail
+
+    def test_fail_when_403_wrong_ct(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                403, {"Content-Type": "text/html"}, b"forbidden"
+            )
+            result = _check_plugin_token_validator("http://gw", "t1")
+        assert not result.passed
+
+
+class TestCheckPluginTenantInjector:
+    def test_pass_when_403_vendor_error(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _forbidden_response()
+            result = _check_plugin_tenant_injector("http://gw", "valid-token")
+        assert result.passed
+        assert result.name == "plugin:tenant-injector"
+
+    def test_fail_when_200_returned(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                200, {"Content-Type": _CT_JSON}, b"{}"
+            )
+            result = _check_plugin_tenant_injector("http://gw", "valid-token")
+        assert not result.passed
+        assert "tenant-injector" in result.detail
+
+
+# ── MATRIX_ROWS constant ─────────────────────────────────────────────────────
+
+
+class TestMatrixRows:
+    def test_has_exactly_10_rows(self) -> None:
+        assert len(MATRIX_ROWS) == 10
+
+    def test_all_expected_statuses_present(self) -> None:
+        statuses = {r[0] for r in MATRIX_ROWS}
+        assert statuses == {200, 201, 202, 400, 403, 409, 412, 422, 424, 500}
+
+    def test_forbidden_row_uses_error_ct(self) -> None:
+        row = next(r for r in MATRIX_ROWS if r[0] == 403)
+        assert row[1] == _CT_ERROR
+
+    def test_clarification_row(self) -> None:
+        row = next(r for r in MATRIX_ROWS if r[0] == 400)
+        assert row[1] == _CT_CLARIFICATION
+
+
 # ── full suite (mocked) ───────────────────────────────────────────────────────
 
 
 class TestConformanceSuite:
     def test_all_pass(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = _SIDE_EFFECTS_PASS
+            mock_open.side_effect = _make_pass_side_effects()
             result = conformance_test(
                 "http://localhost:8120", jwt_secret=DEMO_JWT_SECRET
             )
         assert result.passed
-        assert len(result.checks) == 5
+        # 6 core checks (profile, clarif-ct, clarif-schema, corr-id, tenant, always-on)
+        assert len(result.checks) == 6
         assert all(c.passed for c in result.checks)
 
+    def test_matrix_has_10_rows(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects()
+            result = conformance_test("http://localhost:8120")
+        assert len(result.matrix) == 10
+
     def test_broken_profile_header_fails(self) -> None:
-        """Broken route (profile header absent) → result.passed is False."""
+        """v0.1 gateway (profile header absent) → result.passed is False."""
         broken_201 = _make_mock_response(
             201,
-            {"Content-Type": "application/json"},  # no profile header
+            {"Content-Type": _CT_JSON},  # no profile header
             b"{}",
         )
         clarif = _make_mock_response(
@@ -355,16 +531,35 @@ class TestConformanceSuite:
         corr = _make_mock_response(
             201, {"X-Correlation-ID": _CORR_ID_SENTINEL}, b"{}"
         )
-        forbid = _make_mock_response(403, _forbidden_headers(), b"{}")
+        forbid = _forbidden_response()
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = [broken_201, clarif, corr, forbid]
+            mock_open.side_effect = (
+                [broken_201, clarif, corr, forbid] + list(_ALWAYS_ON_403)
+            )
             result = conformance_test("http://localhost:8120")
         assert not result.passed
-        assert (
-            result.checks[0].name
-            == "X-YAAgents-Profile header on proxied response"
-        )
         assert not result.checks[0].passed
+        detail = result.checks[0].detail
+        assert "header-absent" in detail or "profile-mismatch" in detail
+
+    def test_v01_gateway_profile_mismatch(self) -> None:
+        """Gateway returning X-YAAgents-Profile: v0.1 → profile-mismatch FAIL."""
+        v01_headers = {**_valid_201_headers(), _PROFILE_HEADER: "v0.1"}
+        broken_201 = _make_mock_response(201, v01_headers, b"{}")
+        clarif = _make_mock_response(
+            400, _clarification_headers(), _clarification_body()
+        )
+        corr = _make_mock_response(
+            201, {"X-Correlation-ID": _CORR_ID_SENTINEL}, b"{}"
+        )
+        forbid = _forbidden_response()
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = (
+                [broken_201, clarif, corr, forbid] + list(_ALWAYS_ON_403)
+            )
+            result = conformance_test("http://localhost:8120")
+        assert not result.passed
+        assert "profile-mismatch" in result.checks[0].detail
 
     def test_connection_error_captured(self) -> None:
         import urllib.error
@@ -378,11 +573,12 @@ class TestConformanceSuite:
 
     def test_result_to_dict_pass(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = _SIDE_EFFECTS_PASS
+            mock_open.side_effect = _make_pass_side_effects()
             result = conformance_test("http://localhost:8120")
         d = result.to_dict()
         assert d["result"] == "PASS"
-        assert len(d["checks"]) == 5
+        assert len(d["checks"]) == 6
+        assert len(d["matrix"]) == 10
         assert all(c["result"] == "PASS" for c in d["checks"])
 
     def test_result_to_dict_fail(self) -> None:
@@ -390,6 +586,73 @@ class TestConformanceSuite:
         d = result.to_dict()
         assert d["result"] == "FAIL"
         assert "error" in d
+
+    def test_require_plugin_token_validator_pass(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects(
+                extra_plugin_responses=[_forbidden_response()]
+            )
+            result = conformance_test(
+                "http://localhost:8120",
+                require_plugins=["token-validator"],
+            )
+        assert result.passed
+        plugin_checks = [c for c in result.checks if c.name == "plugin:token-validator"]
+        assert len(plugin_checks) == 1
+        assert plugin_checks[0].passed
+
+    def test_require_plugin_token_validator_fail(self) -> None:
+        # Plugin check returns 200 instead of 403 → FAIL
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects(
+                extra_plugin_responses=[
+                    _make_mock_response(200, {"Content-Type": _CT_JSON}, b"{}")
+                ]
+            )
+            result = conformance_test(
+                "http://localhost:8120",
+                require_plugins=["token-validator"],
+            )
+        assert not result.passed
+        plugin_checks = [c for c in result.checks if c.name == "plugin:token-validator"]
+        assert not plugin_checks[0].passed
+
+    def test_require_plugin_tenant_injector_pass(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects(
+                extra_plugin_responses=[_forbidden_response()]
+            )
+            result = conformance_test(
+                "http://localhost:8120",
+                require_plugins=["tenant-injector"],
+            )
+        assert result.passed
+        plugin_checks = [c for c in result.checks if c.name == "plugin:tenant-injector"]
+        assert plugin_checks[0].passed
+
+    def test_require_both_plugins_pass(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects(
+                extra_plugin_responses=[_forbidden_response(), _forbidden_response()]
+            )
+            result = conformance_test(
+                "http://localhost:8120",
+                require_plugins=["token-validator", "tenant-injector"],
+            )
+        assert result.passed
+        assert len([c for c in result.checks if c.name.startswith("plugin:")]) == 2
+
+    def test_unknown_plugin_fails(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects()
+            result = conformance_test(
+                "http://localhost:8120",
+                require_plugins=["nonexistent-plugin"],
+            )
+        assert not result.passed
+        plugin_check = next(c for c in result.checks if "plugin:" in c.name)
+        assert not plugin_check.passed
+        assert "unknown" in plugin_check.detail
 
 
 # ── CLI integration (report format) ──────────────────────────────────────────
@@ -400,7 +663,7 @@ class TestCliOutput:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = list(_SIDE_EFFECTS_PASS)
+            mock_open.side_effect = _make_pass_side_effects()
             rc = main(
                 ["conformance-test", "http://localhost:8120",
                  "--jwt-secret", DEMO_JWT_SECRET]
@@ -415,7 +678,7 @@ class TestCliOutput:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         broken_201 = _make_mock_response(
-            201, {"Content-Type": "application/json"}, b"{}"
+            201, {"Content-Type": _CT_JSON}, b"{}"
         )
         clarif = _make_mock_response(
             400, _clarification_headers(), _clarification_body()
@@ -423,9 +686,11 @@ class TestCliOutput:
         corr = _make_mock_response(
             201, {"X-Correlation-ID": _CORR_ID_SENTINEL}, b"{}"
         )
-        forbid = _make_mock_response(403, _forbidden_headers(), b"{}")
+        forbid = _forbidden_response()
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = [broken_201, clarif, corr, forbid]
+            mock_open.side_effect = (
+                [broken_201, clarif, corr, forbid] + list(_ALWAYS_ON_403)
+            )
             rc = main(["conformance-test", "http://localhost:8120"])
         out = capsys.readouterr().out
         assert rc == 1
@@ -436,7 +701,7 @@ class TestCliOutput:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = list(_SIDE_EFFECTS_PASS)
+            mock_open.side_effect = _make_pass_side_effects()
             rc = main(
                 ["conformance-test", "http://localhost:8120",
                  "--jwt-secret", DEMO_JWT_SECRET, "--json"]
@@ -445,7 +710,8 @@ class TestCliOutput:
         data = json.loads(out)
         assert rc == 0
         assert data["result"] == "PASS"
-        assert len(data["checks"]) == 5
+        assert len(data["checks"]) == 6
+        assert len(data["matrix"]) == 10
 
     def test_json_mode_fail(
         self, capsys: pytest.CaptureFixture[str]
@@ -456,18 +722,74 @@ class TestCliOutput:
         assert rc == 1
         assert data["result"] == "FAIL"
 
+    def test_summary_table_in_output(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Summary table (status | requested | observed | pass) present in output."""
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects()
+            main(["conformance-test", "http://localhost:8120"])
+        out = capsys.readouterr().out
+        assert "Content-Type matrix" in out
+        assert "status" in out
+        assert "requested" in out
+        assert "observed" in out
+        assert "pass" in out
+        # All 10 status codes present in table
+        for status in (200, 201, 202, 400, 403, 409, 412, 422, 424, 500):
+            assert str(status) in out
+
+    def test_require_plugin_flag_pass(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_pass_side_effects(
+                extra_plugin_responses=[_forbidden_response()]
+            )
+            rc = main([
+                "conformance-test", "http://localhost:8120",
+                "--require-plugin", "token-validator",
+            ])
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "plugin:token-validator" in out
+        assert "✓" in out
+
+    def test_v01_gateway_exits_1_with_profile_mismatch(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Running against a v0.1 gateway → exit 1, 'profile-mismatch' in output."""
+        v01_headers = {**_valid_201_headers(), _PROFILE_HEADER: "v0.1"}
+        broken_201 = _make_mock_response(201, v01_headers, b"{}")
+        clarif = _make_mock_response(
+            400, _clarification_headers(), _clarification_body()
+        )
+        corr = _make_mock_response(
+            201, {"X-Correlation-ID": _CORR_ID_SENTINEL}, b"{}"
+        )
+        forbid = _forbidden_response()
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = (
+                [broken_201, clarif, corr, forbid] + list(_ALWAYS_ON_403)
+            )
+            rc = main(["conformance-test", "http://localhost:8120"])
+        out = capsys.readouterr().out
+        assert rc == 1
+        assert "profile-mismatch" in out
+
     def test_report_check_names_in_output(
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         with patch("urllib.request.urlopen") as mock_open:
-            mock_open.side_effect = list(_SIDE_EFFECTS_PASS)
+            mock_open.side_effect = _make_pass_side_effects()
             main(["conformance-test", "http://localhost:8120"])
         out = capsys.readouterr().out
-        assert "X-YAAgents-Profile header on proxied response" in out
+        assert "v0.2" in out
         assert "Clarification response uses correct content type" in out
         assert "400 response matches clarification schema" in out
         assert "Correlation ID propagated" in out
         assert "Gateway route requires tenant context" in out
+        assert "always-on" in out
 
     def test_url_scheme_error_exit1(
         self, capsys: pytest.CaptureFixture[str]
