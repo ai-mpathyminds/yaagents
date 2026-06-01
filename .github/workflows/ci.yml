@@ -184,6 +184,35 @@ jobs:
           fi
           echo "license-clean-scan: PASS — no Community License strings found"
 
+  # ── No secrets in Dockerfile / no .env files in repo ────────────────────
+  # Blocks any ENV instruction that bakes a secret value into the gateway
+  # image layer. Runs on all push + pull_request events (security-critical;
+  # not advisory like license-clean-scan). ADR: PI1-yaa-0001 §3 + NFR-GW-1.
+  no-secret-in-dockerfile:
+    name: No secrets in Dockerfile or .env files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: no-secret-in-dockerfile
+        run: |
+          if grep -rnE "ENV.*(SECRET|TOKEN|PASSWORD).*=" docker/gateway/; then
+            echo "::error::Secret ENV instruction found in Dockerfile — all secrets are runtime-only (inject via orchestrator)"
+            exit 1
+          fi
+          echo "no-secret-in-dockerfile: PASS — no secret ENV instructions found"
+
+      - name: no-env-files-in-repo
+        run: |
+          DOTENV=$(git ls-files "*.env" ".env*")
+          if [ -n "${DOTENV}" ]; then
+            echo "::error::.env file committed to repo: ${DOTENV}"
+            exit 1
+          fi
+          echo "no-env-files-in-repo: PASS — no .env files tracked"
+
   # ── Spec archive: schemas/ + openapi/ → GitHub Release ───────────────────
   # Runs only on tag push, and only after all three language jobs are green.
   # ADR PI1-yaa-0005 §6: schemas + OpenAPI attached as versioned archive;

@@ -21,7 +21,7 @@ sourcing; prompt-sanitize stub behaviour).
 
 ---
 
-### WI-2yaa.PLG-2: Gateway plugin-loader refactor (PI1-yaa middleware → plugin chain) [WIP] — Sprint 1
+### WI-2yaa.PLG-2: Gateway plugin-loader refactor (PI1-yaa middleware → plugin chain) [DONE] — Sprint 1
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: Refactor `gateway/cmd/` + `gateway/internal/` so the PI1-yaa
@@ -240,7 +240,7 @@ depends_on: [WI-2yaa.PLG-6]
 | [SUPPLY] OIDC trusted publishing (no long-lived token) | feature WI | REL-3 (`GITHUB_TOKEN` OIDC; no PAT) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no cloud run-rate in PI2-yaa; GHCR is free for public images |
 
-### WI-2yaa.NFR-GW-1: No secrets in gateway image/config [READY]
+### WI-2yaa.NFR-GW-1: No secrets in gateway image/config [DONE]
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: [SEC] Enforce secret hygiene in the gateway Dockerfile and default
