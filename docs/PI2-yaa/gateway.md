@@ -199,7 +199,7 @@ depends_on: [WI-2yaa.LLM-2, WI-2yaa.LLM-3]
 
 ## Profile version bump (cross-component touchpoint that lives here)
 
-### WI-2yaa.BUMP-3: Profile v0.2 header + spec/schema path bump [READY] — Sprint 5
+### WI-2yaa.BUMP-3: Profile v0.2 header + spec/schema path bump [WIP] — Sprint 5
 service: yaagents/{gateway,spec,schemas,openapi}
 parent_feature: F-LICENSE
 brief: Update the gateway's response-header injector (PLG-6) to write

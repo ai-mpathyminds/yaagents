@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://yaagents.io/schemas/v0.2/conflict.schema.json",
+  "title": "Conflict",
+  "description": "Body for application/vnd.yaagents.conflict+json (HTTP 409). A conflicting resource state prevents the operation.",
+  "type": "object",
+  "required": ["type", "code", "message", "trace"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "conflict",
+      "description": "Discriminator identifying this response type."
+    },
+    "code": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Service-specific conflict code (e.g. RESOURCE_ALREADY_EXISTS)."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable description of the conflict."
+    },
+    "conflictingResourceId": {
+      "type": "string",
+      "description": "Identifier of the resource in conflict (recommended when known)."
+    },
+    "trace": {
+      "$ref": "#/definitions/trace"
+    }
+  },
+  "definitions": {
+    "trace": {
+      "type": "object",
+      "description": "Correlation identifiers propagated from the inbound request.",
+      "required": ["correlationId", "requestId"],
+      "additionalProperties": false,
+      "properties": {
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cross-service correlation identifier (X-Correlation-ID header)."
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Per-request unique identifier (X-Request-ID header)."
+        }
+      }
+    }
+  }
+}

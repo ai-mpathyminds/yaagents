@@ -1,7 +1,7 @@
 # YAAgents Conformance Corpus — Index
 
-**Profile version:** v0.1
-**Path:** `spec/examples/v0.1/`
+**Current profile version:** v0.2
+**Frozen backward-compat corpus:** `spec/examples/v0.1/` — validates against `schemas/v0.1/`
 **Authority:** ADR PI1-yaa-0002 §5 — single shared conformance oracle.
 SDK, both clients, and CLI all test against this corpus; prevents per-component drift.
 
@@ -11,7 +11,7 @@ Valid fixtures must **pass** their schema. Invalid fixtures must **fail** their 
 
 ## `application/vnd.yaagents.clarification+json` (HTTP 400)
 
-Schema: `schemas/v0.1/clarification-required.schema.json`
+Schema: `schemas/v0.2/clarification-required.schema.json` (frozen: `schemas/v0.1/clarification-required.schema.json`)
 
 | Fixture | Verdict | Notes |
 |---------|---------|-------|
@@ -25,7 +25,7 @@ Schema: `schemas/v0.1/clarification-required.schema.json`
 
 ## `application/vnd.yaagents.validation-error+json` (HTTP 422)
 
-Schema: `schemas/v0.1/validation-failed.schema.json`
+Schema: `schemas/v0.2/validation-failed.schema.json` (frozen: `schemas/v0.1/validation-failed.schema.json`)
 
 | Fixture | Verdict | Notes |
 |---------|---------|-------|
@@ -39,7 +39,7 @@ Schema: `schemas/v0.1/validation-failed.schema.json`
 
 ## `application/vnd.yaagents.approval-required+json` (HTTP 412)
 
-Schema: `schemas/v0.1/approval-required.schema.json`
+Schema: `schemas/v0.2/approval-required.schema.json` (frozen: `schemas/v0.1/approval-required.schema.json`)
 
 | Fixture | Verdict | Notes |
 |---------|---------|-------|
@@ -53,7 +53,7 @@ Schema: `schemas/v0.1/approval-required.schema.json`
 
 ## `application/vnd.yaagents.conflict+json` (HTTP 409)
 
-Schema: `schemas/v0.1/conflict.schema.json`
+Schema: `schemas/v0.2/conflict.schema.json` (frozen: `schemas/v0.1/conflict.schema.json`)
 
 | Fixture | Verdict | Notes |
 |---------|---------|-------|
@@ -67,7 +67,7 @@ Schema: `schemas/v0.1/conflict.schema.json`
 
 ## `application/vnd.yaagents.error+json` (HTTP 403 / 424 / 500)
 
-Schema: `schemas/v0.1/agentic-error.schema.json`
+Schema: `schemas/v0.2/agentic-error.schema.json` (frozen: `schemas/v0.1/agentic-error.schema.json`)
 
 | Fixture | Verdict | Notes |
 |---------|---------|-------|
@@ -82,7 +82,7 @@ Schema: `schemas/v0.1/agentic-error.schema.json`
 
 ## `application/vnd.yaagents.operation+json` (HTTP 202)
 
-Schema: `schemas/v0.1/operation-accepted.schema.json`
+Schema: `schemas/v0.2/operation-accepted.schema.json` (frozen: `schemas/v0.1/operation-accepted.schema.json`)
 
 > **PI1-yaa scope note (ADR PI1-yaa-0002 §4):** Schema and fixtures ship in PI1-yaa;
 > async polling runtime is v0.2 scope.
@@ -110,8 +110,8 @@ Schema: `schemas/v0.1/operation-accepted.schema.json`
 ## How consumers use this corpus
 
 ```bash
-# CLI validator (WI-1yaa.CLI-*)
-yaagents-cli validate-corpus spec/examples/v0.1/
+# CLI validator (WI-1yaa.CLI-*) — corpus path is the version subdirectory
+yaagents-cli validate-corpus spec/examples/v0.1/   # frozen backward-compat corpus
 
 # Python (pytest, WI-1yaa.SDK-*)
 pytest tests/conformance/ --corpus spec/examples/v0.1/
@@ -122,3 +122,4 @@ npx jest --testPathPattern conformance
 
 Each test runner loads the INDEX via path convention (`*.valid.json` must pass,
 `*.invalid.json` must fail) and the schema map above. No per-component fixture copies.
+The corpus directory name matches the schema version it validates against.
