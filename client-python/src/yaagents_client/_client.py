@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""YaAgentsClient — sync HTTP client for the YAAgents Agentic REST Profile v0.1."""
+"""YaAgentsClient — sync HTTP client for the YAAgents Agentic REST Profile v0.2."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from ._resources import CampaignResource
 __all__ = ["YaAgentsClient"]
 
 #: Profile version supported by this client build.
-PROFILE_VERSION = "v0.1"
+PROFILE_VERSION = "v0.2"
 
 
 class YaAgentsClient:

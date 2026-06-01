@@ -1,13 +1,13 @@
 # yaagents-client
 
-Python client for the [YAAgents Agentic REST Profile v0.1](../spec/agentic-rest-profile.md).
+Python client for the [YAAgents Agentic REST Profile v0.2](../spec/agentic-rest-profile.md).
 
-Supports-YAAgents-Profile: **v0.1**
+Supports-YAAgents-Profile: **v0.2**
 
 ## Install
 
 ```bash
-pip install yaagents-client
+pip install yaagents-client==0.2.0
 ```
 
 ## Quickstart
