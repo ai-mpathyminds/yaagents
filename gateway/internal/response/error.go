@@ -18,9 +18,13 @@ const ContentTypeError = "application/vnd.yaagents.error+json"
 
 // Trace holds cross-service correlation identifiers propagated from the
 // inbound request (Agentic REST Profile §5).
+//
+// Dependency, when non-empty, names the upstream service that caused the
+// failure (e.g. "license-server"). Omitted from JSON when empty.
 type Trace struct {
 	CorrelationID string `json:"correlationId"`
 	RequestID     string `json:"requestId"`
+	Dependency    string `json:"dependency,omitempty"`
 }
 
 // ErrorBody is the canonical shape for application/vnd.yaagents.error+json.

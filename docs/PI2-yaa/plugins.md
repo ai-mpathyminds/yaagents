@@ -85,7 +85,7 @@ acceptance:
 library_justify: novel plugin-middleware abstraction; no portfolio shared library applies.
 depends_on: [WI-2yaa.PLG-1]
 
-### WI-2yaa.PLG-5: Plugin (c) — `license-check` [READY] — Sprint 2
+### WI-2yaa.PLG-5: Plugin (c) — `license-check` [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/license-check
 parent_feature: F-PLUGIN
 brief: Implement `license-check` plugin (PRD §6.5 plugin c). Read a
