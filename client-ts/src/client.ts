@@ -2,12 +2,12 @@
 // Copyright 2026 AimpathyMinds
 
 /**
- * YaAgentsClient — fetch-based HTTP client for the YAAgents Agentic REST Profile v0.1.
+ * YaAgentsClient — fetch-based HTTP client for the YAAgents Agentic REST Profile v0.2.
  *
  * Uses the global `fetch` API (Node ≥ 18 / all modern browsers).
  * Zero runtime dependencies.
  *
- * Supports YAAgents Profile v0.1.
+ * Supports YAAgents Profile v0.2.
  */
 
 import { CampaignsAccessor } from "./resources.js";

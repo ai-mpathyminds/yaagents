@@ -1,13 +1,13 @@
 {
   "name": "@aimpathyminds/yaagents-client",
-  "version": "0.1.0",
-  "description": "YAAgents TypeScript client — Agentic REST Profile v0.1",
+  "version": "0.2.0",
+  "description": "YAAgents TypeScript client — Agentic REST Profile v0.2",
   "keywords": [
     "yaagents",
     "agentic",
     "REST",
     "client",
-    "profile-v0.1"
+    "profile-v0.2"
   ],
   "type": "module",
   "main": "./dist/index.cjs",
@@ -50,8 +50,8 @@
     }
   },
   "yaagents": {
-    "profile": "v0.1"
+    "profile": "v0.2"
   },
   "homepage": "https://github.com/ai-mpathyminds/yaagents",
-  "license": "SEE LICENSE IN ../LICENSE"
+  "license": "Apache-2.0"
 }
