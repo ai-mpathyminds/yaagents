@@ -40,7 +40,7 @@ acceptance:
 library_justify: novel plugin-middleware abstraction; no portfolio shared library applies (the plugin interface IS the abstraction being authored).
 depends_on: [WI-2yaa.LIC-1]
 
-### WI-2yaa.PLG-3: Plugin (a) — `token-validator` (always-on; JWT RS256/JWKS + HS256-test) [READY] — Sprint 2
+### WI-2yaa.PLG-3: Plugin (a) — `token-validator` (always-on; JWT RS256/JWKS + HS256-test) [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/token-validator
 parent_feature: F-PLUGIN
 brief: Implement `token-validator` plugin (PRD §6.5 plugin a). JWT RS256
@@ -66,24 +66,136 @@ acceptance:
 library_justify: portfolio/packages/go/auth-jwks/ extraction NOT yet landed (verified at A-3 — portfolio/packages/go/ contains only README.md; LIBRARIES.md row re-targeted PI14-oppor; oppor/docs/PI14-oppor/ absent). Per ADR PI2-yaa-0005 re-implement minimally inline. Plugin Init signature stable so import-path can switch when extraction lands. Open extraction row tracked in LIBRARIES.md.
 depends_on: [WI-2yaa.PLG-1, WI-2yaa.PLG-2]
 
-### WI-2yaa.PLG-4: Plugin (b) — `tenant-injector` [DONE] — Sprint 2
-service: yaagents/gateway/internal/plugins/tenant-injector
+### WI-2yaa.PLG-4: Plugin (b) — `tenant-injector` v1 (SUPERSEDED by PLG-4b) [DONE] — Sprint 2
+service: yaagents/gateway/internal/plugins/tenantinjector
 parent_feature: F-PLUGIN
-brief: Implement `tenant-injector` plugin (PRD §6.5 plugin b). Read tenant
-ID from the configured `header` (default `X-Tenant-ID`); if `allowlist` is
-non-empty and the tenant ID is not in the list → return
-`403 application/vnd.yaagents.error+json`. Inject the configured
-`inject_header` (default `X-Actor-Tenant`) into the **upstream** request
-(modify `r.Header` before calling `next.ServeHTTP`). Default-on; operator
-may disable per-gateway or per-route (per-route override handled by PLG-6).
-init() → plugin.Register.
-acceptance:
-- Allowlist empty → all tenants accepted; allowlist non-empty + tenant in list → accepted; tenant NOT in list → 403 vendor-error body
-- `inject_header` appears in upstream request (verified by test upstream that echoes `r.Header`)
-- `Init` validates: `inject_header` non-empty; `header` non-empty
-- ≥85% line coverage on `tenant-injector` package
-library_justify: novel plugin-middleware abstraction; no portfolio shared library applies.
+brief: **SUPERSEDED 2026-06-01 by WI-2yaa.PLG-4b per ADR PI2-yaa-0006.**
+The v1 design read tenant ID from a client-supplied `X-Tenant-ID` header
+gated by an optional allowlist. This conflates tenant admission with
+tenant identity proof — a caller with a valid JWT for `tenant-A` can
+assert `X-Tenant-ID: tenant-B` and the gateway accepts it. The v1
+implementation landed at 2026-06-01 14:03
+(`gateway/internal/plugins/tenantinjector/plugin.go`); the code path is
+**deleted and replaced** by PLG-4b before B-12 (chain wiring) integrates.
+Status `[DONE]` preserved for audit trail; the v1 design is NOT shipped
+in v0.2.0.
+acceptance: (superseded — see PLG-4b)
+library_justify: superseded — see PLG-4b
 depends_on: [WI-2yaa.PLG-1]
+
+### WI-2yaa.PLG-4b: Plugin (b) — `tenant-injector` v2 (JWT-derived + HTTP lookup) [READY] — Sprint 2
+service: yaagents/gateway/internal/plugins/tenantinjector
+parent_feature: F-PLUGIN
+brief: Re-implement `tenant-injector` per ADR PI2-yaa-0006. **Replace**
+the v1 client-header trust model with a JWT-claim-derived principal plus
+HTTP lookup against a tenant-directory service. Per-request flow: (1)
+read configured claim from validated JWT claims (populated by PLG-3
+token-validator into request context); (2) call `lookup.url` (HTTP, with
+`{principal}` URL-encoded placeholder) to resolve principal → tenant;
+(3) parse response per `response.tenant_id_field`; (4) inject derived
+tenant into upstream via `inject.tenant_header`. **Strip inbound
+`X-Actor-Tenant`** before injection (anti-smuggling — the client must
+not be able to smuggle a header the gateway also writes). **Caching**:
+per-principal LRU with `golang.org/x/sync/singleflight` to collapse
+concurrent first-fetches into a single outbound call; positive +
+negative TTL configurable. **Failure modes**: configurable HTTP codes
+via `on_failure.*` — defaults 503 (lookup network error / timeout), 403
+(principal not found / allowlist miss), 401 (principal claim missing).
+**Boot behaviour**: fail-open — gateway boots even if lookup service is
+unreachable; per-request failures return the configured status from
+cold-start onward. **PI2-yaa scope**: `response.mode: single` only
+(one tenant per principal); multi-tenant principals are a v0.3+
+enhancement per ADR PI2-yaa-0006. Companion artifact: mock-iam-api stub
+binary under `examples/llm-gateway/mock-iam-api/` (~80 LOC Go binary,
+single GET endpoint, in-memory map driven by `mock-tenants.yaml`) — wires
+the compose demo green without an external IAM dependency.
+
+Default plugin YAML schema:
+
+```yaml
+tenant-injector:
+  enabled: true
+  principal:
+    claim: sub                                 # JWT claim naming the principal
+  lookup:
+    url: "https://iam.internal/api/v1/principals/{principal}/tenant"
+    method: GET                                # GET | POST
+    timeout_ms: 500
+    auth:
+      mode: none                               # none | bearer | mtls
+      bearer_token_env: TENANT_LOOKUP_TOKEN    # env var, never in YAML; required when mode: bearer
+      client_cert_path: ""                     # required when mode: mtls
+      client_key_path: ""                      # required when mode: mtls
+    headers:                                   # extra headers sent on the lookup call
+      X-Gateway-Identity: "yaagents-gateway"
+    response:
+      mode: single                             # PI2-yaa: single only; multi is v0.3+
+      tenant_id_field: "tenant_id"             # JSON field path to the tenant id in the reply
+    cache:
+      ttl_seconds: 300
+      negative_ttl_seconds: 30                 # cache "principal has no tenant" briefly
+      max_entries: 10000
+      singleflight: true                       # coalesce concurrent first-fetches
+  inject:
+    tenant_header: "X-Actor-Tenant"
+    principal_header: "X-Actor-Principal"      # "" disables principal injection
+  allowlist: []                                # post-derivation admission gate; empty = allow all
+  on_failure:
+    lookup_network_error: 503
+    lookup_timeout: 503
+    principal_not_found: 403
+    claim_missing: 401
+```
+
+Lookup-service contract (canonical; documented for OSS adopters):
+
+```http
+GET {lookup.url with {principal} URL-encoded and substituted}
+Authorization: <per lookup.auth.mode>           # absent when mode: none
+X-Gateway-Identity: yaagents-gateway            # plus any other lookup.headers entries
+
+200 OK
+Content-Type: application/json
+{"principal":"<value>","tenant_id":"tenant-001"}
+
+404 Not Found     → principal_not_found (HTTP 404 from IAM, or 200 with empty tenant_id)
+5xx / network err → lookup_network_error
+>timeout_ms       → lookup_timeout
+```
+
+The v1 code at `gateway/internal/plugins/tenantinjector/` is **deleted
+entirely**; re-implemented from scratch. Package name + import path
+preserved so PLG-6 (B-12) chain composition sees no API drift. `init()`
+→ `plugin.Register(&TenantInjector{})`. Init validation — returns
+non-nil error on any violation (gateway exit 1):
+
+1. `principal.claim` non-empty string.
+2. `lookup.url` parseable URL AND contains exactly one `{principal}` placeholder.
+3. `lookup.method` ∈ {GET, POST}.
+4. `lookup.timeout_ms` > 0 and ≤ 30000.
+5. `lookup.auth.mode` ∈ {none, bearer, mtls}; when `bearer`, env var resolves to non-empty; when `mtls`, both cert + key paths readable.
+6. `lookup.response.mode` == `"single"` (PI2-yaa scope); `tenant_id_field` non-empty.
+7. `lookup.cache.ttl_seconds` > 0; `max_entries` > 0.
+8. `inject.tenant_header` non-empty.
+9. `enabled: false` → Init returns error (defence-in-depth alongside PLG-6 boot assertion; matches PLG-3 token-validator semantics).
+
+acceptance:
+- v1 code at `gateway/internal/plugins/tenantinjector/` fully replaced; `grep -rn "X-Tenant-ID" gateway/internal/plugins/tenantinjector/` returns 0 hits (except possibly in inbound-header-stripping logic if the v1 header name is configured-strippable; v2 strips only `inject.tenant_header`)
+- JWT with `principal.claim` populated + IAM 2xx → upstream request carries `inject.tenant_header` with value matching `response.tenant_id_field` from lookup (verified via test upstream that echoes `r.Header`)
+- JWT with `principal.claim` populated + IAM 404 → 403 vendor-error body; `next` NOT called
+- JWT with `principal.claim` populated + IAM timeout → 503 vendor-error body; trace carries `dependency: "iam-lookup"`
+- JWT missing the configured principal claim → 401 vendor-error body
+- Inbound `X-Actor-Tenant` header is stripped from `r.Header` before plugin handler runs (verified: malicious client sets `X-Actor-Tenant: tenant-evil`; upstream sees only the plugin-derived value, never `tenant-evil`)
+- Cache hit: same principal twice within `cache.ttl_seconds` → exactly one outbound HTTP call (hit-counter)
+- Singleflight: 50 concurrent first-requests for the same principal → exactly one outbound HTTP call (verified via test IAM hit-counter)
+- Negative cache: 404 from IAM cached for `negative_ttl_seconds`; subsequent same-principal request within window returns 403 without re-calling IAM
+- Allowlist non-empty + derived tenant NOT in list → 403 vendor-error (post-derivation admission gate)
+- Init returns error on each of the 9 validation rules above (one test per rule)
+- Boot behaviour: gateway with `lookup.url` pointing at an unreachable host starts cleanly (`/readyz` returns 200); per-request returns 503 from the first call
+- `gateway/internal/plugins/tenantinjector/` ≥85% line coverage
+- `examples/llm-gateway/mock-iam-api/` compiles; Docker build green; compose demo `up` shows end-to-end principal→tenant→upstream flow green
+library_justify: novel tenant-identity-derivation logic; no portfolio shared library applies. Adds `golang.org/x/sync/singleflight` — Go-ecosystem standard, MIT-licensed, single-function utility, widely adopted; `platform-librarian` vet logged at B-11a dispatch time per Library Gate 2.
+depends_on: [WI-2yaa.PLG-1, WI-2yaa.PLG-3]
 
 ### WI-2yaa.PLG-5: Plugin (c) — `license-check` [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/license-check
