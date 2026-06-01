@@ -107,7 +107,7 @@ acceptance:
 library_justify: novel plugin-middleware abstraction; no portfolio shared library applies.
 depends_on: [WI-2yaa.PLG-1]
 
-### WI-2yaa.PLG-7: Stub plugins (d) `prompt-sanitize` + (e) `otel-audit` [READY] — Sprint 2
+### WI-2yaa.PLG-7: Stub plugins (d) `prompt-sanitize` + (e) `otel-audit` [DONE] — Sprint 2
 service: yaagents/gateway/internal/plugins/{prompt-sanitize,otel-audit}
 parent_feature: F-PLUGIN
 brief: Ship the `Plugin` interface implementations for both **stub** plugins
