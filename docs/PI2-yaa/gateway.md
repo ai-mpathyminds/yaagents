@@ -21,7 +21,7 @@ sourcing; prompt-sanitize stub behaviour).
 
 ---
 
-### WI-2yaa.PLG-2: Gateway plugin-loader refactor (PI1-yaa middleware → plugin chain) [READY] — Sprint 1
+### WI-2yaa.PLG-2: Gateway plugin-loader refactor (PI1-yaa middleware → plugin chain) [WIP] — Sprint 1
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: Refactor `gateway/cmd/` + `gateway/internal/` so the PI1-yaa

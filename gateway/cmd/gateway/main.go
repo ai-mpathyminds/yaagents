@@ -4,15 +4,16 @@
 // Command gateway is the yaagents API gateway — a lightweight reverse proxy
 // that adds authn, tenant/actor context, RBAC, typed-response passthrough,
 // audit logging, and Prometheus metrics for the Agentic REST Profile
-// (ADR PI1-yaa-0001).
+// (ADR PI1-yaa-0001; plugin chain per ADR PI2-yaa-0001).
 //
 // Configuration is via environment variables:
 //
-//	GATEWAY_PORT          TCP port to listen on (default: 8120)
-//	GATEWAY_ROUTES_FILE   Path to routes.yaml (default: routes.yaml)
-//	GATEWAY_AUDIT_LOG     Audit sink: "stdout" or file path (default: stdout)
-//	GATEWAY_JWT_SECRET    HS256 secret for dev/demo JWT validation (WI-1yaa.GW-2)
-//	GATEWAY_JWT_JWKS_URL  JWKS URL for RS256 production JWT validation (WI-1yaa.GW-2)
+//	GATEWAY_PORT              TCP port to listen on (default: 8120)
+//	GATEWAY_ROUTES_FILE       Path to routes.yaml (default: routes.yaml)
+//	GATEWAY_AUDIT_LOG         Audit sink: "stdout" or file path (default: stdout)
+//	GATEWAY_PLUGINS_FILE      Optional path to standalone plugins.yaml
+//	GATEWAY_JWT_SECRET        HS256 secret — injected into token-validator config
+//	GATEWAY_JWT_JWKS_URL      JWKS URL  — injected into token-validator config
 package main
 
 import (
@@ -26,13 +27,16 @@ import (
 	"time"
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
-	"github.com/ai-mpathyminds/yaagents/gateway/internal/auth"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/config"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/loader"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/proxy"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
-	"github.com/ai-mpathyminds/yaagents/gateway/internal/tenant"
+
+	// Import token-validator bridge plugin for side-effect registration
+	// (ADR PI2-yaa-0001 §3). PLG-3 will replace this import.
+	_ "github.com/ai-mpathyminds/yaagents/gateway/internal/plugins/tokenvalidator"
 )
 
 func main() {
@@ -63,14 +67,14 @@ func main() {
 	// Prometheus metrics registry (WI-1yaa.GW-5).
 	reg := metrics.New()
 
-	// Auth validator — fail-fast if not configured (WI-1yaa.GW-2).
-	validator, authErr := auth.NewValidator(log)
-	if authErr != nil {
-		log.Error("auth not configured — cannot start", "error", authErr.Error())
+	// Plugin loader — reads plugins: block, validates always-on assertion,
+	// merges env vars into token-validator config, calls Init in declaration order.
+	// Any error is a fatal boot failure (ADR PI2-yaa-0001 §5; PRD §6.4).
+	ldr, ldrErr := loader.Load(log, cfg.PluginsFile, cfg.RoutesFile, cfg.JWTSecret, cfg.JWTJWKSURL)
+	if ldrErr != nil {
+		log.Error("plugin loader failed — cannot start", "error", ldrErr.Error())
 		os.Exit(1)
 	}
-	authMiddle := auth.Middleware(validator, log)
-	ctxMiddle := tenant.ContextMiddleware(log) // WI-1yaa.GW-3
 
 	// Route dispatcher: RBAC + typed-response passthrough + audit + metrics (GW-4/GW-5).
 	dispatcher, dispErr := proxy.New(routeList, log, auditLog, reg)
@@ -83,8 +87,8 @@ func main() {
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
 	mux.HandleFunc("GET /metrics", reg.Handler())
-	// Catch-all: auth → tenant context → route dispatcher.
-	mux.Handle("/", authMiddle(ctxMiddle(dispatcher)))
+	// Catch-all: plugin chain (token-validator → … ) → route dispatcher.
+	mux.Handle("/", ldr.Chain(dispatcher))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
@@ -94,7 +98,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown on SIGTERM / SIGINT — drains in-flight requests (GW-5).
+	// Graceful shutdown on SIGTERM / SIGINT.
+	// Shutdown order: HTTP server drain → plugin Shutdown in reverse order.
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, syscall.SIGINT)
 
@@ -106,6 +111,7 @@ func main() {
 		if shutErr := srv.Shutdown(ctx); shutErr != nil {
 			log.Error("graceful shutdown error", "error", shutErr.Error())
 		}
+		ldr.Shutdown(ctx)
 	}()
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
