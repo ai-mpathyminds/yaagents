@@ -2,15 +2,14 @@
 
 > **Build the agent however you want. Expose it like a governed API.**
 
-[![License: YAAgents Community v0.1](https://img.shields.io/badge/license-YAAgents%20Community%20v0.1-blue)](LICENSE)
-[![Source Available](https://img.shields.io/badge/source-available-fair--code-informational)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8.svg?logo=go)](https://golang.org/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python)](https://python.org/)
 [![CI](https://github.com/ai-mpathyminds/yaagents/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-mpathyminds/yaagents/actions)
 [![Gateway image](https://img.shields.io/badge/ghcr.io-yaagents--gateway-0d1117.svg?logo=github)](https://ghcr.io/ai-mpathyminds/yaagents-gateway)
-[![Profile version](https://img.shields.io/badge/YAAgents%20Profile-v0.1-blueviolet)](spec/)
+[![Profile version](https://img.shields.io/badge/YAAgents%20Profile-v0.2-blueviolet)](spec/)
 
-**YAAgents** is a source-available **Agentic REST Profile** — a response contract, gateway, and client layer for exposing agentic capabilities as ordinary domain resource operations.
+**YAAgents** is an **Agentic REST Profile** — a response contract, gateway, and client layer for exposing agentic capabilities as ordinary domain resource operations.
 
 ```http
 POST /campaigns/{id}/optimizations       ← YAAgents pattern

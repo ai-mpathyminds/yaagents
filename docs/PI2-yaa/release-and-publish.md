@@ -19,7 +19,7 @@ no new IAM / org-config work.
 
 ---
 
-### WI-2yaa.REL-S: README license-badge swap + CONTRIBUTING update [READY] — Sprint 1
+### WI-2yaa.REL-S: README license-badge swap + CONTRIBUTING update [DONE] — Sprint 1
 service: yaagents/(root)
 parent_feature: F-LICENSE
 brief: Update `README.md` license badge from "source-available / fair-code"

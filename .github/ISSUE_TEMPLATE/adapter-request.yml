@@ -51,7 +51,7 @@ body:
       description: |
         Contributions are not currently accepted (legal review pending — see
         CONTRIBUTING.md). This question is forward-looking: once contributions open,
-        would you be willing to maintain this adapter under the YAAgents license?
+        would you be willing to maintain this adapter under the Apache 2.0 license?
       options:
         - "Yes — I would author and maintain it"
         - "Yes — I would co-maintain it with others"
