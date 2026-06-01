@@ -1,0 +1,12 @@
+{
+  "status": 409,
+  "contentType": "application/vnd.yaagents.conflict+json",
+  "expectedType": "conflict",
+  "body": {
+    "type": "conflict",
+    "code": "CAMPAIGN_LOCKED",
+    "message": "Campaign camp-001 is currently locked by another optimization job.",
+    "conflictingResourceId": "camp-001",
+    "trace": {"correlationId": "corr-301", "requestId": "req-301"}
+  }
+}

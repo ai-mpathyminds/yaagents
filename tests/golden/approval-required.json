@@ -1,0 +1,12 @@
+{
+  "status": 412,
+  "contentType": "application/vnd.yaagents.approval-required+json",
+  "expectedType": "approval_required",
+  "body": {
+    "type": "approval_required",
+    "code": "APPROVAL_REQUIRED",
+    "message": "This optimization will increase the campaign budget by 40%. Human approval is required.",
+    "approvalToken": "apptok-abc123",
+    "trace": {"correlationId": "corr-201", "requestId": "req-201"}
+  }
+}

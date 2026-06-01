@@ -1,0 +1,11 @@
+{
+  "status": 424,
+  "contentType": "application/vnd.yaagents.error+json",
+  "expectedType": "failed_dependency",
+  "body": {
+    "type": "failed_dependency",
+    "code": "UPSTREAM_UNAVAILABLE",
+    "message": "The AI model service is temporarily unavailable. Please retry in a few seconds.",
+    "trace": {"correlationId": "corr-402", "requestId": "req-402"}
+  }
+}

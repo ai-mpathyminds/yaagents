@@ -1,0 +1,11 @@
+{
+  "status": 500,
+  "contentType": "application/vnd.yaagents.error+json",
+  "expectedType": "error",
+  "body": {
+    "type": "error",
+    "code": "INTERNAL_ERROR",
+    "message": "An unexpected error occurred while processing your request.",
+    "trace": {"correlationId": "corr-403", "requestId": "req-403"}
+  }
+}

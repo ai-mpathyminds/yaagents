@@ -1,0 +1,6 @@
+{
+  "status": 201,
+  "contentType": "application/json",
+  "expectedType": "created",
+  "body": {"id": "opt-001", "campaignId": "cmp-001", "goal": "reduce_cost_per_lead", "status": "queued"}
+}
