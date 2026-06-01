@@ -47,7 +47,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001, ADR PI2-yaa-0001
 depends_on: [WI-2yaa.PLG-1]
 
-### WI-2yaa.PLG-6: Plugin chain handler + per-route overrides + reverse-Shutdown [READY] — Sprint 2
+### WI-2yaa.PLG-6: Plugin chain handler + per-route overrides + reverse-Shutdown [WIP] — Sprint 2
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: Implement the request-time plugin chain composition (PRD §6.4 per

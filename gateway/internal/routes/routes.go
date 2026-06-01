@@ -45,6 +45,15 @@ type Route struct {
 	TenantRequired bool     `yaml:"tenantRequired"`
 	Audit          bool     `yaml:"audit"`
 
+	// Plugins holds per-route plugin overrides (PRD §5.4.2). A plugin listed
+	// here may set enabled: false to bypass it for this route only. Disabling
+	// token-validator per-route is a fatal boot error (ADR PI2-yaa-0001 §5).
+	// Example YAML:
+	//   plugins:
+	//     tenant-injector:
+	//       enabled: false
+	Plugins map[string]map[string]any `yaml:"plugins"`
+
 	// PathParams holds the ordered placeholder names extracted from Path
 	// (e.g. ["campaignId"] for /campaigns/{campaignId}/optimizations).
 	// Populated by Load; not present in the YAML source.

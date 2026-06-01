@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -32,10 +33,10 @@ import (
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/logger"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/proxy"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/response"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
 
-	// Import token-validator bridge plugin for side-effect registration
-	// (ADR PI2-yaa-0001 §3). PLG-3 will replace this import.
+	// Plugin side-effect registrations (ADR PI2-yaa-0001 §3).
 	_ "github.com/ai-mpathyminds/yaagents/gateway/internal/plugins/tokenvalidator"
 )
 
@@ -54,6 +55,13 @@ func main() {
 		slog.String("routes_file", cfg.RoutesFile),
 		slog.Int("routes_loaded", len(routeList)),
 	)
+
+	// PLG-6: boot-time per-route plugin-override validation.
+	// Ensures no route disables token-validator (ADR PI2-yaa-0001 §5).
+	if overrideErr := loader.ValidateRouteOverrides(routeList); overrideErr != nil {
+		log.Error("invalid per-route plugin override — cannot start", "error", overrideErr.Error())
+		os.Exit(1)
+	}
 
 	// Audit log sink (WI-1yaa.GW-5).
 	auditSink, closeAudit, auditErr := audit.OpenSink(cfg.AuditLog)
@@ -83,13 +91,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	// PLG-6: shutdown gate — new requests after SIGTERM receive 503.
+	chain := ldr.Chain(dispatcher)
+	var shuttingDown atomic.Bool
+	chainWithGate := withShutdownGate(chain, &shuttingDown)
+
 	mux := http.NewServeMux()
+	// Health + metrics routes are pre-auth: they bypass the plugin chain entirely
+	// and are always reachable (PRD §10 [SEC] Gateway; PLG-6 AC).
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
 	mux.HandleFunc("GET /metrics", reg.Handler())
-	// Catch-all: plugin chain (token-validator → … ) → route dispatcher.
-	mux.Handle("/", ldr.Chain(dispatcher))
+	// Catch-all: shutdown gate → plugin chain → route dispatcher.
+	mux.Handle("/", chainWithGate)
 
+	shutdownTimeout := time.Duration(cfg.ShutdownTimeoutS) * time.Second
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
 		Handler:      mux,
@@ -99,14 +115,16 @@ func main() {
 	}
 
 	// Graceful shutdown on SIGTERM / SIGINT.
-	// Shutdown order: HTTP server drain → plugin Shutdown in reverse order.
+	// Sequence: set shutdown gate (503 new requests) → drain HTTP server
+	// → call plugin Shutdown in reverse declaration order (PLG-6 AC).
 	stopCh := make(chan os.Signal, 1)
 	signal.Notify(stopCh, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
 		sig := <-stopCh
 		log.Info("shutdown signal received — draining", slog.String("signal", sig.String()))
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		shuttingDown.Store(true) // start rejecting new requests with 503
+		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()
 		if shutErr := srv.Shutdown(ctx); shutErr != nil {
 			log.Error("graceful shutdown error", "error", shutErr.Error())
@@ -119,6 +137,23 @@ func main() {
 		os.Exit(1)
 	}
 	log.Info("gateway stopped")
+}
+
+// withShutdownGate wraps h to return 503 Service Unavailable when shutting is
+// true. The flag is set after SIGTERM; in-flight requests are already past
+// this gate and continue to drain normally (PLG-6 AC).
+func withShutdownGate(h http.Handler, shutting *atomic.Bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if shutting.Load() {
+			response.WriteError(w, http.StatusServiceUnavailable, response.ErrorBody{
+				Type:    "error",
+				Code:    "SHUTTING_DOWN",
+				Message: "gateway is shutting down; retry shortly",
+			})
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 // handleHealthz responds 200 OK for liveness checks (always up while running).
