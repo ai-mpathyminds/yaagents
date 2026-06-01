@@ -1,13 +1,13 @@
 # yaagents-cli
 
-**Supports-YAAgents-Profile: v0.1**
+**Supports-YAAgents-Profile: v0.2**
 
 CLI validator for the [YAAgents Agentic REST Profile](https://github.com/ai-mpathyminds/yaagents).
 
 ## Install
 
 ```bash
-pip install yaagents-cli
+pip install yaagents-cli==0.2.0
 ```
 
 ## Usage

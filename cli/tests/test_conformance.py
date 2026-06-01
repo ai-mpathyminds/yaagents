@@ -213,7 +213,7 @@ class TestCheckProfileHeader:
     def test_fail_when_wrong_version(self) -> None:
         with patch("urllib.request.urlopen") as mock_open:
             mock_open.return_value = _make_mock_response(
-                201, {_PROFILE_HEADER: "v0.2"}, b"{}"
+                201, {_PROFILE_HEADER: "v0.1"}, b"{}"
             )
             result = _check_profile_header("http://gw", "tok", "t1")
         assert not result.passed

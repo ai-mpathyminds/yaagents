@@ -42,7 +42,7 @@ import jsonschema
 # ── profile constants (spec §2 + §4) ─────────────────────────────────────────
 
 _PROFILE_HEADER = "X-YAAgents-Profile"
-_PROFILE_VERSION = "v0.1"
+_PROFILE_VERSION = "v0.2"
 _CT_CLARIFICATION = "application/vnd.yaagents.clarification+json"
 _CT_ERROR = "application/vnd.yaagents.error+json"
 _CT_JSON = "application/json"
@@ -168,7 +168,8 @@ def _http(
             # Normalise header keys to lowercase so lookups are case-insensitive.
             # Go's net/http canonicalises headers (e.g. "X-YAAgents-Profile" →
             # "X-Yaagents-Profile"), which breaks exact-case dict.get() calls.
-            return resp.status, {k.lower(): v for k, v in resp.headers.items()}, resp.read()
+            hdrs = {k.lower(): v for k, v in resp.headers.items()}
+            return resp.status, hdrs, resp.read()
     except urllib.error.HTTPError as e:
         return e.code, {k.lower(): v for k, v in e.headers.items()}, e.read()
     except urllib.error.URLError as e:

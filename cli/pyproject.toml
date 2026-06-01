@@ -5,13 +5,15 @@ build-backend = "hatchling.build"
 [project]
 name = "yaagents-cli"
 dynamic = ["version"]
-description = "YAAgents CLI — Agentic REST Profile v0.1 validator"
+description = "YAAgents CLI — Agentic REST Profile v0.2 validator"
 readme = "README.md"
 requires-python = ">=3.11,<4"
-keywords = ["yaagents", "agentic", "REST", "cli", "validator", "profile-v0.1"]
+license = { text = "Apache-2.0" }
+keywords = ["yaagents", "agentic", "REST", "cli", "validator", "profile-v0.2"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -25,7 +27,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/ai-mpathyminds/yaagents"
-"Supports-YAAgents-Profile" = "v0.1"
+"Supports-YAAgents-Profile" = "v0.2"
 
 [project.scripts]
 yaagents = "yaagents_cli.__main__:_entry"
