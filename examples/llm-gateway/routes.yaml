@@ -1,0 +1,18 @@
+# yaagents LLM-gateway demo — route configuration (WI-2yaa.EX-LLM-1)
+# Topology: yaagents-gateway (port 8122) → llm-api (port 8123)
+# ADR: PI2-yaa-0002 (Option A layer-atop; SSE mode activated by mode: sse)
+#
+# Route: POST /completions
+#   mode: sse             → gateway uses SSE pipe-and-flush proxy (LLM-1)
+#   tenantRequired: true  → rejects requests without X-Tenant-ID header
+#   executionTimeoutSeconds: 30  → SSE deadline = 30 + 30 = 60 s (PRD §7.1)
+
+routes:
+  - id: completions
+    method: POST
+    path: /completions
+    target: http://llm-api:8123
+    mode: sse
+    tenantRequired: true
+    executionTimeoutSeconds: 30
+    audit: false
