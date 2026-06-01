@@ -413,7 +413,7 @@ func TestNewProxy_NilError(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	h, err := NewProxy(u)
+	h, err := NewProxy(u, nil)
 	if err != nil {
 		t.Fatalf("NewProxy returned unexpected error: %v", err)
 	}
@@ -433,7 +433,7 @@ func TestNewProxy_ProxiesRequest(t *testing.T) {
 	defer upstream.Close()
 
 	u, _ := url.Parse(upstream.URL)
-	h, _ := NewProxy(u)
+	h, _ := NewProxy(u, nil)
 
 	gw := httptest.NewServer(h)
 	defer gw.Close()

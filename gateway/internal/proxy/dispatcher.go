@@ -45,25 +45,28 @@ type routeEntry struct {
 // RouteDispatcher matches inbound requests to the route table and forwards
 // them to the upstream target with RBAC enforcement and typed-response passthrough.
 // auditLog and reg are optional (nil disables the feature).
+// lim is the per-tenant SSE concurrency limiter (LLM-2); nil disables limiting.
 type RouteDispatcher struct {
 	entries  []routeEntry
 	log      *slog.Logger
 	auditLog *audit.Logger
 	reg      *metrics.Registry
+	lim      *llm.Limiter
 }
 
 // New builds a RouteDispatcher from a validated route list.
-// auditLog and reg may be nil to disable audit/metrics respectively.
+// auditLog, reg, and lim may be nil to disable the respective feature.
 // Returns an error if any route's target URL cannot be parsed.
-func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry) (*RouteDispatcher, error) {
+func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry, lim *llm.Limiter) (*RouteDispatcher, error) {
 	d := &RouteDispatcher{
 		entries:  make([]routeEntry, 0, len(routeList)),
 		log:      log,
 		auditLog: auditLog,
 		reg:      reg,
+		lim:      lim,
 	}
 	for _, r := range routeList {
-		handler, err := makeRouteHandler(r, log)
+		handler, err := makeRouteHandler(r, log, lim)
 		if err != nil {
 			return nil, fmt.Errorf("building handler for route %q: %w", r.ID, err)
 		}
@@ -201,10 +204,10 @@ func (d *RouteDispatcher) observeHandler(h http.Handler, route routes.Route) htt
 //	EnforceTenant(route.TenantRequired) → RBAC check → reverse-proxy
 //
 // When route.Mode == llm.ModeSSE the downstream proxy is an SSE pipe-and-flush
-// handler (LLM-1) rather than httputil.ReverseProxy. The X-YAAgents-Profile
-// header is injected before the SSE handler writes response headers so it is
-// included in both SSE and standard proxied responses.
-func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error) {
+// handler (LLM-1 + LLM-2 limiter) rather than httputil.ReverseProxy.
+// The X-YAAgents-Profile header is injected before the SSE handler writes
+// response headers so it is included in both SSE and standard proxied responses.
+func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter) (http.Handler, error) {
 	targetURL, err := url.Parse(route.Target)
 	if err != nil {
 		return nil, fmt.Errorf("parsing target %q: %w", route.Target, err)
@@ -212,8 +215,8 @@ func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error
 
 	var rp http.Handler
 	if route.Mode == llm.ModeSSE {
-		// SSE-aware pipe-and-flush proxy (LLM-1).
-		sseHandler, sseErr := llm.NewProxy(targetURL)
+		// SSE-aware pipe-and-flush proxy with per-tenant concurrency limiter (LLM-1+2).
+		sseHandler, sseErr := llm.NewProxy(targetURL, lim)
 		if sseErr != nil {
 			return nil, fmt.Errorf("building SSE proxy for route %q: %w", route.ID, sseErr)
 		}
@@ -225,6 +228,7 @@ func makeRouteHandler(route routes.Route, log *slog.Logger) (http.Handler, error
 		})
 	} else {
 		// Standard httputil.ReverseProxy (GW-4 path — default, mode == "").
+		// Non-SSE routes never touch the limiter (LLM-2 AC: non-SSE ≠ counter).
 		rp = buildProxy(targetURL, route, log)
 	}
 

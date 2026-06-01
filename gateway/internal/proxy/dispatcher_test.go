@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/audit"
+	"github.com/ai-mpathyminds/yaagents/gateway/internal/llm"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/metrics"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/reqctx"
 	"github.com/ai-mpathyminds/yaagents/gateway/internal/routes"
@@ -47,7 +48,9 @@ func makeDispatcherWithObs(t *testing.T, upstream *httptest.Server, routeDef rou
 	if upstream != nil {
 		routeDef.Target = upstream.URL
 	}
-	d, err := New([]routes.Route{routeDef}, nullLog(), auditLog, reg)
+	// nil limiter: LLM-2 concurrency limiting disabled in unit tests unless
+	// the test explicitly constructs a dispatcher with a real Limiter.
+	d, err := New([]routes.Route{routeDef}, nullLog(), auditLog, reg, nil)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
@@ -568,6 +571,40 @@ func TestDispatcher_SSEMode_ReachesUpstream(t *testing.T) {
 	}
 	if got := w.Header().Get(ProfileHeader); got != ProfileVersion {
 		t.Errorf("X-YAAgents-Profile: want %q, got %q", ProfileVersion, got)
+	}
+}
+
+// TestDispatcher_NonSSERoute_DoesNotTouchLimiter verifies LLM-2 acceptance
+// criterion: non-SSE requests do NOT increment the SSE concurrency limiter.
+// The standard httputil.ReverseProxy path (mode == "") never calls NewProxy
+// or the Limiter, so the counter must remain 0 after the request.
+func TestDispatcher_NonSSERoute_DoesNotTouchLimiter(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, `{"ok":true}`)
+	}))
+	defer upstream.Close()
+
+	lim := llm.NewLimiter(10)
+	route := routes.Route{
+		ID:     "std-no-limiter",
+		Method: "GET",
+		Path:   "/items",
+		Target: upstream.URL,
+		// Mode is empty — standard httputil.ReverseProxy, limiter not touched.
+	}
+	d, err := New([]routes.Route{route}, nullLog(), nil, nil, lim)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	req := ctxRequest("GET", "/items", nil, []string{}, "tenant-001")
+	d.ServeHTTP(httptest.NewRecorder(), req)
+
+	// Limiter must not have been touched — counter stays at 0.
+	if got := lim.Count("tenant-001"); got != 0 {
+		t.Errorf("non-SSE route must not increment limiter; got count %d", got)
 	}
 }
 
