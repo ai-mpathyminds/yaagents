@@ -395,7 +395,7 @@ is enumerated in `gateway.md` as WIs PLG-2 (loader refactor) and PLG-6
 | [SRE] per-plugin latency histogram | feature WI | gateway.md LLM-4 (advisory; `yaagents_gateway_plugin_latency_seconds`) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; plugins are compiled-in Go code with zero cloud cost implication |
 
-### WI-2yaa.NFR-PLG-1: govulncheck + no-dynamic-load CI gate [READY]
+### WI-2yaa.NFR-PLG-1: govulncheck + no-dynamic-load CI gate [DONE]
 service: yaagents/gateway/internal/plugins
 parent_feature: F-PLUGIN
 brief: [SEC] Two CI checks wired in `.github/workflows/ci.yml`:
