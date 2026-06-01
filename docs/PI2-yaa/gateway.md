@@ -101,7 +101,7 @@ Activation is **config-driven**: a route declares `mode: sse` in
 cost (the SSE code path is dormant when no route activates it — PRD §7.1
 Option A trade-off accepted).
 
-### WI-2yaa.LLM-1: SSE proxy (pipe-and-flush) [WIP] — Sprint 4
+### WI-2yaa.LLM-1: SSE proxy (pipe-and-flush) [DONE] — Sprint 4
 service: yaagents/gateway/internal/llm
 parent_feature: F-LLM
 brief: **MOVE** (not copy) `ai-platform/services/ai-gateway/internal/proxy/sse.go`
