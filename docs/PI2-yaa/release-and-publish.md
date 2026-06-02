@@ -280,7 +280,7 @@ depends_on: [WI-2yaa.REL-1, WI-2yaa.REL-2, WI-2yaa.REL-3, WI-2yaa.REL-4, WI-2yaa
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; no TF edits in PI2-yaa; GHCR/PyPI/npm are public registries; Go module proxy is free. No AWS run-rate change. FinOps WI is explicitly N/A for this PI. |
 | Cosign image signing | NOTE — deferred | PI3-yaa scope (noted in REL-3 brief; no WI in PI2-yaa) |
 
-### WI-2yaa.NFR-REL-1: CI matrix — community-license grep + SPDX audit [READY]
+### WI-2yaa.NFR-REL-1: CI matrix — community-license grep + SPDX audit [WIP]
 service: yaagents/(ci)
 parent_feature: F-LICENSE
 brief: [SEC + SUPPLY] Integrate the two license-hygiene checks from the
