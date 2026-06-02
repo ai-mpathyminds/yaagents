@@ -4,8 +4,12 @@
 package sdkgo
 
 import (
+	"bytes"
 	"encoding/json"
+	"flag"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -284,5 +288,134 @@ func TestAgenticResponse_FailedDependency_NoDependency(t *testing.T) {
 	}
 	if body.Message != "unknown upstream failure" {
 		t.Errorf("message = %q, want %q", body.Message, "unknown upstream failure")
+	}
+}
+
+// updateGolden regenerates testdata/*.golden.json when passed as -update.
+// Usage: go test -run TestGolden_ResponseBodies -update
+var updateGolden = flag.Bool("update", false, "regenerate golden test files")
+
+// goldenCtx is the fixed AgenticContext embedded in every golden JSON file.
+// Changing these values requires regenerating the corpus (-update).
+var goldenCtx = AgenticContext{
+	CorrelationID: "corr-golden-123",
+	RequestID:     "req-golden-456",
+}
+
+// TestGolden_ResponseBodies asserts that json.Marshal of each factory output
+// equals the committed golden file (testdata/<name>.golden.json).
+// Covers all 10 PRD §4 response types per WI-3yaa.SG-5 acceptance criteria.
+//
+// approval_required uses token-normalization before comparison because
+// its approvalToken is a random UUID v4 generated at call time.
+//
+// To regenerate the corpus: go test -run TestGolden_ResponseBodies -update
+func TestGolden_ResponseBodies(t *testing.T) {
+	ar := AgenticResponse{}
+
+	cases := []struct {
+		name string
+		resp AgenticWritable
+	}{
+		{
+			"accepted",
+			ar.Accepted(goldenCtx, "op-golden-001"),
+		},
+		{
+			"done",
+			ar.Done(goldenCtx, map[string]string{"result": "ok"}),
+		},
+		{
+			"created",
+			ar.Created(goldenCtx, map[string]string{"id": "golden-id-001"}),
+		},
+		{
+			"failed",
+			ar.Failed(goldenCtx, "golden error message"),
+		},
+		{
+			"clarification_required",
+			ar.ClarificationRequired(goldenCtx, []RequiredInput{
+				{
+					Name:          "successMetric",
+					Location:      "body",
+					Type:          "string",
+					Required:      true,
+					Question:      "Which success metric should be optimized?",
+					AllowedValues: []string{"ctr", "cpl", "conversion_rate", "lead_quality"},
+				},
+			}),
+		},
+		{
+			"validation_failed",
+			ar.ValidationFailed(goldenCtx, []ValidationError{
+				{Field: "amount", Message: "must be a positive number"},
+			}),
+		},
+		{
+			"approval_required",
+			ar.ApprovalRequired(goldenCtx, nil, "golden approval reason"),
+		},
+		{
+			"forbidden",
+			ar.Forbidden(goldenCtx, "golden forbidden message"),
+		},
+		{
+			"conflict",
+			ar.Conflict(goldenCtx, "golden conflict message"),
+		},
+		{
+			"failed_dependency",
+			ar.FailedDependency(goldenCtx, "golden-svc", "golden dep failure"),
+		},
+	}
+
+	if len(cases) != 10 {
+		t.Fatalf("expected 10 golden cases, got %d", len(cases))
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := tc.resp.Body()
+			if err != nil {
+				t.Fatalf("Body() error: %v", err)
+			}
+
+			// approval_required: normalize the random UUID token before comparison
+			// so the golden file is deterministic.
+			if tc.name == "approval_required" {
+				var body ApprovalRequiredBody
+				if err := json.Unmarshal(got, &body); err != nil {
+					t.Fatalf("unmarshal approval_required: %v", err)
+				}
+				body.ApprovalToken = "00000000-0000-4000-8000-000000000000"
+				got, err = json.Marshal(body)
+				if err != nil {
+					t.Fatalf("re-marshal approval_required: %v", err)
+				}
+			}
+
+			goldenPath := filepath.Join("testdata", tc.name+".golden.json")
+
+			if *updateGolden {
+				if err := os.MkdirAll("testdata", 0o755); err != nil {
+					t.Fatalf("MkdirAll testdata: %v", err)
+				}
+				if err := os.WriteFile(goldenPath, got, 0o644); err != nil {
+					t.Fatalf("WriteFile %s: %v", goldenPath, err)
+				}
+				t.Logf("updated %s", goldenPath)
+				return
+			}
+
+			want, err := os.ReadFile(goldenPath)
+			if err != nil {
+				t.Fatalf("ReadFile %s: %v\nhint: run with -update to generate", goldenPath, err)
+			}
+
+			if !bytes.Equal(got, want) {
+				t.Errorf("golden mismatch for %s:\n got:  %s\n want: %s", tc.name, got, want)
+			}
+		})
 	}
 }

@@ -81,3 +81,18 @@ func TestFromRequest_PartialHeaders(t *testing.T) {
 		t.Errorf("Principal: want empty, got %q", ctx.Principal)
 	}
 }
+
+// TestFromRequest_NilBody_NoPanic explicitly documents that FromRequest does
+// not panic when the request body is nil (the standard case for GET and
+// header-only POST requests per WI-3yaa.SG-5 acceptance criteria).
+func TestFromRequest_NilBody_NoPanic(t *testing.T) {
+	r, err := http.NewRequest(http.MethodPost, "/", nil) // nil body
+	if err != nil {
+		t.Fatalf("http.NewRequest: %v", err)
+	}
+	// Must not panic:
+	ctx := sdkgo.FromRequest(r)
+	if ctx.CorrelationID != "" || ctx.RequestID != "" || ctx.ActorTenant != "" || ctx.Principal != "" {
+		t.Errorf("expected all-empty AgenticContext for request with nil body and no headers, got %+v", ctx)
+	}
+}
