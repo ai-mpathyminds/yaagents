@@ -1,0 +1,7 @@
+module example.com/campaign-api-go
+
+go 1.22
+
+require github.com/ai-mpathyminds/yaagents-sdk-go v0.0.0-00010101000000-000000000000
+
+replace github.com/ai-mpathyminds/yaagents-sdk-go => ../../sdk-go
