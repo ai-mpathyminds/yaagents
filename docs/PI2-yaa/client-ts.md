@@ -56,7 +56,7 @@ depends_on: [WI-2yaa.LIC-2]
 | [SUPPLY] OIDC trusted publishing via npm provenance | feature WI | REL-2 in `release-and-publish.md` (`npm publish --provenance` via OIDC carry-forward) |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; npm is a public registry; zero cloud cost |
 
-### WI-2yaa.NFR-TS-1: pnpm audit CI gate for client-ts [READY]
+### WI-2yaa.NFR-TS-1: pnpm audit CI gate for client-ts [WIP]
 service: yaagents/client-ts
 parent_feature: F-LICENSE
 brief: [SEC] Run `pnpm audit --audit-level high` (or `npm audit --audit-level high`

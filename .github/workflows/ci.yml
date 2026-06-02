@@ -219,8 +219,11 @@ jobs:
       - name: tsc --noEmit
         run: pnpm run typecheck
 
-      # pnpm audit: vulnerability scan of the dependency graph (HIGH+)
-      - name: pnpm audit
+      # pnpm audit: vulnerability scan of the dependency graph (HIGH+).
+      # Step name: pnpm-audit-client-ts (WI-2yaa.NFR-TS-1; lockfile=pnpm-lock.yaml → pnpm).
+      # Exits 1 on any HIGH/CRITICAL advisory. 0 findings expected on v0.2.0
+      # (vitest bumped to 4.1.8 to fix GHSA-5xrq-8626-4rwp CRITICAL).
+      - name: pnpm-audit-client-ts
         run: pnpm audit --audit-level=high
 
       # vitest: unit tests + coverage (≥80% gate in vitest.config.ts thresholds)
