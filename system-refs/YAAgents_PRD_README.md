@@ -769,3 +769,27 @@ The promise:
 - **K8s/Helm** displaced from v0.2 to **PI3-yaa** (not v0.2.0 scope).
 
 Full v0.2.0 PRD: `yaagents/system-refs/yaagents-v0.2_detailed.md` [READY]
+
+---
+
+## Amendment — v0.3.0 Profile Version + sdk-go (2026-06-02)
+
+**PI3-yaa introduces the following changes that supersede or extend the §Versioning and §Roadmap sections above:**
+
+- **Profile version:** Bumped from `v0.2` to **`v0.3`**. Every package MUST declare
+  `Supports YAAgents Profile v0.3` in its metadata and emit `X-YAAgents-Profile: v0.3`
+  on every agentic response. See `spec/agentic-rest-profile.md §2` and `spec/VERSION = 0.3`.
+
+- **sdk-go server SDK (`sdk-go/`):** New Go server SDK — idiomatic analog to `sdk-fastapi`;
+  router-agnostic (`net/http` core + chi/gin/echo adapters); zero non-stdlib runtime deps;
+  `ProfileVersion = "v0.3"`; published as Go module `github.com/ai-mpathyminds/yaagents-sdk-go@v0.3.0`.
+
+- **Schema directory prefix bump:** `schemas/v0.3/` created with 6 schema files copied verbatim
+  from `schemas/v0.2/`; only the `$id` path segment changes (`/v0.3/`). No schema body changes
+  in v0.3 per PRD §5.2 (no-breaking-change guarantee). `schemas/v0.2/` frozen and retained
+  for v0.2.x consumers; `schemas/v0.1/` retained for v0.1.x consumers.
+
+- **Public launch:** Meta-repo + 7 submodule repos at `github.com/ai-mpathyminds/yaagents-*`
+  flipped PUBLIC; PyPI ×3, npm ×1, GHCR multi-arch, Go modules ×2 published.
+
+Full v0.3.0 PRD: `yaagents/system-refs/yaagents-v0.3_detailed.md` [READY]

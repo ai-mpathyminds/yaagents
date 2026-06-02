@@ -1,14 +1,14 @@
 openapi: "3.1.0"
 info:
   title: YAAgents Response Profile — x-yaagents Extension + Example Surface
-  version: "0.2.0"
+  version: "0.3.0"
   description: >
     Documents the x-yaagents OpenAPI operation-metadata extension and provides
     a worked example operation surface for POST /campaigns/{campaignId}/optimizations
     wiring each response type to its vendor Content-Type and schema $ref per
-    YAAgents Agentic REST Response Profile v0.2 (PRD §5.3).
+    YAAgents Agentic REST Response Profile v0.3 (PRD §5.3).
     Authoritative source: spec/agentic-rest-profile.md (ADR PI1-yaa-0002).
-    v0.2 adds SSE streaming contract (§11); schema refs updated to schemas/v0.2/.
+    v0.3 adds SSE streaming contract (§11); schema refs updated to schemas/v0.3/.
 
 # -----------------------------------------------------------------------
 # x-yaagents extension schema — documents the 4 required fields.
@@ -145,7 +145,7 @@ paths:
       summary: Create a campaign optimization
       description: >
         Agentic operation: analyses a campaign and generates ranked optimization
-        recommendations. Demonstrates YAAgents Profile v0.2 response surface
+        recommendations. Demonstrates YAAgents Profile v0.3 response surface
         wiring per PRD §5.3 and spec/agentic-rest-profile.md §4.
       tags:
         - campaigns
@@ -221,7 +221,7 @@ paths:
               schema:
                 type: string
                 enum:
-                  - v0.2
+                  - v0.3
           content:
             application/json:
               schema:
@@ -242,11 +242,11 @@ paths:
               schema:
                 type: string
                 enum:
-                  - v0.2
+                  - v0.3
           content:
             application/vnd.yaagents.clarification+json:
               schema:
-                $ref: "../schemas/v0.2/clarification-required.schema.json"
+                $ref: "../schemas/v0.3/clarification-required.schema.json"
               example:
                 type: clarification_required
                 code: CLARIFICATION_REQUIRED
@@ -281,11 +281,11 @@ paths:
               schema:
                 type: string
                 enum:
-                  - v0.2
+                  - v0.3
           content:
             application/vnd.yaagents.validation-error+json:
               schema:
-                $ref: "../schemas/v0.2/validation-failed.schema.json"
+                $ref: "../schemas/v0.3/validation-failed.schema.json"
 
         "424":
           description: >
@@ -302,8 +302,8 @@ paths:
               schema:
                 type: string
                 enum:
-                  - v0.2
+                  - v0.3
           content:
             application/vnd.yaagents.error+json:
               schema:
-                $ref: "../schemas/v0.2/agentic-error.schema.json"
+                $ref: "../schemas/v0.3/agentic-error.schema.json"

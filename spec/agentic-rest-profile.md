@@ -1,12 +1,12 @@
 # Agentic REST Response Profile
 
-**Profile version:** v0.2
-**Profile header literal:** `X-YAAgents-Profile: v0.2`
+**Profile version:** v0.3
+**Profile header literal:** `X-YAAgents-Profile: v0.3`
 **Authoritative source:** `spec/` (ADR PI1-yaa-0002 §1 — sole table source; no other
 component may redefine or paraphrase the normative table below)
 **Version file:** `spec/VERSION` = `0.2`
-**Date adopted:** 2026-06-01 (v0.2 profile bump; SSE streaming addendum — see §11)
-**Prior version:** v0.1 adopted 2026-05-17; frozen schemas at `schemas/v0.1/`
+**Date adopted:** 2026-06-02 (v0.3 profile bump; sdk-go server SDK component added — see §Changelog)
+**Prior version:** v0.2 adopted 2026-06-01; frozen schemas at `schemas/v0.2/`; v0.1 adopted 2026-05-17; frozen schemas at `schemas/v0.1/`
 
 ---
 
@@ -27,13 +27,13 @@ the CLI validator (`cli/`), and the reference example (`examples/campaign-api/`)
 Every published package MUST carry the following declaration in its metadata:
 
 ```text
-Supports YAAgents Profile v0.2
+Supports YAAgents Profile v0.3
 ```
 
 The HTTP request / response header that identifies profile compliance is:
 
 ```text
-X-YAAgents-Profile: v0.2
+X-YAAgents-Profile: v0.3
 ```
 
 This header MUST be emitted on every agentic response served through the yaagents
@@ -74,7 +74,7 @@ implement and honour it. Paraphrasing or diverging from these media types is pro
 | `error` | `500` | `application/vnd.yaagents.error+json` |
 
 **Profile versioning:** Every published package MUST declare the profile version it supports,
-e.g., `Supports YAAgents Profile v0.2`.
+e.g., `Supports YAAgents Profile v0.3`.
 
 ### 4.1 Clarification Required — canonical body shape
 
@@ -175,7 +175,7 @@ The operation was accepted for asynchronous processing. The body MUST include:
 - `trace`: object (mandatory)
 
 > **PI1-yaa scope note (ADR PI1-yaa-0002 §4):** The schema and SDK factory for this
-> type ship in PI1-yaa. The async polling runtime (`GET …/{opId}/status`) is v0.2 scope
+> type ship in PI1-yaa. The async polling runtime (`GET …/{opId}/status`) is v0.3 scope
 > and is not built in PI1-yaa. The reference example does not exercise a 202 flow.
 
 ### 7.4 `clarification_required` — 400 `application/vnd.yaagents.clarification+json`
@@ -233,7 +233,7 @@ Internal server error. The body MUST include:
 
 ## 8. Conformance Acceptance Criteria
 
-A component is **conformant** with YAAgents Profile v0.2 if and only if:
+A component is **conformant** with YAAgents Profile v0.3 if and only if:
 
 1. **Table fidelity** — the component maps every one of the 10 response types to the
    exact HTTP status code and Content-Type string listed in §4. No aliases, no
@@ -247,15 +247,16 @@ A component is **conformant** with YAAgents Profile v0.2 if and only if:
    returned, the body matches §4.1 exactly: `type`, `code`, `message`, `requiredInputs`
    (array, ≥1 element, each element matching the shape in §6), and `trace`.
 
-4. **Profile header** — the gateway emits `X-YAAgents-Profile: v0.2` on every agentic
+4. **Profile header** — the gateway emits `X-YAAgents-Profile: v0.3` on every agentic
    response, including SSE streaming responses (§11).
 
-5. **Package declaration** — every published package carries `Supports YAAgents Profile v0.2`
+5. **Package declaration** — every published package carries `Supports YAAgents Profile v0.3`
    in its metadata (`pyproject.toml`, `package.json`, or equivalent).
 
 6. **Schema conformance** — every vendor-typed response body validates against its
-   corresponding JSON schema in `schemas/v0.2/` (ADR PI1-yaa-0002 §2). The frozen
-   backward-compat schemas at `schemas/v0.1/` remain valid for v0.1.x consumers.
+   corresponding JSON schema in `schemas/v0.3/` (ADR PI1-yaa-0002 §2). The frozen
+   backward-compat schemas at `schemas/v0.2/` remain valid for v0.2.x consumers;
+   `schemas/v0.1/` remain valid for v0.1.x consumers.
 
 7. **No table redefinition** — no component file contains a copy or paraphrase of the
    10-row table in §4. The grep command below is the EX-4 gate check:
@@ -285,7 +286,8 @@ A component is **conformant** with YAAgents Profile v0.2 if and only if:
 - Profile bumps produce a sibling `schemas/vX.Y/` path containing updated schemas with
   bumped `$id` values; the prior version's schemas are frozen and never deleted.
 - This document is updated in-place to the current canonical version; prior version
-  history is preserved in git. The frozen v0.1 schemas live at `schemas/v0.1/`.
+  history is preserved in git. Frozen schemas: v0.2 at `schemas/v0.2/`; v0.1 at
+  `schemas/v0.1/`.
 - A profile bump requires an ADR under `docs/adr/` recording the delta, migration
   path, and affected components.
 
@@ -304,10 +306,10 @@ the §4 table. This rule is enforced at:
 
 ---
 
-## 11. SSE Streaming Contract (v0.2 normative addition)
+## 11. SSE Streaming Contract (normative since v0.2)
 
-Profile v0.2 adds Server-Sent Events (SSE) streaming through the plugin chain as a
-normative gateway feature (PRD §5.1, §7 LLM Gateway; WI-2yaa.BUMP-3).
+SSE streaming through the plugin chain is a normative gateway feature first introduced in
+Profile v0.2 (PRD §5.1, §7 LLM Gateway; WI-2yaa.BUMP-3); carried forward unchanged in v0.3.
 
 ### 11.1 Activation
 
@@ -338,12 +340,12 @@ the standard JSON reverse-proxy path.
 | Property | Value |
 |---|---|
 | `Content-Type` | `text/event-stream` |
-| `X-YAAgents-Profile` | `v0.2` (mandatory — same as all agentic responses) |
+| `X-YAAgents-Profile` | `v0.3` (mandatory — same as all agentic responses) |
 | `Cache-Control` | `no-cache` |
 | Flush semantics | Per upstream chunk; gateway does not buffer |
 
 The plugin chain (token-validator, tenant-injector, etc.) runs **before** the SSE proxy
-path executes. `X-YAAgents-Profile: v0.2` is injected by the profile-header middleware
+path executes. `X-YAAgents-Profile: v0.3` is injected by the profile-header middleware
 on the response before any chunk is flushed to the client.
 
 ### 11.4 Error responses on SSE routes
@@ -378,7 +380,7 @@ On deadline exceeded the gateway returns `500 application/vnd.yaagents.error+jso
 
 ### 11.7 Metrics
 
-Profile v0.2 adds two SSE-specific Prometheus metrics on `/metrics`:
+Profile v0.3 adds two SSE-specific Prometheus metrics on `/metrics`:
 
 | Metric | Type | Labels |
 |---|---|---|
@@ -386,3 +388,20 @@ Profile v0.2 adds two SSE-specific Prometheus metrics on `/metrics`:
 | `yaagents_gateway_sse_errors_total` | Counter | `tenant_id`, `route_id`, `error_kind` |
 
 `error_kind` ∈ `client_disconnect` / `upstream_error` / `timeout` / `limit_exceeded`.
+
+---
+
+## Changelog
+
+### v0.3 changes (2026-06-02)
+
+`sdk-go` server SDK component added (PRD §5.10); no schema body changes; `Supports-YAAgents-Profile`
+header value bumps to `v0.3`; `X-YAAgents-Profile: v0.3` response header MUST be added by every
+component. Profile version file `spec/VERSION` bumped from `0.2` to `0.3`. `schemas/v0.3/` created
+as directory-prefix copy of `schemas/v0.2/` with `$id` paths updated; no body changes (PRD §5.2).
+
+### v0.2 changes (2026-06-01)
+
+SSE streaming contract added as normative gateway feature (§11); per-tenant concurrency +
+execution timeout; `schemas/v0.2/` created with 6 updated schema files; `X-YAAgents-Profile: v0.2`
+header mandated on SSE responses; `go-client` SDK component added.
