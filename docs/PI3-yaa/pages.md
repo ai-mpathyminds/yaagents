@@ -28,7 +28,7 @@ Design constraints (PRD §5.11):
 
 ---
 
-### WI-3yaa.PG-1: Astro Starlight scaffold + Astro config [DRAFT] — Sprint 5
+### WI-3yaa.PG-1: Astro Starlight scaffold + Astro config [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Initialize the Astro Starlight project at meta-repo root `docs/`. Per Starlight scaffold
@@ -115,7 +115,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages at ai-mpathyminds.github.io/yaagents/; Astro Starlight choice).
 depends_on: [WI-3yaa.SP-1]
 
-### WI-3yaa.PG-2: Hero + "Why yaagents" content [DRAFT] — Sprint 5
+### WI-3yaa.PG-2: Hero + "Why yaagents" content [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Author the landing-page Hero + "Why yaagents" content per PRD §5.11. PRD §11 OQ-3
@@ -153,7 +153,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight).
 depends_on: [WI-3yaa.PG-1]
 
-### WI-3yaa.PG-3: Quick Start (10-minute walkthrough) [DRAFT] — Sprint 5
+### WI-3yaa.PG-3: Quick Start (10-minute walkthrough) [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Author the Quick Start walkthrough per PRD §5.11. Goal: a developer reading this for the
@@ -185,7 +185,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.PG-2]
 
-### WI-3yaa.PG-4: Profile Spec MDX render [DRAFT] — Sprint 5
+### WI-3yaa.PG-4: Profile Spec MDX render [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Render `spec/agentic-rest-profile.md` (the canonical normative Profile spec) inline on the
@@ -217,7 +217,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.SP-1]
 
-### WI-3yaa.PG-5: 6-target SDK Quickstarts [DRAFT] — Sprint 5
+### WI-3yaa.PG-5: 6-target SDK Quickstarts [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Author SDK Quickstart pages for 6 targets per PRD §5.11. Each is a single MDX file with:
@@ -242,7 +242,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.RP-XREF]
 
-### WI-3yaa.PG-6: Examples walkthroughs (campaign-api + campaign-api-go) [DRAFT] — Sprint 5
+### WI-3yaa.PG-6: Examples walkthroughs (campaign-api + campaign-api-go) [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Author example walkthroughs in `docs/src/content/docs/examples/`. Two examples per PRD
@@ -263,7 +263,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.SG-6, WI-3yaa.RP-XREF]
 
-### WI-3yaa.PG-7: Plugin Authoring + Public Roadmap + Contributing + Community [DRAFT] — Sprint 5
+### WI-3yaa.PG-7: Plugin Authoring + Public Roadmap + Contributing + Community [READY] — Sprint 5
 service: yaagents/docs
 parent_feature: F-PAGES
 brief: Author the remaining 4 sidebar sections per PRD §5.11.
@@ -296,7 +296,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages + Astro Starlight); ADR PI2-yaa-0003 (legal-review-pending banner carry-forward).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.RP-META]
 
-### WI-3yaa.PG-8: `.github/workflows/pages.yml` build+deploy workflow stub [DRAFT] — Sprint 5
+### WI-3yaa.PG-8: `.github/workflows/pages.yml` build+deploy workflow stub [READY] — Sprint 5
 service: yaagents/.github/workflows
 parent_feature: F-PAGES
 brief: Author the GitHub Actions workflow that builds the Astro site + publishes to GitHub Pages

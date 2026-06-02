@@ -1,6 +1,6 @@
 # PI3-yaa — YAAgents v0.3 Public Launch + sdk-go + Repo Restructure + Pages — Roadmap (master)
 
-Status: [DRAFT] (A-4 platform-engineer NFR pass pending; flips all WIs [DRAFT]→[READY])
+Status: [READY] (A-4 NFR pass complete 2026-06-02; all WIs [READY]; 5 NFR WIs + bin/yaagents-public-mirror-verify.sh authored)
 PI: PI3-yaa · Lane: yaa (parallel to Lane A oppor + Lane B plt-aip)
 Author: yaagents-architect · Date: 2026-06-02
 PRD: `yaagents/system-refs/yaagents-v0.3_detailed.md` (§ refs throughout)
