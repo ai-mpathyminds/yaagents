@@ -51,11 +51,15 @@ jobs:
           version: v1.64
           working-directory: gateway
 
-      # govulncheck scans for known Go vulnerabilities (OSV database)
+      # govulncheck scans for known Go vulnerabilities (OSV database).
+      # Step name govulncheck-gateway (WI-2yaa.NFR-GW-2 [SEC]): whole-module
+      # scan covering plugin chain, LLM specialisation, token-validator JWKS
+      # client. Exits 1 on any HIGH/CRITICAL finding; 0 findings expected on
+      # v0.2.0 tagged commit.
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@latest
 
-      - name: govulncheck
+      - name: govulncheck-gateway
         run: govulncheck ./...
 
       # govulncheck focused on plugin packages — NFR-PLG-1 explicit gate (SEC).

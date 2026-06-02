@@ -115,10 +115,13 @@ jobs:
           echo "OK  org.opencontainers.image.licenses=${LABEL}"
 
       # ── Trivy image scan ─────────────────────────────────────────────────
-      # Scan by digest (not mutable tag) so the exact pushed image is checked.
-      # exit-code: 1 — CI fails on any unpatched HIGH or CRITICAL finding.
-      # ignore-unfixed: true — advisory-only; non-actionable vulns don't block.
-      - name: Trivy image scan (HIGH + CRITICAL)
+      # WI-2yaa.NFR-GW-2 [SEC + SUPPLY]: step name trivy-scan (per acceptance
+      # criterion). Scan by digest (not mutable tag) so the exact pushed image
+      # is checked. exit-code: 1 — CI fails on any unpatched HIGH or CRITICAL
+      # finding. ignore-unfixed: true — advisory-only; non-actionable vulns
+      # don't block. Alpine base-layer HIGH finding → base-image bump WI next
+      # sprint before publish proceeds.
+      - name: trivy-scan
         uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
