@@ -199,7 +199,7 @@ depends_on: [WI-2yaa.LLM-2, WI-2yaa.LLM-3]
 
 ## Profile version bump (cross-component touchpoint that lives here)
 
-### WI-2yaa.BUMP-3: Profile v0.2 header + spec/schema path bump [WIP] — Sprint 5
+### WI-2yaa.BUMP-3: Profile v0.2 header + spec/schema path bump [DONE] — Sprint 5
 service: yaagents/{gateway,spec,schemas,openapi}
 parent_feature: F-LICENSE
 brief: Update the gateway's response-header injector (PLG-6) to write
@@ -260,7 +260,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0001 (secret hygiene; carries forward)
 depends_on: [WI-2yaa.PLG-2]
 
-### WI-2yaa.NFR-GW-2: govulncheck + trivy CI gate on gateway binary + image [READY]
+### WI-2yaa.NFR-GW-2: govulncheck + trivy CI gate on gateway binary + image [WIP]
 service: yaagents/gateway
 parent_feature: F-PLUGIN
 brief: [SEC + SUPPLY] Two CI checks on the v0.2.0 gateway artefact:
