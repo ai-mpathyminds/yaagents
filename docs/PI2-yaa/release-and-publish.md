@@ -171,7 +171,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005, ADR PI2-yaa-0003
 depends_on: [WI-2yaa.BUMP-1a, WI-2yaa.BUMP-1b, WI-2yaa.BUMP-1c]
 
-### WI-2yaa.REL-2: npm re-publish @ 0.2.0 (OIDC provenance) [READY] — Sprint 5
+### WI-2yaa.REL-2: npm re-publish @ 0.2.0 (OIDC provenance) [WIP] — Sprint 5
 service: yaagents/(ci)
 parent_feature: F-LICENSE
 brief: Re-publish `@aimpathyminds/yaagents-client` at version `0.2.0` via

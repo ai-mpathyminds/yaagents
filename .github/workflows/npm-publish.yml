@@ -1,7 +1,9 @@
 # .github/workflows/npm-publish.yml
-# WI-1yaa.REL-4 — npm publish @aimpathyminds/yaagents-client (OIDC provenance)
+# WI-2yaa.REL-2 — npm re-publish @aimpathyminds/yaagents-client @ 0.2.0 (OIDC provenance)
+# WI-1yaa.REL-4 — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
 # ADR PI1-yaa-0003 — dual ESM+CJS via tsup
 # ADR PI1-yaa-0005 — no long-lived token; npm publish --provenance via OIDC
+# ADR PI2-yaa-0003 — Apache 2.0 license metadata (supersedes Community License)
 #
 # Package: @aimpathyminds/yaagents-client
 # Publishes ESM + CJS + .d.ts bundle to npmjs.com/package/@aimpathyminds/yaagents-client
@@ -72,6 +74,23 @@ jobs:
       - name: Dependency audit
         run: pnpm audit --audit-level=high
 
+      # ── PRE-PUBLISH GATE: community-license + source-available grep ─────────
+      # WI-2yaa.REL-2 + NFR-REL-1: zero "Community License" or "source-available"
+      # hits in client-ts/ (source + built artefacts) before publish.
+      # Prevents a regression from reaching the public npm registry.
+      # ADR PI2-yaa-0003.
+      - name: license-clean-scan (pre-publish gate)
+        working-directory: .
+        run: |
+          if grep -rnE "Community License|source-available" \
+               --include='*.ts' --include='*.js' --include='*.mjs' --include='*.cjs' \
+               --include='*.json' \
+               client-ts/src client-ts/dist 2>/dev/null; then
+            echo "::error::Community License or source-available string found in client-ts — cannot publish. See ADR PI2-yaa-0003."
+            exit 1
+          fi
+          echo "license-clean-scan: PASS — no Community License / source-available strings found"
+
       # ── build (dual ESM + CJS) ────────────────────────────────────────────
       - name: Build dual-bundle (tsup)
         run: pnpm run build
@@ -83,14 +102,36 @@ jobs:
           test -f dist/index.d.ts || { echo "ERROR: types missing (dist/index.d.ts)";       exit 1; }
           echo "OK  dual-bundle: dist/index.{mjs,cjs,d.ts} present"
 
-      - name: Verify PROFILE_VERSION export
+      - name: Verify PROFILE_VERSION export — CJS
         run: |
-          # Quick node smoke-test of the CJS bundle before publish
+          # Smoke-test the CJS bundle (Node require path).
+          # WI-2yaa.REL-2 AC: PROFILE_VERSION exports v0.2 from both ESM + CJS.
           node -e "
             const { PROFILE_VERSION } = require('./dist/index.cjs');
-            if (PROFILE_VERSION !== 'v0.1') throw new Error('PROFILE_VERSION=' + PROFILE_VERSION);
-            console.log('OK  PROFILE_VERSION=' + PROFILE_VERSION);
+            if (PROFILE_VERSION !== 'v0.2') throw new Error('CJS PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.2');
+            console.log('OK  CJS PROFILE_VERSION=' + PROFILE_VERSION);
           "
+
+      - name: Verify PROFILE_VERSION export — ESM
+        run: |
+          # Smoke-test the ESM bundle (Node --input-type=module).
+          # WI-2yaa.REL-2 AC: PROFILE_VERSION exports v0.2 from both ESM + CJS.
+          node --input-type=module - <<'ESEOF'
+          import { PROFILE_VERSION } from './dist/index.mjs';
+          if (PROFILE_VERSION !== 'v0.2') throw new Error('ESM PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.2');
+          console.log('OK  ESM PROFILE_VERSION=' + PROFILE_VERSION);
+          ESEOF
+
+      - name: Verify package.json license field
+        # WI-2yaa.REL-2 AC: npm view ... license → Apache-2.0 (ADR PI2-yaa-0003).
+        # Pre-publish assertion from package.json (source of truth for npm metadata).
+        run: |
+          LICENSE=$(node -p "require('./package.json').license")
+          if [ "${LICENSE}" != "Apache-2.0" ]; then
+            echo "::error::package.json license=${LICENSE} — expected Apache-2.0 (ADR PI2-yaa-0003)"
+            exit 1
+          fi
+          echo "OK  package.json license=${LICENSE}"
 
       # ── publish to npm (with OIDC provenance) ────────────────────────────
       # --provenance: npm CLI uses the OIDC token (id-token: write above) to
