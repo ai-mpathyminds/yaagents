@@ -1,0 +1,193 @@
+# .github/workflows/verify-go-module.yml
+# WI-2yaa.REL-4 — Go module tag client-go/v0.2.0 + proxy.golang.org verify
+# ADR PI1-yaa-0005 — no long-lived registry tokens (tag push uses git auth;
+#   proxy.golang.org is a public read endpoint; no token required)
+# ADR PI2-yaa-0003 — Apache 2.0 LICENSE file must be present at client-go/
+#   module root (inherited from repo root; Go module proxy serves it)
+#
+# Flow:
+#   1. Poll proxy.golang.org until the module is indexed (≤ 30 min, backoff)
+#   2. go get github.com/ai-mpathyminds/yaagents/client-go@<version> in a
+#      fresh scratch module
+#   3. Compile + run a minimal program that imports the package and asserts
+#      ProfileVersion == expected semver tag
+#   4. Exit 0 (signals to the operator that the Go module is live + importable)
+#
+# Operator action before this workflow fires:
+#   git tag client-go/v0.2.0 && git push --tags
+#   (requires: WI-2yaa.GOC-4 merged; repo PUBLIC — see note below)
+#
+# NOTE: proxy.golang.org only indexes PUBLIC repositories.
+# The yaagents repo is PRIVATE as of scope-amendment-2026-06-02.
+# This workflow will not succeed until the PI3-yaa public-launch flip.
+# The tag trigger is intentionally NOT parked (unlike pypi/npm/ghcr workflows)
+# because the tag push is itself gated on the repo becoming public.
+
+on:
+  push:
+    tags:
+      - 'client-go/v[0-9]+.[0-9]+.[0-9]+'   # client-go/v0.2.0, client-go/v1.2.3, …
+
+  # Manual trigger for operator smoke-test (pass version without "v" prefix, e.g. "0.2.0")
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Module version to verify (without "v" prefix, e.g. 0.2.0)'
+        required: true
+        default: '0.2.0'
+
+permissions:
+  contents: read   # read-only — pure verification; no writes needed
+
+jobs:
+  verify:
+    name: Verify Go module — proxy.golang.org
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      # ── Derive module version from tag or workflow_dispatch input ──────────
+      - name: Extract module version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODULE_VERSION="v${{ github.event.inputs.version }}"
+          else
+            # Tag format: client-go/v0.2.0 → strip "client-go/" prefix
+            MODULE_VERSION="${GITHUB_REF_NAME#client-go/}"
+          fi
+          echo "version=${MODULE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Module version: ${MODULE_VERSION}"
+
+      # ── Poll proxy.golang.org until indexed ───────────────────────────────
+      # proxy.golang.org typically indexes a new tag within 5-30 minutes.
+      # Strategy: exponential backoff starting at 30 s, capped at 300 s,
+      # max 12 attempts — covers the ~30 min window from the WI brief.
+      # Exits 1 with a clear operator message if the window expires.
+      - name: Wait for proxy.golang.org indexing
+        env:
+          MODULE_VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          PROXY_URL="https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
+          echo "Polling: ${PROXY_URL}"
+          echo "STATUS-CLAIM: cite this URL + its JSON body as proxy.golang.org evidence"
+
+          DELAY=30
+          MAX_ATTEMPTS=12
+          for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
+            HTTP_CODE=$(curl -sf -o /tmp/proxy_info.json \
+              -w "%{http_code}" "${PROXY_URL}" 2>/dev/null || echo "000")
+            if [ "${HTTP_CODE}" = "200" ]; then
+              echo "::notice::proxy.golang.org INDEXED — attempt ${attempt}"
+              echo "proxy_url=${PROXY_URL}" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+              cat /tmp/proxy_info.json
+              break
+            fi
+            if [ "${attempt}" = "${MAX_ATTEMPTS}" ]; then
+              echo "::error::proxy.golang.org did not index ${MODULE}@${MODULE_VERSION} within the polling window."
+              echo "::error::Proxy URL checked: ${PROXY_URL}"
+              echo "::error::Ensure the repository is PUBLIC and tag '${GITHUB_REF_NAME}' was pushed."
+              exit 1
+            fi
+            echo "Attempt ${attempt}/${MAX_ATTEMPTS}: HTTP ${HTTP_CODE} — retrying in ${DELAY}s"
+            sleep "${DELAY}"
+            DELAY=$(( DELAY < 300 ? DELAY * 2 : 300 ))
+          done
+
+      # ── LICENSE file at module root check ────────────────────────────────
+      # ADR PI2-yaa-0003: client-go/ must carry an Apache-2.0 LICENSE file so
+      # that proxy.golang.org and pkg.go.dev serve correct license metadata.
+      # This is a go-developer lane deliverable (WI-2yaa.GOC-4 or LIC-2 sweep).
+      # Fail loud rather than silently skipping: a missing LICENSE file means
+      # pkg.go.dev will show "No license file found" — unacceptable for OSS.
+      - name: Verify client-go LICENSE file present
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: client-go/LICENSE
+          sparse-checkout-cone-mode: false
+
+      - name: Assert client-go/LICENSE exists
+        run: |
+          if [ ! -f client-go/LICENSE ]; then
+            echo "::error::client-go/LICENSE absent — proxy.golang.org will not serve license metadata."
+            echo "::error::go-developer must copy/symlink the repo root LICENSE to client-go/LICENSE (ADR PI2-yaa-0003)"
+            exit 1
+          fi
+          head -1 client-go/LICENSE
+          echo "client-go/LICENSE: present"
+
+      # ── go get + build + import in a scratch module ───────────────────────
+      # Creates a minimal Go module, fetches the client-go package from the
+      # proxy, builds a small program that imports and uses it, and asserts
+      # ProfileVersion matches the expected semver.
+      # ADR PI2-yaa-0003: the Apache-2.0 LICENSE file at client-go/ is served
+      # by the proxy alongside the module; this step implicitly validates that
+      # the module is well-formed.
+      - name: go get + build + import in scratch module
+        env:
+          MODULE_VERSION: ${{ steps.ver.outputs.version }}
+          GOFLAGS: '-mod=mod'
+        run: |
+          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          SCRATCH="$(mktemp -d)/scratch"
+          mkdir -p "${SCRATCH}"
+          cd "${SCRATCH}"
+
+          # Strip leading "v" for the expected ProfileVersion string
+          EXPECTED_PROFILE="v${MODULE_VERSION#v}"
+
+          go mod init scratch-verify-module
+
+          echo "Fetching ${MODULE}@${MODULE_VERSION} …"
+          go get "${MODULE}@${MODULE_VERSION}"
+          echo "go get: OK"
+
+          # Minimal program: imports the package and asserts ProfileVersion
+          cat > main.go << GOEOF
+          package main
+
+          import (
+            "fmt"
+            "os"
+            clientgo "${MODULE}"
+          )
+
+          func main() {
+            want := "${EXPECTED_PROFILE}"
+            got  := clientgo.ProfileVersion
+            if got != want {
+              fmt.Fprintf(os.Stderr, "FAIL ProfileVersion=%q expected=%q\n", got, want)
+              os.Exit(1)
+            }
+            // Basic construction smoke-test (no network call)
+            _ = clientgo.New("http://example.com")
+            fmt.Printf("OK  ProfileVersion=%s  import=resolved  New()=callable\n", got)
+          }
+          GOEOF
+
+          go build ./...
+          echo "go build: OK"
+
+          go run main.go
+
+      - name: Summary
+        if: success()
+        env:
+          MODULE_VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          echo "✓ WI-2yaa.REL-4 verification PASSED"
+          echo "  Module:        ${MODULE}@${MODULE_VERSION}"
+          echo "  Proxy URL:     https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
+          echo "  GitHub tag:    https://github.com/ai-mpathyminds/yaagents/releases/tag/client-go%2F${MODULE_VERSION}"
+          echo "  GHA run:       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo ""
+          echo "STATUS-CLAIM evidence (cite in WI-2yaa.REL-4 [DONE] close):"
+          echo "  tag URL:       https://github.com/ai-mpathyminds/yaagents/releases/tag/client-go%2F${MODULE_VERSION}"
+          echo "  proxy URL:     https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
+          echo "  GHA run-id:    ${{ github.run_id }}"

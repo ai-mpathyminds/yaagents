@@ -212,7 +212,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005, ADR PI2-yaa-0003
 depends_on: [WI-2yaa.BUMP-3, WI-2yaa.PLG-6, WI-2yaa.LLM-4]
 
-### WI-2yaa.REL-4: Go module tag `client-go/v0.2.0` + proxy.golang.org verify [READY] — Sprint 5
+### WI-2yaa.REL-4: Go module tag `client-go/v0.2.0` + proxy.golang.org verify [WIP] — Sprint 5
 service: yaagents/(ci)
 parent_feature: F-GOCLIENT
 brief: Publish `client-go` via Go modules tag-driven release per PRD §9.4:
