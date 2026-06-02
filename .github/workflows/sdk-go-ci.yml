@@ -1,0 +1,114 @@
+# .github/workflows/sdk-go-ci.yml
+# WI-3yaa.NFR-SEC-1 — sdk-go security + quality gates
+#
+# Triggered on push/PR for sdk-go/** paths (path-filtered to save minutes).
+# Four sequential gates in one job — each must pass before the next runs:
+#   Gate 1  govulncheck   — OSV vulnerability scan of the sdk-go workspace
+#   Gate 2  zero-deps     — core sdk-go/go.mod MUST carry zero require entries
+#   Gate 3  codegen-repro — go generate must be a no-op on committed tree
+#   Gate 4  coverage      — go test ≥80% statement coverage on ./sdkgo/...
+#
+# All four failure modes exit the job immediately; no silent skips.
+
+on:
+  push:
+    paths:
+      - 'sdk-go/**'
+  pull_request:
+    paths:
+      - 'sdk-go/**'
+
+permissions:
+  contents: read   # read-only; no artifacts published here
+
+# Cancel in-progress runs on the same branch/PR to save minutes
+concurrency:
+  group: sdk-go-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sdk-go-gates:
+    name: sdk-go — vuln + zero-deps + codegen-repro + coverage (≥80%)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: sdk-go
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # go-version-file path is relative to the REPO root, not working-directory.
+      # cache-dependency-path uses the workspace sum (covers adapters' transitive deps).
+      - name: Set up Go (from sdk-go/go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: sdk-go/go.mod
+          cache-dependency-path: sdk-go/go.work.sum
+
+      # ── Gate 1: govulncheck — OSV vulnerability scan ─────────────────────
+      # WI-3yaa.NFR-SEC-1 Gate 1: scan the entire sdk-go workspace (core +
+      # adapters/chi + adapters/gin + adapters/echo) via go.work.
+      # Exit 1 on any HIGH/CRITICAL finding from the OSV database.
+      # Expected: zero findings on the initial zero-external-dep core module.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: govulncheck-sdk-go
+        run: govulncheck ./...
+
+      # ── Gate 2: zero-deps — sdk-go core MUST have zero external require lines ──
+      # WI-3yaa.NFR-SEC-1 Gate 2: PRD §5.10 "zero-dependency" guarantee for the
+      # core sdkgo package.  sdk-go/go.mod must carry no require directives.
+      # Adapters (adapters/chi|gin|echo) have their own go.mod files with framework
+      # deps; those are intentionally separate modules and are NOT checked here.
+      # Implementation: awk count avoids grep exit-code 1 in bash pipefail mode.
+      - name: zero-deps-sdk-go
+        run: |
+          REQUIRE_COUNT=$(awk '/^require /{count++} END{print count+0}' go.mod)
+          echo "sdk-go go.mod require count: ${REQUIRE_COUNT}"
+          if [ "${REQUIRE_COUNT}" -ne 0 ]; then
+            echo "::error::sdk-go/go.mod has ${REQUIRE_COUNT} external require entries — sdk-go core MUST be zero-dependency (PRD §5.10)"
+            grep -E '^require ' go.mod || true
+            exit 1
+          fi
+          echo "zero-deps-sdk-go: PASS — no external requires found"
+
+      # ── Gate 3: reproducible codegen — go generate must be a no-op ──────────
+      # WI-3yaa.NFR-SEC-1 Gate 3: sdk-go/sdkgo/types.go is generated from
+      # schemas/v0.3/*.json via tools/gen (//go:generate in types.go).
+      # Generated files MUST be committed; re-running codegen must produce no diff.
+      # go generate ./... runs with cwd = sdk-go/; the generate directive itself
+      # runs with cwd = sdk-go/sdkgo/ (standard Go generate semantics), so the
+      # relative paths ../../tools/gen and ../../sdk-go/sdkgo/types.go resolve
+      # correctly from the repo checkout root.
+      - name: codegen-repro
+        run: |
+          go generate ./...
+          # git diff --exit-code exits 1 if any tracked file in sdk-go/ changed;
+          # path "." scopes to the current working-directory (sdk-go/).
+          if ! git diff --exit-code .; then
+            echo "::error::go generate ./sdk-go/... produced uncommitted changes — commit the generated files before merging"
+            exit 1
+          fi
+          echo "codegen-repro: PASS — go generate is a no-op on committed tree"
+
+      # ── Gate 4: coverage — go test ≥80% on ./sdkgo/... ──────────────────────
+      # WI-3yaa.NFR-SEC-1 Gate 4: statement coverage on the core sdkgo package.
+      # Adapter packages (chi/gin/echo) are EXCLUDED here because they have
+      # external framework deps that are not available in this minimal Go setup;
+      # framework adapters are tested by their own module's go.sum resolution.
+      # awk extracts the integer percentage from "total: (statements)  96.8%"
+      # and exits 1 if below the 80% threshold.
+      - name: go test + coverage gate (≥80%)
+        run: |
+          go test -coverprofile=cov.out ./sdkgo/...
+          TOTAL=$(go tool cover -func=cov.out \
+            | awk '/^total:/{gsub(/%/,"",$3); printf "%d\n", $3}')
+          echo "sdk-go sdkgo coverage: ${TOTAL}%"
+          if [ "${TOTAL}" -lt 80 ]; then
+            echo "::error::sdk-go/sdkgo coverage ${TOTAL}% is below the 80% gate (WI-3yaa.NFR-SEC-1)"
+            exit 1
+          fi
+          echo "coverage-gate: PASS — ${TOTAL}% >= 80%"
