@@ -9,7 +9,7 @@ Sprint 1. Meta-repo root surfaces (NOT submodules per ADR PI3-yaa-0001).
 
 ---
 
-### WI-3yaa.SP-1: Profile v0.3 bump on `spec/`, `schemas/`, `openapi/` [READY] — Sprint 1
+### WI-3yaa.SP-1: Profile v0.3 bump on `spec/`, `schemas/`, `openapi/` [DONE] — Sprint 1
 service: yaagents/spec, yaagents/schemas, yaagents/openapi
 parent_feature: F-CONTRACTS
 brief: Bump the canonical Profile version from `v0.2` to `v0.3` across all three contract surfaces
