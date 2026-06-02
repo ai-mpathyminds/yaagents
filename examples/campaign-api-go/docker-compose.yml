@@ -1,0 +1,77 @@
+# campaign-api-go — Compose demo (WI-3yaa.SG-6)
+# ports: 8120 (gateway), 8121 (campaign-api-go) — portfolio band 8120-8129
+# Mirrors examples/campaign-api/ (Python) using the Go sdk-go reference example.
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
+# Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
+# instead (ADR PI1-yaa-0001 sec 3).
+#
+# NFR-refined by platform-engineer at A-4 (compose-linter clean).
+# Both demos (campaign-api + campaign-api-go) share ports 8120/8121 and run
+# mutually-exclusively (WI-3yaa.SG-6 brief; platform-engineer A-4 confirmation).
+
+name: yaagents-campaign-go
+
+services:
+  yaagents-gateway:
+    # Build from local gateway source.
+    # When ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0 is published,
+    # replace the build block with: image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+    build:
+      context: ../../gateway
+      dockerfile: ../docker/gateway/Dockerfile
+    ports:
+      - "8120:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_PLUGINS_FILE: /etc/yaagents/plugins.yaml
+      GATEWAY_JWT_SECRET: "demo-secret-not-for-production"   # demo only; see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./gateway-routes.yaml:/etc/yaagents/routes.yaml:ro
+      - ./gateway-plugins.yaml:/etc/yaagents/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    depends_on:
+      campaign-api-go:
+        condition: service_healthy
+    restart: on-failure
+
+  campaign-api-go:
+    # Build context is the yaagents repo root so Dockerfile can reach sdk-go/.
+    build:
+      context: ../..
+      dockerfile: examples/campaign-api-go/Dockerfile
+    ports:
+      - "8121:8121"
+    environment:
+      PORT: "8121"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8121/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.25"
+    networks:
+      - yaagents-net
+    restart: on-failure
+
+networks:
+  yaagents-net:         # named network — intra-product isolation
