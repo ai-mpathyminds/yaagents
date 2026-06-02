@@ -53,7 +53,7 @@ mechanical-entry pattern (`model: none`) authored at A-6.
 
 ---
 
-### WI-3yaa.RP-META: Meta-repo public skeleton + community health files [DRAFT] — Sprint 3
+### WI-3yaa.RP-META: Meta-repo public skeleton + community health files [READY] — Sprint 3
 service: yaagents (meta-repo root)
 parent_feature: F-REPO
 brief: Author the meta-repo public-facing skeleton at `github.com/ai-mpathyminds/yaagents` root.
@@ -81,7 +81,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI2-yaa-0003 (Apache 2.0 license posture carry-forward).
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2]
 
-### WI-3yaa.RP-SUBMOD: `.gitmodules` + submodule pointers [DRAFT] — Sprint 3
+### WI-3yaa.RP-SUBMOD: `.gitmodules` + submodule pointers [READY] — Sprint 3
 service: yaagents (meta-repo root)
 parent_feature: F-REPO
 brief: After the 7 submodule repos exist (operator-created empty) AND each has its orphan-baseline
@@ -109,7 +109,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape).
 depends_on: [WI-3yaa.RP-GATEWAY-INIT, WI-3yaa.RP-SDKFASTAPI-INIT, WI-3yaa.RP-SDKGO-INIT, WI-3yaa.RP-CLIPY-INIT, WI-3yaa.RP-CLITS-INIT, WI-3yaa.RP-CLIGO-INIT, WI-3yaa.RP-CLI-INIT]
 
-### WI-3yaa.RP-GATEWAY-INIT: `yaagents-gateway` orphan-baseline + Go module path migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-GATEWAY-INIT: `yaagents-gateway` orphan-baseline + Go module path migration [READY] — Sprint 4
 service: yaagents/gateway (→ github.com/ai-mpathyminds/yaagents-gateway)
 parent_feature: F-REPO
 brief: Initialize the standalone `yaagents-gateway` submodule repo. Steps (in a working copy of
@@ -137,7 +137,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0002 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-SDKFASTAPI-INIT: `yaagents-sdk-fastapi` orphan-baseline + pyproject migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-SDKFASTAPI-INIT: `yaagents-sdk-fastapi` orphan-baseline + pyproject migration [READY] — Sprint 4
 service: yaagents/sdk-fastapi (→ github.com/ai-mpathyminds/yaagents-sdk-fastapi)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-sdk-fastapi` submodule repo. Steps:
@@ -159,7 +159,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0003 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-SDKGO-INIT: `yaagents-sdk-go` orphan-baseline + new Go module path [DRAFT] — Sprint 4
+### WI-3yaa.RP-SDKGO-INIT: `yaagents-sdk-go` orphan-baseline + new Go module path [READY] — Sprint 4
 service: yaagents/sdk-go (→ github.com/ai-mpathyminds/yaagents-sdk-go)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-sdk-go` submodule repo (NEW component — no internal
@@ -184,7 +184,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0002 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META, WI-3yaa.SG-6]
 
-### WI-3yaa.RP-CLIPY-INIT: `yaagents-client-python` orphan-baseline + pyproject migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-CLIPY-INIT: `yaagents-client-python` orphan-baseline + pyproject migration [READY] — Sprint 4
 service: yaagents/client-python (→ github.com/ai-mpathyminds/yaagents-client-python)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-client-python` submodule repo. Steps mirror
@@ -202,7 +202,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0003 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-CLITS-INIT: `yaagents-client-ts` orphan-baseline + package.json migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-CLITS-INIT: `yaagents-client-ts` orphan-baseline + package.json migration [READY] — Sprint 4
 service: yaagents/client-ts (→ github.com/ai-mpathyminds/yaagents-client-ts)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-client-ts` submodule repo. Steps:
@@ -219,7 +219,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0003 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-CLIGO-INIT: `yaagents-client-go` orphan-baseline + Go module path migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-CLIGO-INIT: `yaagents-client-go` orphan-baseline + Go module path migration [READY] — Sprint 4
 service: yaagents/client-go (→ github.com/ai-mpathyminds/yaagents-client-go)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-client-go` submodule repo. Steps mirror RP-GATEWAY-INIT
@@ -238,7 +238,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0002 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-CLI-INIT: `yaagents-cli` orphan-baseline + pyproject migration [DRAFT] — Sprint 4
+### WI-3yaa.RP-CLI-INIT: `yaagents-cli` orphan-baseline + pyproject migration [READY] — Sprint 4
 service: yaagents/cli (→ github.com/ai-mpathyminds/yaagents-cli)
 parent_feature: F-REPO
 brief: Initialize standalone `yaagents-cli` submodule repo. Steps:
@@ -254,7 +254,7 @@ library_ref: ADR PI3-yaa-0001 (meta-repo + 7 submodule shape); ADR PI3-yaa-0003 
 duplication_override: per-submodule package-metadata + per-language toolchain (Go go.mod / Python pyproject / TS package.json / Docker image) are distinct; orphan-baseline-and-migrate command sequence is the only superficially shared structure and is 4 shell lines per INIT. Extraction would couple 4 language toolchain writers — net complexity ↑.
 depends_on: [WI-3yaa.SC-1, WI-3yaa.SC-2, WI-3yaa.RP-META]
 
-### WI-3yaa.RP-XREF: Cross-reference sweep across all 8 repos [DRAFT] — Sprint 4
+### WI-3yaa.RP-XREF: Cross-reference sweep across all 8 repos [READY] — Sprint 4
 service: yaagents (meta-repo + 7 submodules)
 parent_feature: F-REPO
 brief: Update every cross-reference that previously pointed at the monorepo paths to the new

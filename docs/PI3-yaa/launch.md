@@ -32,7 +32,7 @@ Gate: operator confirms `PRECHECK_MANUAL_OK=1` before any LA-* WI dispatches.
 
 ---
 
-### WI-3yaa.LA-PYPI-FASTAPI: PyPI publish `yaagents-fastapi@0.3.0` [DRAFT] — Sprint 6
+### WI-3yaa.LA-PYPI-FASTAPI: PyPI publish `yaagents-fastapi@0.3.0` [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-sdk-fastapi
 parent_feature: F-LAUNCH
 brief: Trigger PyPI publish of `yaagents-fastapi==0.3.0` via OIDC Trusted Publisher tag-driven
@@ -57,7 +57,7 @@ library_ref: ADR PI1-yaa-0005 (OIDC trusted publishing); ADR PI2-yaa-0003 (Apach
 duplication_override: each LA-PYPI-* WI is a tag-push trigger only; OIDC Trusted Publisher OWNS the publish action; no shared portfolio code to extract.
 depends_on: [WI-3yaa.RP-SDKFASTAPI-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-PYPI-CLIPY: PyPI publish `yaagents-client@0.3.0` [DRAFT] — Sprint 6
+### WI-3yaa.LA-PYPI-CLIPY: PyPI publish `yaagents-client@0.3.0` [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-client-python
 parent_feature: F-LAUNCH
 brief: Mirror LA-PYPI-FASTAPI for `yaagents-client` on `yaagents-client-python` submodule repo.
@@ -71,7 +71,7 @@ library_ref: ADR PI1-yaa-0005; ADR PI2-yaa-0003; ADR PI3-yaa-0001.
 duplication_override: each LA-PYPI-* WI is a tag-push trigger only; OIDC Trusted Publisher OWNS the publish action; no shared portfolio code to extract.
 depends_on: [WI-3yaa.RP-CLIPY-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-PYPI-CLI: PyPI publish `yaagents-cli@0.3.0` [DRAFT] — Sprint 6
+### WI-3yaa.LA-PYPI-CLI: PyPI publish `yaagents-cli@0.3.0` [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-cli
 parent_feature: F-LAUNCH
 brief: Mirror LA-PYPI-FASTAPI for `yaagents-cli` on `yaagents-cli` submodule repo.
@@ -85,7 +85,7 @@ library_ref: ADR PI1-yaa-0005; ADR PI2-yaa-0003; ADR PI3-yaa-0001.
 duplication_override: each LA-PYPI-* WI is a tag-push trigger only; OIDC Trusted Publisher OWNS the publish action; no shared portfolio code to extract.
 depends_on: [WI-3yaa.RP-CLI-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-NPM: npm publish `@aimpathyminds/yaagents-client@0.3.0` with provenance [DRAFT] — Sprint 6
+### WI-3yaa.LA-NPM: npm publish `@aimpathyminds/yaagents-client@0.3.0` with provenance [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-client-ts
 parent_feature: F-LAUNCH
 brief: Trigger npm publish of `@aimpathyminds/yaagents-client@0.3.0` with provenance attestation
@@ -105,7 +105,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005 (OIDC trusted publishing + npm provenance); ADR PI2-yaa-0003; ADR PI3-yaa-0001.
 depends_on: [WI-3yaa.RP-CLITS-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-GHCR: GHCR publish `yaagents-gateway:0.3.0` (multi-arch + Cosign + Syft SBOM) [DRAFT] — Sprint 6
+### WI-3yaa.LA-GHCR: GHCR publish `yaagents-gateway:0.3.0` (multi-arch + Cosign + Syft SBOM) [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-gateway
 parent_feature: F-LAUNCH
 brief: Trigger GHCR publish of `ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0` (multi-arch
@@ -131,7 +131,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005 (OIDC trusted publishing + GHCR OIDC); ADR PI2-yaa-0003 (Apache 2.0 OCI label); ADR PI3-yaa-0001.
 depends_on: [WI-3yaa.RP-GATEWAY-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-GO-CLIENT: Go module publish `yaagents-client-go@v0.3.0` [DRAFT] — Sprint 6
+### WI-3yaa.LA-GO-CLIENT: Go module publish `yaagents-client-go@v0.3.0` [READY] — Sprint 6
 service: github.com/ai-mpathyminds/yaagents-client-go
 parent_feature: F-LAUNCH
 brief: Tag-driven Go module publish via `proxy.golang.org`. Mirrors SG-7 (which publishes
@@ -150,7 +150,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0001 (per-submodule repo structure); ADR PI3-yaa-0002 (Go module path migration: yaagents/client-go subpath → yaagents-client-go own module); ADR PI1-yaa-0005 (publishing-discipline consistency — N/A directly for Go modules but cited cross-component).
 depends_on: [WI-3yaa.RP-CLIGO-INIT, WI-3yaa.RP-XREF]
 
-### WI-3yaa.LA-PUBLIC-FLIP: Flip 8 repos PRIVATE→PUBLIC on GitHub [DRAFT] — Sprint 7
+### WI-3yaa.LA-PUBLIC-FLIP: Flip 8 repos PRIVATE→PUBLIC on GitHub [READY] — Sprint 7
 service: github.com/ai-mpathyminds/yaagents{,-gateway,-sdk-fastapi,-sdk-go,-client-python,-client-ts,-client-go,-cli}
 parent_feature: F-LAUNCH
 brief: Flip the 8 repos (1 meta + 7 submodules) from PRIVATE to PUBLIC on GitHub. Pre-conditions:
@@ -178,7 +178,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0001 (per-submodule repo structure); ADR PI3-yaa-0003 (orphan-baseline squashed history; clean public surface).
 depends_on: [WI-3yaa.LA-PYPI-FASTAPI, WI-3yaa.LA-PYPI-CLIPY, WI-3yaa.LA-PYPI-CLI, WI-3yaa.LA-NPM, WI-3yaa.LA-GHCR, WI-3yaa.SG-7, WI-3yaa.LA-GO-CLIENT]
 
-### WI-3yaa.LA-PAGES-DEPLOY: Push initial Pages site live [DRAFT] — Sprint 7
+### WI-3yaa.LA-PAGES-DEPLOY: Push initial Pages site live [READY] — Sprint 7
 service: yaagents (meta-repo)
 parent_feature: F-LAUNCH
 brief: Trigger the `.github/workflows/pages.yml` build+deploy workflow against meta-repo `main`
@@ -198,7 +198,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0004 (Pages on GitHub Pages; `actions/deploy-pages@v4` deploy path).
 depends_on: [WI-3yaa.PG-1, WI-3yaa.PG-2, WI-3yaa.PG-3, WI-3yaa.PG-4, WI-3yaa.PG-5, WI-3yaa.PG-6, WI-3yaa.PG-7, WI-3yaa.PG-8, WI-3yaa.LA-PUBLIC-FLIP]
 
-### WI-3yaa.LA-PI-GATE: End-of-PI acceptance gate [DRAFT] — Sprint 7
+### WI-3yaa.LA-PI-GATE: End-of-PI acceptance gate [READY] — Sprint 7
 service: yaagents (cross-component)
 parent_feature: F-LAUNCH
 brief: Run the full prod-install regression check covering PRD §1 Goals (success criteria #1–10

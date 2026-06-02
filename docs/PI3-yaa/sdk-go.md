@@ -32,7 +32,7 @@ Sequencing: yaagents-side SG-1..SG-5 land in S2 → ai-platform-architect-author
 
 ---
 
-### WI-3yaa.SG-1: sdk-go module scaffold + AgenticContext + FromRequest [DRAFT] — Sprint 1
+### WI-3yaa.SG-1: sdk-go module scaffold + AgenticContext + FromRequest [READY] — Sprint 1
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Create `sdk-go/` directory at meta-repo root (will become standalone repo
@@ -81,7 +81,7 @@ acceptance:
 library_justify: novel Go server SDK; idiomatic analog to sdk-fastapi; zero non-stdlib runtime deps per PRD §5.10 design constraints; vendor types generated from canonical schemas/v0.3/ (one source of truth).
 depends_on: [WI-3yaa.SP-1]
 
-### WI-3yaa.SG-2: Vendor type codegen from `schemas/v0.3/*.json` [DRAFT] — Sprint 1
+### WI-3yaa.SG-2: Vendor type codegen from `schemas/v0.3/*.json` [READY] — Sprint 1
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Generate Go vendor types from `schemas/v0.3/*.json` at build time (PRD §5.10.1 vendor-types
@@ -112,7 +112,7 @@ acceptance:
 library_justify: novel Go server SDK; idiomatic analog to sdk-fastapi; zero non-stdlib runtime deps per PRD §5.10 design constraints; vendor types generated from canonical schemas/v0.3/ (one source of truth).
 depends_on: [WI-3yaa.SG-1, WI-3yaa.SP-1]
 
-### WI-3yaa.SG-3: AgenticResponse factory + Write helper + AgenticWritable interface [DRAFT] — Sprint 2
+### WI-3yaa.SG-3: AgenticResponse factory + Write helper + AgenticWritable interface [READY] — Sprint 2
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Implement the 10 response-type factory methods per PRD §5.10.1 + the `Write()` helper +
@@ -167,7 +167,7 @@ acceptance:
 library_justify: novel Go server SDK; idiomatic analog to sdk-fastapi; zero non-stdlib runtime deps per PRD §5.10 design constraints; vendor types generated from canonical schemas/v0.3/ (one source of truth).
 depends_on: [WI-3yaa.SG-2]
 
-### WI-3yaa.SG-4: Router adapters (chi/gin/echo) [DRAFT] — Sprint 2
+### WI-3yaa.SG-4: Router adapters (chi/gin/echo) [READY] — Sprint 2
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Implement thin adapter sub-packages per PRD §5.10.1 package layout. Each adapter wraps
@@ -204,7 +204,7 @@ acceptance:
 library_justify: novel Go server SDK; idiomatic analog to sdk-fastapi; chi/gin/echo are the three canonical Go HTTP routers (covers 95%+ of Go server use cases); adapter sub-modules isolate their build deps from the core sdkgo package per PRD §5.10 zero-runtime-deps constraint on core.
 depends_on: [WI-3yaa.SG-3]
 
-### WI-3yaa.SG-5: Unit tests + ≥80% coverage on `sdkgo/` [DRAFT] — Sprint 2
+### WI-3yaa.SG-5: Unit tests + ≥80% coverage on `sdkgo/` [READY] — Sprint 2
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Author the unit-test suite for `sdkgo/` core package. Coverage target ≥80% on `sdkgo/`
@@ -231,7 +231,7 @@ acceptance:
 library_justify: novel Go server SDK; idiomatic analog to sdk-fastapi; zero non-stdlib runtime deps per PRD §5.10 design constraints; vendor types generated from canonical schemas/v0.3/ (one source of truth).
 depends_on: [WI-3yaa.SG-3, WI-3yaa.SG-4]
 
-### WI-3yaa.SG-6: `examples/campaign-api-go/` reference example [DRAFT] — Sprint 3
+### WI-3yaa.SG-6: `examples/campaign-api-go/` reference example [READY] — Sprint 3
 service: yaagents/examples/campaign-api-go
 parent_feature: F-SDKGO
 brief: Author the Go reference example mirroring `examples/campaign-api/` (Python). Uses `sdk-go`
@@ -269,7 +269,7 @@ acceptance:
 library_justify: novel Go server SDK reference example; idiomatic analog to examples/campaign-api/ (Python). Reference example exists to validate the SDK in a real example — not a candidate for portfolio-shared extraction.
 depends_on: [WI-3yaa.SG-5]
 
-### WI-3yaa.SG-7: Go module tag `v0.3.0` on yaagents-sdk-go submodule repo [DRAFT] — Sprint 6
+### WI-3yaa.SG-7: Go module tag `v0.3.0` on yaagents-sdk-go submodule repo [READY] — Sprint 6
 service: yaagents/sdk-go
 parent_feature: F-SDKGO
 brief: Tag-driven Go module publish via `proxy.golang.org` per PRD §10.4. Pre-conditions:

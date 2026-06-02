@@ -13,7 +13,7 @@ during `cp -r`).
 
 ---
 
-### WI-3yaa.SC-1: Move internal planning artifacts into `portfolio/yaagents-internal/` [DRAFT] — Sprint 1
+### WI-3yaa.SC-1: Move internal planning artifacts into `portfolio/yaagents-internal/` [READY] — Sprint 1
 service: portfolio/yaagents-internal (target) + yaagents (source)
 parent_feature: F-SCRUB
 brief: Move every internal planning artifact out of `yaagents/` into
@@ -71,7 +71,7 @@ acceptance:
 library_ref: ADR PI3-yaa-0003 (orphan-baseline squashed history + portfolio-scrub trade-off).
 depends_on: [WI-3yaa.SP-1]
 
-### WI-3yaa.SC-2: Delete `yaagents/.claude/` + `yaagents/CLAUDE.md` from working tree [DRAFT] — Sprint 1
+### WI-3yaa.SC-2: Delete `yaagents/.claude/` + `yaagents/CLAUDE.md` from working tree [READY] — Sprint 1
 service: yaagents
 parent_feature: F-SCRUB
 brief: Remove `yaagents/.claude/` directory and `yaagents/CLAUDE.md` from the `yaagents/` repo
