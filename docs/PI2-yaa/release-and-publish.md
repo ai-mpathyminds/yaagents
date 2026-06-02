@@ -188,7 +188,7 @@ acceptance:
 library_ref: ADR PI1-yaa-0005, ADR PI2-yaa-0003
 depends_on: [WI-2yaa.BUMP-2]
 
-### WI-2yaa.REL-3: GHCR gateway image re-publish @ 0.2.0 (multi-arch + SBOM) [READY] — Sprint 5
+### WI-2yaa.REL-3: GHCR gateway image re-publish @ 0.2.0 (multi-arch + SBOM) [WIP] — Sprint 5
 service: yaagents/(ci)
 parent_feature: F-LICENSE
 brief: Re-publish the gateway image at tag `0.2.0` + update `:latest` to

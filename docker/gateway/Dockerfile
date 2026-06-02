@@ -1,5 +1,5 @@
 # yaagents gateway — multi-stage Alpine build
-# Published as: ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0
+# Published as: ghcr.io/ai-mpathyminds/yaagents-gateway:0.2.0  (WI-2yaa.REL-3)
 # Multi-arch: linux/amd64 + linux/arm64 (see WI-1yaa.REL-5)
 # Non-root; CGO_ENABLED=0 for fully static binary.
 # SBOM generated at publish via syft (SPDX 2.3) — platform-engineer A-4 pick.
