@@ -43,7 +43,7 @@ depends_on: [WI-2yaa.LIC-2]
 | [SUPPLY] OIDC trusted publishing | feature WI | REL-1 in `release-and-publish.md` |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; PyPI is a public registry; zero cloud cost |
 
-### WI-2yaa.NFR-PYC-1: pip-audit CI gate for client-python [READY]
+### WI-2yaa.NFR-PYC-1: pip-audit CI gate for client-python [WIP]
 service: yaagents/client-python
 parent_feature: F-LICENSE
 brief: [SEC] Run `pip-audit` against the built `yaagents-client==0.2.0`

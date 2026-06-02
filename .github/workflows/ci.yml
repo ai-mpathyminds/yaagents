@@ -172,8 +172,12 @@ jobs:
       - name: mypy
         run: mypy src
 
-      # pip-audit: vulnerability scan of the installed environment (OSV)
-      - name: pip-audit
+      # pip-audit: vulnerability scan of the installed environment (OSV database).
+      # Step name resolves to pip-audit-sdk-fastapi / pip-audit-client-python /
+      # pip-audit-cli per matrix (WI-2yaa.NFR-SDK-1 / NFR-PYC-1 / NFR-CLI-1).
+      # Exits 1 on any vulnerability (satisfies HIGH/CRITICAL threshold);
+      # zero findings expected on v0.2.0 packages (no runtime CVEs).
+      - name: pip-audit-${{ matrix.pkg }}
         run: pip-audit
 
       # pytest: unit tests + coverage gate (--cov-fail-under=80 in pyproject.toml)

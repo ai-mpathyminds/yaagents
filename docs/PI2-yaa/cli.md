@@ -80,7 +80,7 @@ depends_on: [WI-2yaa.BUMP-1c, WI-2yaa.BUMP-3]
 | [SUPPLY] Used by PI-GATE as conformance harness | feature WI | PI-GATE step 6 (`release-and-publish.md`); CLI-CONF is the gate harness invoked against both examples |
 | [FIN] FinOps WI | **N/A** | dev-host/CI product; PyPI is a public registry; zero cloud cost |
 
-### WI-2yaa.NFR-CLI-1: pip-audit CI gate for yaagents-cli [READY]
+### WI-2yaa.NFR-CLI-1: pip-audit CI gate for yaagents-cli [WIP]
 service: yaagents/cli
 parent_feature: F-LICENSE
 brief: [SEC] Run `pip-audit` against the built `yaagents-cli==0.2.0`
