@@ -1,0 +1,1 @@
+{"type":"operation_accepted","code":"OPERATION_ACCEPTED","message":"Operation accepted for asynchronous processing.","operationId":"op-golden-001","statusUrl":"","trace":{"correlationId":"corr-golden-123","requestId":"req-golden-456"}}

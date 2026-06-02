@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -157,4 +158,37 @@ func TestWrite_BodyContents(t *testing.T) {
 	if !strings.Contains(body, "hello") {
 		t.Errorf("body %q does not contain 'hello'", body)
 	}
+}
+
+// TestWrite_ConcurrentRace verifies that 100 goroutines can concurrently call
+// Write() sharing the same AgenticWritable without data races.
+// Each goroutine uses its own httptest.ResponseRecorder.
+// Run with: go test -race ./sdk-go/sdkgo/...
+func TestWrite_ConcurrentRace(t *testing.T) {
+	ar := AgenticResponse{}
+	// Pre-build one response value shared across all goroutines to prove
+	// Body() (which calls json.Marshal) is safe for concurrent reads.
+	resp := ar.Done(testCtx, map[string]string{"concurrent": "ok"})
+
+	const n = 100
+	var wg sync.WaitGroup
+	wg.Add(n)
+
+	for i := 0; i < n; i++ {
+		go func() {
+			defer wg.Done()
+			rec := httptest.NewRecorder()
+			if err := Write(rec, resp); err != nil {
+				t.Errorf("Write: %v", err)
+				return
+			}
+			if rec.Code != http.StatusOK {
+				t.Errorf("status = %d, want %d", rec.Code, http.StatusOK)
+			}
+			if rec.Header().Get("X-YAAgents-Profile") != ProfileVersion {
+				t.Errorf("X-YAAgents-Profile missing or wrong")
+			}
+		}()
+	}
+	wg.Wait()
 }
