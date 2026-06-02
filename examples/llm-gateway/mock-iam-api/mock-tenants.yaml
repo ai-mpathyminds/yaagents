@@ -11,3 +11,4 @@ principals:
   "user-bob@example.com":   "tenant-002"
   "service-account-1":      "tenant-001"
   "admin@example.com":      "tenant-admin"
+  "conformance-tester":     "tenant-001"   # yaagents conformance-test sub claim → tenant-001

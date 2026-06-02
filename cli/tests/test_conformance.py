@@ -36,10 +36,14 @@ from yaagents_cli._conformance import (
     _check_clarification_ct,
     _check_clarification_schema,
     _check_correlation_id,
+    _check_correlation_id_llm,
     _check_plugin_tenant_injector,
+    _check_plugin_tenant_injector_llm,
     _check_plugin_token_validator,
     _check_profile_header,
+    _check_profile_header_and_detect,
     _check_tenant_required,
+    _check_tenant_required_llm,
     _make_invalid_jwt,
     conformance_test,
     make_jwt,
@@ -798,3 +802,242 @@ class TestCliOutput:
         assert rc == 1
         err = capsys.readouterr().err
         assert "http" in err
+
+
+# ── make_jwt sub parameter ────────────────────────────────────────────────────
+
+
+class TestMakeJwtSubParam:
+    def test_default_sub_is_conformance_tester(self) -> None:
+        import base64
+
+        token = make_jwt("s")
+        payload_b64 = token.split(".")[1]
+        padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded))
+        assert payload["sub"] == "conformance-tester"
+
+    def test_custom_sub(self) -> None:
+        import base64
+
+        token = make_jwt("s", sub="custom-user@example.com")
+        payload_b64 = token.split(".")[1]
+        padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded))
+        assert payload["sub"] == "custom-user@example.com"
+
+
+# ── LLM-gateway mode: _check_profile_header_and_detect ───────────────────────
+
+
+class TestCheckProfileHeaderAndDetect:
+    def test_campaign_api_mode_pass(self) -> None:
+        """201 from /campaigns → campaign-api mode, profile header present → PASS."""
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                201, _valid_201_headers(), b"{}"
+            )
+            result, is_llm = _check_profile_header_and_detect("http://gw", "tok", "t1")
+        assert result.passed
+        assert not is_llm
+
+    def test_campaign_api_mode_profile_mismatch(self) -> None:
+        """v0.1 gateway (campaign-api) → FAIL, is_llm=False."""
+        v01_hdrs = {**_valid_201_headers(), _PROFILE_HEADER: "v0.1"}
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(201, v01_hdrs, b"{}")
+            result, is_llm = _check_profile_header_and_detect("http://gw", "tok", "t1")
+        assert not result.passed
+        assert "profile-mismatch" in result.detail
+        assert not is_llm
+
+    def test_llm_gateway_mode_detected_on_404(self) -> None:
+        """404 from /campaigns + v0.2 from /completions → PASS, is_llm=True."""
+        resp_404 = _make_mock_response(
+            404, {"content-type": _CT_ERROR}, b'{"type":"error"}'
+        )
+        resp_completions = _make_mock_response(201, _valid_201_headers(), b"{}")
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = [resp_404, resp_completions]
+            result, is_llm = _check_profile_header_and_detect("http://gw", "tok", "t1")
+        assert result.passed
+        assert is_llm
+        assert "completions" in result.detail
+
+    def test_llm_gateway_no_profile_header_on_completions(self) -> None:
+        """LLM gateway: no profile header on /completions → FAIL, is_llm=True."""
+        resp_404 = _make_mock_response(404, {}, b'{"type":"error"}')
+        resp_completions = _make_mock_response(201, {"content-type": _CT_JSON}, b"{}")
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = [resp_404, resp_completions]
+            result, is_llm = _check_profile_header_and_detect("http://gw", "tok", "t1")
+        assert not result.passed
+        assert "header-absent" in result.detail
+        assert is_llm
+
+
+# ── LLM-gateway mode: _check_correlation_id_llm ──────────────────────────────
+
+
+class TestCheckCorrelationIdLlm:
+    def test_pass_when_echoed(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                201,
+                {**_valid_201_headers(), "X-Correlation-ID": _CORR_ID_SENTINEL},
+                b"{}",
+            )
+            result = _check_correlation_id_llm("http://gw", "tok", "t1")
+        assert result.passed
+
+    def test_fail_when_absent(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            # Headers without the correlation ID (no X-Correlation-ID key)
+            mock_open.return_value = _make_mock_response(
+                201,
+                {"content-type": _CT_JSON, _PROFILE_HEADER: _PROFILE_VERSION},
+                b"{}",
+            )
+            result = _check_correlation_id_llm("http://gw", "tok", "t1")
+        assert not result.passed
+
+
+# ── LLM-gateway mode: _check_tenant_required_llm ─────────────────────────────
+
+
+class TestCheckTenantRequiredLlm:
+    def test_pass_when_unknown_principal_rejected(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _forbidden_response()
+            result = _check_tenant_required_llm("http://gw", DEMO_JWT_SECRET)
+        assert result.passed
+
+    def test_fail_when_200_returned(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                200, {"Content-Type": _CT_JSON}, b"{}"
+            )
+            result = _check_tenant_required_llm("http://gw", DEMO_JWT_SECRET)
+        assert not result.passed
+
+
+# ── LLM-gateway mode: _check_plugin_tenant_injector_llm ─────────────────────
+
+
+class TestCheckPluginTenantInjectorLlm:
+    def test_pass_when_403_vendor_error(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _forbidden_response()
+            result = _check_plugin_tenant_injector_llm("http://gw", DEMO_JWT_SECRET)
+        assert result.passed
+        assert result.name == "plugin:tenant-injector"
+
+    def test_fail_when_200_returned(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.return_value = _make_mock_response(
+                200, {"Content-Type": _CT_JSON}, b"{}"
+            )
+            result = _check_plugin_tenant_injector_llm("http://gw", DEMO_JWT_SECRET)
+        assert not result.passed
+
+
+# ── full LLM-gateway suite (conformance_test in LLM mode) ────────────────────
+
+
+def _make_llm_pass_side_effects(
+    extra_plugin_responses: list[MagicMock] | None = None,
+) -> list[MagicMock]:
+    """Side-effects for a full PASS run against an LLM gateway.
+
+    Call order:
+      1. check 1a: /campaigns → 404 (detect LLM mode)
+      2. check 1b: /completions → 201 + profile header (LLM profile confirm)
+      3. check 4:  /completions + correlation ID → 201 + corr-id echo
+      4. check 5:  /completions (unknown JWT) → 403 (tenant-injector)
+      5-14. always-on 10 probes → 403 each
+      15+. plugin checks (optional)
+    """
+    _llm_404 = _make_mock_response(
+        404, {"content-type": _CT_ERROR}, b'{"type":"error","code":"ROUTE_NOT_FOUND"}'
+    )
+    _completions_201 = _make_mock_response(
+        201, _valid_201_headers(), b'{"type":"completion"}'
+    )
+    _corr_201 = _make_mock_response(
+        201,
+        {**_valid_201_headers(), "X-Correlation-ID": _CORR_ID_SENTINEL},
+        b'{"type":"completion"}',
+    )
+    return (
+        [_llm_404, _completions_201, _corr_201, _forbidden_response()]
+        + list(_ALWAYS_ON_403)
+        + (extra_plugin_responses or [])
+    )
+
+
+class TestConformanceSuiteLlmGateway:
+    def test_llm_gateway_all_pass(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_llm_pass_side_effects()
+            result = conformance_test(
+                "http://localhost:8122", jwt_secret=DEMO_JWT_SECRET
+            )
+        assert result.passed
+        assert len(result.checks) == 6
+        assert all(c.passed for c in result.checks)
+
+    def test_llm_gateway_clarification_checks_are_na(self) -> None:
+        """Clarification checks are N/A (skipped) in LLM-gateway mode."""
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_llm_pass_side_effects()
+            result = conformance_test("http://localhost:8122")
+        clarif_checks = [
+            c for c in result.checks
+            if "Clarification" in c.name or "clarification" in c.name
+        ]
+        for c in clarif_checks:
+            assert c.passed
+            assert "N/A" in c.detail
+
+    def test_llm_gateway_with_require_plugins(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_llm_pass_side_effects(
+                extra_plugin_responses=[
+                    _forbidden_response(),  # token-validator
+                    _forbidden_response(),  # tenant-injector (LLM mode)
+                ]
+            )
+            result = conformance_test(
+                "http://localhost:8122",
+                require_plugins=["token-validator", "tenant-injector"],
+            )
+        assert result.passed
+        plugin_checks = [c for c in result.checks if c.name.startswith("plugin:")]
+        assert len(plugin_checks) == 2
+        assert all(c.passed for c in plugin_checks)
+
+    def test_llm_gateway_matrix_has_10_rows(self) -> None:
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = _make_llm_pass_side_effects()
+            result = conformance_test("http://localhost:8122")
+        assert len(result.matrix) == 10
+
+    def test_llm_gateway_profile_mismatch_fails(self) -> None:
+        """LLM gateway returning wrong profile version → FAIL."""
+        _llm_404 = _make_mock_response(404, {}, b'{}')
+        _completions_v01 = _make_mock_response(
+            201, {**_valid_201_headers(), _PROFILE_HEADER: "v0.1"}, b"{}"
+        )
+        _corr = _make_mock_response(
+            201,
+            {**_valid_201_headers(), "X-Correlation-ID": _CORR_ID_SENTINEL},
+            b"{}",
+        )
+        with patch("urllib.request.urlopen") as mock_open:
+            mock_open.side_effect = (
+                [_llm_404, _completions_v01, _corr, _forbidden_response()]
+                + list(_ALWAYS_ON_403)
+            )
+            result = conformance_test("http://localhost:8122")
+        assert not result.passed
+        assert "profile-mismatch" in result.checks[0].detail

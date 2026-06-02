@@ -50,6 +50,9 @@ type completionRequest struct {
 	Prompt          string `json:"prompt"`
 	Stream          bool   `json:"stream"`
 	SimulateTimeout bool   `json:"simulate_timeout"`
+	// HoldOpen, when true, uses a 2-second inter-chunk delay to keep SSE
+	// connections alive for concurrency tests (EX-LLM-3 Flow 3).
+	HoldOpen bool `json:"hold_open"`
 }
 
 // choice is one completion choice in a response.
@@ -145,7 +148,14 @@ func handleCompletions(w http.ResponseWriter, r *http.Request) {
 	// SSE mode: request has stream:true OR client accepts text/event-stream.
 	wantsSSE := req.Stream || strings.Contains(r.Header.Get("Accept"), "text/event-stream")
 	if wantsSSE {
-		handleSSE(w, r, model)
+		delay := cfg.streamDelay
+		if req.HoldOpen {
+			// Slow-stream mode for concurrency testing (EX-LLM-3 Flow 3).
+			// 2-second inter-chunk delay keeps SSE slots occupied long enough
+			// to trigger the gateway's per-tenant SSE concurrency limit.
+			delay = 2 * time.Second
+		}
+		handleSSE(w, r, model, delay)
 		return
 	}
 
@@ -158,12 +168,21 @@ func handleCompletions(w http.ResponseWriter, r *http.Request) {
 			{Index: 0, Text: text},
 		},
 	}
+	// Echo X-Correlation-Id so conformance-test's correlation-ID check passes
+	// (the SSE proxy forwards all upstream response headers to the client).
+	if cid := r.Header.Get("X-Correlation-Id"); cid != "" {
+		w.Header().Set("X-Correlation-Id", cid)
+	}
+	// Also handle the canonical Go net/http form "X-Correlation-ID"
+	if cid := r.Header.Get("X-Correlation-ID"); cid != "" && r.Header.Get("X-Correlation-Id") == "" {
+		w.Header().Set("X-Correlation-Id", cid)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-func handleSSE(w http.ResponseWriter, r *http.Request, model string) {
+func handleSSE(w http.ResponseWriter, r *http.Request, model string, delay time.Duration) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming not supported", http.StatusInternalServerError)
@@ -201,9 +220,9 @@ func handleSSE(w http.ResponseWriter, r *http.Request, model string) {
 		}
 		flusher.Flush()
 
-		if i < len(tokens)-1 && cfg.streamDelay > 0 {
+		if i < len(tokens)-1 && delay > 0 {
 			select {
-			case <-time.After(cfg.streamDelay):
+			case <-time.After(delay):
 			case <-r.Context().Done():
 				return
 			}
