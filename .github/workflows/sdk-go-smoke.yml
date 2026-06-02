@@ -1,0 +1,132 @@
+# .github/workflows/sdk-go-smoke.yml
+# WI-3yaa.NFR-SRE-1 — campaign-api-go Docker Compose smoke CI
+#
+# Validates the campaign-api-go reference example (WI-3yaa.SG-6) end-to-end
+# in CI using Docker Compose. Triggered on push/PR to sdk-go/** and
+# examples/campaign-api-go/** paths.
+#
+# Four steps (per platform-engineer.md §NFR-SRE-1):
+#   Step 1  compose-up          — build + start gateway + campaign-api-go (health-gated, ≤60s poll)
+#   Step 2  smoke-happy-201     — POST valid goal → assert HTTP 201
+#   Step 3  smoke-clarify-400   — POST empty body → assert HTTP 400 + Content-Type
+#   Step 4  compose-down        — unconditional teardown (if: always())
+#
+# Implementation note — field name deviation from WI brief:
+#   The WI brief specifies `{"brief":"test"}` (happy) / `{"brief":"?"}` (clarify).
+#   The SG-6 handler (examples/campaign-api-go/main.go) checks the `goal` field.
+#   Sending `{"brief":"test"}` returns 400 (clarification required — goal absent),
+#   not 201. This workflow uses `{"goal":"test"}` (happy) and `{}` (clarify) so
+#   the smoke is actually green on SG-6's implementation as required by the
+#   acceptance criteria. HTTP status codes are checked via -w '%{http_code}'
+#   rather than body-grep, which is more reliable and correct for this handler.
+#
+# Port assignments (portfolio-conventions.md §Port Allocation, band 8120-8129):
+#   8120 — yaagents-gateway (not exercised directly; brought up for full stack)
+#   8121 — campaign-api-go  (direct; no gateway JWT required for these two flows)
+#
+# Acceptance: workflow green on SG-6 green state (WI-3yaa.NFR-SRE-1).
+
+on:
+  push:
+    paths:
+      - 'sdk-go/**'
+      - 'examples/campaign-api-go/**'
+  pull_request:
+    paths:
+      - 'sdk-go/**'
+      - 'examples/campaign-api-go/**'
+
+permissions:
+  contents: read   # read-only; no artifacts published here
+
+# Cancel in-progress runs on the same branch/PR to save minutes
+concurrency:
+  group: sdk-go-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  campaign-api-go-smoke:
+    name: campaign-api-go — Compose smoke (happy + clarification)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Step 1: Compose up — build + health-gate (≤60 s poll) ───────────────
+      # WI-3yaa.NFR-SRE-1 Step 1
+      # Build both services from local source and start them. --wait blocks until
+      # all containers report healthy per their docker-compose.yml healthcheck
+      # definitions (campaign-api-go: /healthz every 10s; gateway: /healthz every
+      # 10s). --wait-timeout 60 caps the health-poll window at 60 seconds; the
+      # build phase (multi-stage Alpine) runs before the wait window opens.
+      # --build forces a source rebuild so CI always tests the current commit, not
+      # a cached layer from a prior run.
+      - name: compose-up
+        working-directory: examples/campaign-api-go
+        run: docker compose up --detach --build --wait --wait-timeout 60
+
+      # ── Step 2: Happy path — valid goal → HTTP 201 ───────────────────────────
+      # WI-3yaa.NFR-SRE-1 Step 2 (happy path)
+      # POST with a valid `goal` field directly to campaign-api-go (port 8121,
+      # no gateway JWT required). Handler flow: goal present + non-empty +
+      # no Prefer: respond-async → Created (201 application/json).
+      # -w '%{http_code}' writes the status code to stdout; -o /dev/null
+      # discards the body. Exits 1 if the response is not HTTP 201.
+      - name: smoke-happy-201
+        run: |
+          STATUS=$(curl -s \
+            -X POST http://localhost:8121/campaigns/c1/optimizations \
+            -H 'Content-Type: application/json' \
+            -d '{"goal":"test"}' \
+            -o /dev/null \
+            -w '%{http_code}')
+          echo "happy path HTTP status: ${STATUS}"
+          if [ "${STATUS}" != "201" ]; then
+            echo "::error::smoke-happy: expected HTTP 201, got ${STATUS} — campaign-api-go must return 201 Created when goal field is present (WI-3yaa.SG-6 flow 2)"
+            exit 1
+          fi
+          echo "smoke-happy-201: PASS"
+
+      # ── Step 3: Clarification path — missing goal → HTTP 400 + Content-Type ─
+      # WI-3yaa.NFR-SRE-1 Step 3 (clarification path + Content-Type assertion)
+      # POST with an empty JSON body (no `goal` field) directly to campaign-api-go.
+      # Handler flow: goal key absent → ClarificationRequired (400).
+      # Two assertions are required:
+      #   (a) HTTP status must be 400
+      #   (b) Content-Type must be application/vnd.yaagents.clarification+json
+      # -D /tmp/sdk_smoke_clarif_hdrs.txt dumps response headers to a temp file;
+      # -o /dev/null discards the body; -w '%{http_code}' captures the status.
+      # grep on the headers file extracts the Content-Type for the assertion.
+      - name: smoke-clarification-400
+        run: |
+          STATUS=$(curl -s \
+            -X POST http://localhost:8121/campaigns/c1/optimizations \
+            -H 'Content-Type: application/json' \
+            -d '{}' \
+            -D /tmp/sdk_smoke_clarif_hdrs.txt \
+            -o /dev/null \
+            -w '%{http_code}')
+          CT=$(grep -i '^content-type:' /tmp/sdk_smoke_clarif_hdrs.txt \
+               | tail -1 | tr -d '\r' | sed 's/[Cc]ontent-[Tt]ype:[[:space:]]*//')
+          echo "clarification HTTP status: ${STATUS}"
+          echo "clarification Content-Type: ${CT}"
+          if [ "${STATUS}" != "400" ]; then
+            echo "::error::smoke-clarification: expected HTTP 400, got ${STATUS} — handler must return ClarificationRequired when goal is absent (WI-3yaa.SG-6 flow 1)"
+            exit 1
+          fi
+          if [[ "${CT}" != *"application/vnd.yaagents.clarification+json"* ]]; then
+            echo "::error::smoke-clarification: expected Content-Type application/vnd.yaagents.clarification+json, got '${CT}' — sdkgo.ClarificationRequired must set the agentic vendor media type"
+            exit 1
+          fi
+          echo "smoke-clarification-400: PASS — status=400, Content-Type=${CT}"
+
+      # ── Step 4: Compose down — unconditional teardown ────────────────────────
+      # WI-3yaa.NFR-SRE-1 Step 4
+      # Always runs (if: always()) even when smoke steps fail, to avoid port
+      # conflicts in subsequent CI runs sharing the same runner. --volumes removes
+      # named volumes (yaagents-net) so the next run starts from a clean state.
+      - name: compose-down
+        if: always()
+        working-directory: examples/campaign-api-go
+        run: docker compose down --volumes
