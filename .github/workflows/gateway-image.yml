@@ -1,7 +1,9 @@
 # .github/workflows/gateway-image.yml
-# WI-1yaa.REL-5 — GHCR gateway image (multi-arch, OIDC, SBOM)
+# WI-2yaa.REL-3 — GHCR gateway image re-publish @ 0.2.0 (multi-arch + SBOM)
+# WI-1yaa.REL-5 — original authoring; updated at PI2-yaa for Apache 2.0 OCI label
 # WI-1yaa.NFR-REL-1 — SBOM SPDX 2.3 JSON via syft (OQ-5 resolution)
 # ADR PI1-yaa-0005 — OIDC trusted publishing; no PAT, no long-lived token
+# ADR PI2-yaa-0003 — Apache 2.0 license metadata; OCI licenses label flip
 #
 # Publishes:
 #   ghcr.io/ai-mpathyminds/yaagents-gateway:<semver>
@@ -10,7 +12,7 @@
 # Auth:       GITHUB_TOKEN (packages: write) — OIDC; no PAT
 # SBOM:       SPDX 2.3 JSON (syft / anchore/sbom-action) → attached to Release
 # Scan:       trivy image scan HIGH+CRITICAL (exit 1 on unpatched findings)
-# Cosign:     deferred to PI2-yaa (ADR PI1-yaa-0005 §4)
+# Cosign:     deferred to PI3-yaa (ADR PI1-yaa-0005 §4)
 
 # PUBLISH PARKED 2026-05-24 — yaagents is private for now; do NOT auto-publish the
 # GHCR image. Re-enable the tag trigger below at public launch (PI-yaa public seed).
@@ -38,6 +40,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ── PRE-PUBLISH GATE: community-license grep ────────────────────────────
+      # WI-2yaa.REL-3 + NFR-REL-1: zero "YAAgents Community License" hits in
+      # gateway Go source before the image is built and pushed.
+      # Prevents a regression from reaching the public GHCR registry.
+      # ADR PI2-yaa-0003.
+      - name: license-clean-scan (pre-publish gate)
+        run: |
+          if grep -rn "YAAgents Community License" \
+               --include='*.go' \
+               gateway/; then
+            echo "::error::Community License string found in gateway Go source — cannot publish image. See ADR PI2-yaa-0003."
+            exit 1
+          fi
+          echo "license-clean-scan: PASS — no Community License strings found in gateway/"
+
       # ── multi-arch emulation ─────────────────────────────────────────────
       - name: Set up QEMU (arm64 emulation)
         uses: docker/setup-qemu-action@v3
@@ -62,6 +79,8 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest
+          labels: |
+            org.opencontainers.image.licenses=Apache-2.0
 
       # ── build + push (multi-arch) ─────────────────────────────────────────
       # Build context: gateway/  Dockerfile: docker/gateway/Dockerfile
@@ -79,6 +98,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: true
+
+      # ── OCI license label verification ───────────────────────────────────
+      # WI-2yaa.REL-3 AC: docker inspect ... labels["org.opencontainers.image.licenses"]
+      # must return "Apache-2.0". Scanned by digest for immutability.
+      # ADR PI2-yaa-0003 (was LicenseRef-YAAgents-Community-License-v0.1 in PI1-yaa).
+      - name: Verify OCI licenses label (Apache-2.0)
+        run: |
+          DIGEST="${{ steps.push.outputs.digest }}"
+          LABEL=$(docker inspect "${{ env.IMAGE }}@${DIGEST}" \
+            | jq -r '.[0].Config.Labels["org.opencontainers.image.licenses"] // empty')
+          if [ "${LABEL}" != "Apache-2.0" ]; then
+            echo "::error::OCI licenses label=${LABEL:-<absent>} — expected Apache-2.0 (ADR PI2-yaa-0003)"
+            exit 1
+          fi
+          echo "OK  org.opencontainers.image.licenses=${LABEL}"
 
       # ── Trivy image scan ─────────────────────────────────────────────────
       # Scan by digest (not mutable tag) so the exact pushed image is checked.
@@ -104,7 +138,7 @@ jobs:
       # ── SBOM — SPDX 2.3 JSON (syft / anchore/sbom-action) ───────────────
       # OQ-5 resolution: SPDX 2.3 JSON, platform-engineer A-4 pick.
       # See: docs/PI1-yaa/release-and-publish.md §OQ-5 resolution
-      # Cosign SBOM attestation = PI2-yaa (ADR PI1-yaa-0005 §4) — NOT here.
+      # Cosign SBOM attestation deferred to PI3-yaa (ADR PI1-yaa-0005 §4) — NOT here.
       - name: Generate SBOM — SPDX 2.3 JSON (syft)
         uses: anchore/sbom-action@v0.17.9
         with:
