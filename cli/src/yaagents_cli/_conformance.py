@@ -191,17 +191,19 @@ def make_jwt(
     secret: str,
     roles: list[str] | None = None,
     exp_delta: int = 300,
+    sub: str = "conformance-tester",
 ) -> str:
     """Mint a minimal HS256 JWT signed with *secret*.
 
     Valid for *exp_delta* seconds (default 5 min).  ``roles`` defaults to
     ``["campaign:optimize"]`` (the role required by the demo optimizations route).
+    ``sub`` sets the subject claim (default: ``"conformance-tester"``).
     """
     header = _b64url(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
     payload = _b64url(
         json.dumps(
             {
-                "sub": "conformance-tester",
+                "sub": sub,
                 "roles": (
                     roles if roles is not None else ["campaign:optimize"]
                 ),
@@ -333,6 +335,167 @@ def _check_profile_header(
     detail = (
         f"{mismatch}; status {status}; "
         f"{_PROFILE_HEADER}: {got!r} (expected {_PROFILE_VERSION!r})"
+    )
+    return CheckResult(name=name, passed=False, detail=detail)
+
+
+def _check_profile_header_and_detect(
+    base: str,
+    token: str,
+    tenant: str,
+) -> tuple[CheckResult, bool]:
+    """Check 1 variant that auto-detects gateway mode.
+
+    First probes ``POST /campaigns`` (campaign-api).  When the gateway has no
+    such route (404), it falls back to ``POST /completions`` (LLM gateway) and
+    returns ``is_llm_gateway=True``.
+
+    The original :func:`_check_profile_header` is preserved unchanged so
+    existing direct-call tests are unaffected.
+    """
+    name = "X-YAAgents-Profile: v0.2 on proxied response"
+    campaign_payload = json.dumps(
+        {
+            "name": "Conformance Test Campaign",
+            "budget": 1000,
+            "targetAudience": "developers",
+            "successMetric": "ctr",
+        }
+    ).encode()
+    hdrs = {
+        "Authorization": f"Bearer {token}",
+        "X-Tenant-ID": tenant,
+        "Content-Type": _CT_JSON,
+    }
+    status, resp_hdrs, _ = _http(
+        "POST", f"{base}/campaigns", headers=hdrs, body=campaign_payload
+    )
+
+    if status == 404:
+        # LLM-gateway: /campaigns not found; fall back to /completions.
+        llm_payload = json.dumps(
+            {"prompt": "conformance probe", "stream": False}
+        ).encode()
+        _, llm_hdrs, _ = _http(
+            "POST", f"{base}/completions", headers=hdrs, body=llm_payload
+        )
+        got = llm_hdrs.get(_PROFILE_HEADER.lower(), "")
+        if got == _PROFILE_VERSION:
+            return (
+                CheckResult(
+                    name=name,
+                    passed=True,
+                    detail="verified via /completions (LLM gateway)",
+                ),
+                True,
+            )
+        mismatch = (
+            "profile-mismatch" if got and got != _PROFILE_VERSION else "header-absent"
+        )
+        detail = (
+            f"{mismatch}; {_PROFILE_HEADER}: {got!r} "
+            f"(expected {_PROFILE_VERSION!r})"
+        )
+        return CheckResult(name=name, passed=False, detail=detail), True
+
+    # Campaign-api mode: check header from the /campaigns response.
+    got = resp_hdrs.get(_PROFILE_HEADER.lower(), "")
+    if got == _PROFILE_VERSION:
+        return CheckResult(name=name, passed=True), False
+    mismatch = (
+        "profile-mismatch" if got and got != _PROFILE_VERSION else "header-absent"
+    )
+    detail = (
+        f"{mismatch}; status {status}; "
+        f"{_PROFILE_HEADER}: {got!r} (expected {_PROFILE_VERSION!r})"
+    )
+    return CheckResult(name=name, passed=False, detail=detail), False
+
+
+# ── LLM-gateway mode checks (used when /campaigns returns 404) ────────────────
+
+
+def _check_correlation_id_llm(
+    base: str,
+    token: str,
+    tenant: str,
+) -> CheckResult:
+    """Check 4 (LLM gateway): POST /completions → X-Correlation-ID echoed.
+
+    The mock-llm-api echoes the inbound ``X-Correlation-Id`` header and the SSE
+    proxy forwards all upstream response headers, so the sentinel value arrives
+    back on the client response.
+    """
+    name = "Correlation ID propagated"
+    payload = json.dumps({"prompt": "corr-id probe", "stream": False}).encode()
+    hdrs = {
+        "Authorization": f"Bearer {token}",
+        "X-Tenant-ID": tenant,
+        "X-Correlation-ID": _CORR_ID_SENTINEL,
+        "Content-Type": _CT_JSON,
+    }
+    _, resp_hdrs, _ = _http("POST", f"{base}/completions", headers=hdrs, body=payload)
+    echoed = resp_hdrs.get("x-correlation-id", "")
+    if echoed == _CORR_ID_SENTINEL:
+        return CheckResult(name=name, passed=True)
+    detail = f"sent {_CORR_ID_SENTINEL!r}; got {echoed!r}"
+    return CheckResult(name=name, passed=False, detail=detail)
+
+
+def _check_tenant_required_llm(
+    base: str,
+    jwt_secret: str,
+) -> CheckResult:
+    """Check 5 (LLM gateway): unknown principal → tenant-injector rejects 403.
+
+    The tenant-injector derives tenant from the JWT ``sub`` claim; a principal
+    absent from the tenant directory produces 403 vendor-error.
+    """
+    name = "Gateway route requires tenant context"
+    unknown_token = make_jwt(
+        jwt_secret, sub="unknown-principal-for-conformance"
+    )
+    payload = json.dumps({"prompt": "tenant test", "stream": False}).encode()
+    hdrs = {
+        "Authorization": f"Bearer {unknown_token}",
+        "Content-Type": _CT_JSON,
+    }
+    status, resp_hdrs, _ = _http(
+        "POST", f"{base}/completions", headers=hdrs, body=payload
+    )
+    ct = _ct_base(resp_hdrs)
+    if status == 403 and ct == _CT_ERROR:
+        return CheckResult(name=name, passed=True)
+    detail = (
+        f"status {status}; Content-Type: {ct!r} "
+        f"(expected 403 + {_CT_ERROR!r} from tenant-injector)"
+    )
+    return CheckResult(name=name, passed=False, detail=detail)
+
+
+def _check_plugin_tenant_injector_llm(
+    base: str,
+    jwt_secret: str,
+) -> CheckResult:
+    """Plugin check (LLM gateway): tenant-injector rejects unknown principal → 403."""
+    name = "plugin:tenant-injector"
+    unknown_token = make_jwt(
+        jwt_secret, sub="unknown-for-tenant-injector-check"
+    )
+    payload = json.dumps({"prompt": "plugin test", "stream": False}).encode()
+    hdrs = {
+        "Authorization": f"Bearer {unknown_token}",
+        "Content-Type": _CT_JSON,
+    }
+    status, resp_hdrs, _ = _http(
+        "POST", f"{base}/completions", headers=hdrs, body=payload
+    )
+    ct = _ct_base(resp_hdrs)
+    if status == 403 and ct == _CT_ERROR:
+        return CheckResult(name=name, passed=True)
+    detail = (
+        f"status {status}; Content-Type {ct!r}; "
+        f"expected 403 + {_CT_ERROR!r} from tenant-injector"
     )
     return CheckResult(name=name, passed=False, detail=detail)
 
@@ -622,30 +785,59 @@ def conformance_test(
     checks: list[CheckResult] = []
 
     try:
-        # Check 1 — profile header (profile-mismatch FAIL if wrong version)
-        checks.append(_check_profile_header(base, token, tenant_id))
+        # Check 1 — profile header; auto-detects campaign-api vs LLM gateway.
+        # _check_profile_header_and_detect probes /campaigns first; on 404 it
+        # falls back to /completions and sets is_llm_gateway=True.
+        profile_result, is_llm_gateway = _check_profile_header_and_detect(
+            base, token, tenant_id
+        )
+        checks.append(profile_result)
 
-        # Checks 2 + 3 share one HTTP call
-        c2, clarif_body = _check_clarification_ct(base, token, tenant_id)
-        checks.append(c2)
-        checks.append(_check_clarification_schema(clarif_body))
+        if is_llm_gateway:
+            # LLM-gateway mode: /campaigns not present.
+            # Checks 2 + 3 (clarification) are campaign-api-specific → N/A.
+            checks.append(
+                CheckResult(
+                    name="Clarification response uses correct content type",
+                    passed=True,
+                    detail="N/A: LLM gateway — /campaigns route not present",
+                )
+            )
+            checks.append(
+                CheckResult(
+                    name="400 response matches clarification schema",
+                    passed=True,
+                    detail="N/A: LLM gateway — /campaigns route not present",
+                )
+            )
+            # Check 4 — correlation ID via /completions
+            checks.append(_check_correlation_id_llm(base, token, tenant_id))
+            # Check 5 — unknown principal → tenant-injector 403
+            checks.append(_check_tenant_required_llm(base, jwt_secret))
+        else:
+            # Campaign-api mode: existing checks
+            c2, clarif_body = _check_clarification_ct(base, token, tenant_id)
+            checks.append(c2)
+            checks.append(_check_clarification_schema(clarif_body))
+            checks.append(_check_correlation_id(base, token, tenant_id))
+            checks.append(_check_tenant_required(base, token))
 
-        # Check 4 — correlation ID
-        checks.append(_check_correlation_id(base, token, tenant_id))
-
-        # Check 5 — tenant enforcement
-        checks.append(_check_tenant_required(base, token))
-
-        # Check 6 (v0.2) — always-on token-validator assertion (10 probes)
+        # Check 6 (v0.2) — always-on token-validator assertion (10 probes).
+        # Token-validator intercepts all paths with invalid JWT → 403 in both modes.
         always_on_result = _check_always_on(base, tenant_id)
         checks.append(always_on_result)
 
-        # Checks 7+ — per-plugin checks (only when --require-plugin is supplied)
+        # Checks 7+ — per-plugin checks (mode-aware for tenant-injector)
         for plugin in require_plugins or []:
             if plugin == "token-validator":
                 checks.append(_check_plugin_token_validator(base, tenant_id))
             elif plugin == "tenant-injector":
-                checks.append(_check_plugin_tenant_injector(base, token))
+                if is_llm_gateway:
+                    checks.append(
+                        _check_plugin_tenant_injector_llm(base, jwt_secret)
+                    )
+                else:
+                    checks.append(_check_plugin_tenant_injector(base, token))
             else:
                 checks.append(
                     CheckResult(

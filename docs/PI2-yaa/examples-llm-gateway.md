@@ -79,7 +79,7 @@ acceptance:
 library_ref: ADR PI2-yaa-0002
 depends_on: [WI-2yaa.EX-LLM-1]
 
-### WI-2yaa.EX-LLM-3: Compose e2e — all 5 §13.2 flows green [READY] — Sprint 5
+### WI-2yaa.EX-LLM-3: Compose e2e — all 5 §13.2 flows green [WIP] — Sprint 5
 service: yaagents/examples/llm-gateway
 parent_feature: F-LLM
 brief: End-to-end demo + automated test harness that exercises all five
