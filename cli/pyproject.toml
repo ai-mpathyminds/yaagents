@@ -37,10 +37,9 @@ path = "src/yaagents_cli/__about__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/yaagents_cli"]
-
-# Include bundled schemas
-[tool.hatch.build.targets.wheel.force-include]
-"src/yaagents_cli/_schemas" = "yaagents_cli/_schemas"
+# _schemas/ is under src/yaagents_cli/ so packages= already bundles it;
+# force-include was redundant and caused a duplicate-path error in hatchling ≥1.27.
+# Removed at WI-2yaa.REL-1 (platform-engineer packaging fix, 2026-06-02).
 
 # ── ruff ─────────────────────────────────────────────────────────────────────
 [tool.ruff]

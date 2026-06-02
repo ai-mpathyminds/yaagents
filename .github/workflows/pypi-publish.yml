@@ -1,9 +1,11 @@
 # .github/workflows/pypi-publish.yml
-# WI-1yaa.REL-3 — PyPI publish ×3 (OIDC Trusted Publisher)
+# WI-2yaa.REL-1 — PyPI re-publish ×3 @ 0.2.0 (OIDC Trusted Publisher)
+# WI-1yaa.REL-3 — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
 # ADR PI1-yaa-0003 — Hatch build; ADR PI1-yaa-0005 — OIDC; no API token
+# ADR PI2-yaa-0003 — Apache 2.0 license metadata (supersedes Community License)
 #
 # Packages: yaagents-fastapi | yaagents-client | yaagents-cli
-# Flow:     build → TestPyPI publish (gate) → TestPyPI verify → PyPI publish
+# Flow:     license-clean-scan (gate) → build → TestPyPI (gate) → PyPI publish
 # Auth:     PyPI Trusted Publisher OIDC (id-token: write); zero long-lived token
 #
 # External setup (Phase-B dependency, one per package):
@@ -29,6 +31,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # ── PRE-PUBLISH GATE: community-license grep ────────────────────────────
+      # WI-2yaa.REL-1 + NFR-REL-1: zero "YAAgents Community License" hits in
+      # Python source before any wheel is built. Prevents a regression from
+      # reaching a public registry. ADR PI2-yaa-0003.
+      - name: license-clean-scan (pre-publish gate)
+        run: |
+          if grep -rn "YAAgents Community License" \
+               --include='*.py' \
+               sdk-fastapi client-python cli; then
+            echo "::error::Community License string found in Python sources — cannot publish. See ADR PI2-yaa-0003."
+            exit 1
+          fi
+          echo "license-clean-scan: PASS — no Community License strings found"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -179,15 +195,40 @@ jobs:
             "yaagents-client==${{ steps.ver.outputs.version }}" \
             "yaagents-cli==${{ steps.ver.outputs.version }}"
 
-      - name: Smoke-test profile declarations
+      - name: Smoke-test profile declarations + license + Supports-YAAgents-Profile
         run: |
+          # WI-2yaa.REL-1 acceptance criteria:
+          #   - All three wheels report License: Apache-2.0
+          #   - All three wheels declare Supports-YAAgents-Profile: v0.2
+          #   - Module __profile__ == "v0.2" on all three
+          # ADR PI2-yaa-0003 (Apache 2.0 metadata everywhere)
           python - <<'EOF'
+          import importlib.metadata as im
           from yaagents_fastapi import __version__ as fv, __profile__ as fp
-          from yaagents_client import __version__ as cv, __profile__ as cp
-          from yaagents_cli    import __version__ as lv, __profile__ as lp
+          from yaagents_client  import __version__ as cv, __profile__ as cp
+          # yaagents_cli.__init__ does not re-export __profile__; import from __about__
+          from yaagents_cli import __version__ as lv
+          from yaagents_cli.__about__ import __profile__ as lp
+
           assert fv == cv == lv, f"version mismatch: {fv} {cv} {lv}"
-          assert fp == cp == lp == "v0.1", f"profile mismatch: {fp} {cp} {lp}"
+          assert fp == cp == lp == "v0.2", f"profile mismatch: {fp} {cp} {lp}"
           print(f"OK  version={fv}  profile={fp}")
+
+          PKGS = ["yaagents-fastapi", "yaagents-client", "yaagents-cli"]
+          for pkg in PKGS:
+              meta = im.metadata(pkg)
+              # License assertion (PEP 621 license.text → License header in METADATA)
+              lic = meta.get("License-Expression") or meta.get("License") or ""
+              assert "Apache-2.0" in str(lic), \
+                  f"{pkg}: License={lic!r} — expected Apache-2.0 (ADR PI2-yaa-0003)"
+              # Supports-YAAgents-Profile assertion via Project-URL header
+              # pyproject.toml [project.urls] "Supports-YAAgents-Profile" = "v0.2"
+              # → Project-URL: Supports-YAAgents-Profile, v0.2 in wheel METADATA
+              urls = meta.get_all("Project-URL") or []
+              assert any(
+                  "Supports-YAAgents-Profile" in u and "v0.2" in u for u in urls
+              ), f"{pkg}: Supports-YAAgents-Profile: v0.2 not found. Project-URLs={urls}"
+              print(f"PASS  {pkg}  License={lic}  Supports-YAAgents-Profile: v0.2")
           EOF
 
       - name: Smoke-test CLI entrypoint

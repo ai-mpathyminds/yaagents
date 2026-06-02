@@ -148,7 +148,7 @@ acceptance:
 library_justify: PI gate; no library import (operator script + manual checklist for external-registry account configuration).
 depends_on: [WI-2yaa.LIC-1]
 
-### WI-2yaa.REL-1: PyPI re-publish ×3 @ 0.2.0 (OIDC) [READY] — Sprint 5
+### WI-2yaa.REL-1: PyPI re-publish ×3 @ 0.2.0 (OIDC) [WIP] — Sprint 5
 service: yaagents/(ci)
 parent_feature: F-LICENSE
 brief: Re-publish `yaagents-fastapi`, `yaagents-client`, `yaagents-cli` at
