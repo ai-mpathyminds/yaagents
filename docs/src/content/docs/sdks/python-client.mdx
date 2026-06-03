@@ -1,0 +1,82 @@
+---
+title: Python Client (client-python)
+description: Typed Python client for calling YAAgents-compliant agentic endpoints.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Package:** `yaagents-client` on PyPI
+**Full API reference:** [github.com/ai-mpathyminds/yaagents-client-python](https://github.com/ai-mpathyminds/yaagents-client-python)
+
+## Install
+
+```bash
+pip install yaagents-client==0.3.0
+```
+
+## Minimal example — clarification handling
+
+```python
+from yaagents_client import YaAgentsClient, ClarificationRequired, ValidationFailed
+
+client = YaAgentsClient(
+    base_url="http://localhost:8120",
+    token="demo-token",
+    tenant_id="tenant-001",
+)
+
+# --- First call: missing required field ---
+try:
+    result = client.campaigns.by_id("cmp-123").optimizations.create({})
+except ClarificationRequired as e:
+    print("Missing fields:", [i.field for i in e.required_inputs])
+    # → Missing fields: ['goal']
+
+    # Re-submit with the required field
+    result = client.campaigns.by_id("cmp-123").optimizations.create(
+        {"goal": "ctr"}
+    )
+    print("Created:", result)
+    # → Created: {'id': 'opt-abc', 'goal': 'ctr', 'suggestions': [...]}
+```
+
+## Exception-based API
+
+The Python client raises typed exceptions for every non-success agentic outcome:
+
+| Exception | HTTP Status | When |
+|-----------|------------|------|
+| `ClarificationRequired` | 400 | Agent needs more input; `.required_inputs` list |
+| `ValidationFailed` | 422 | Body fails schema validation; `.errors` list |
+| `AgenticForbidden` | 403 | Policy violation or insufficient permissions |
+| `FailedDependency` | 424 | Upstream dependency unavailable; `.dependency` |
+
+<Aside type="tip">
+  The result-style API (`result.type`) is available on the TypeScript client.
+  The Python client uses exception-style by convention — idiomatic Python.
+</Aside>
+
+## Key API symbols
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `YaAgentsClient(base_url, token, tenant_id)` | class | Root client |
+| `.campaigns.by_id(id).optimizations.create(body)` | method | `POST /campaigns/{id}/optimizations` |
+| `ClarificationRequired` | exception | `.required_inputs: list[RequiredInput]` |
+| `ValidationFailed` | exception | `.errors: list[ValidationError]` |
+
+## Run against campaign-api
+
+```bash
+cd examples/campaign-api && docker compose up -d
+python3 - <<'EOF'
+from yaagents_client import YaAgentsClient, ClarificationRequired
+c = YaAgentsClient("http://localhost:8120", "demo-token", "tenant-001")
+try:
+    c.campaigns.by_id("cmp-1").optimizations.create({})
+except ClarificationRequired as e:
+    print("Need:", [i.field for i in e.required_inputs])
+EOF
+```
+
+See [Examples](/examples/) for the full five-flow walkthrough.

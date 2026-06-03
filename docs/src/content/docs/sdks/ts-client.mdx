@@ -1,0 +1,101 @@
+---
+title: TypeScript Client (client-ts)
+description: Typed ESM TypeScript client with discriminated-union result handling.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Package:** `@aimpathyminds/yaagents-client` on npm
+**Full API reference:** [github.com/ai-mpathyminds/yaagents-client-ts](https://github.com/ai-mpathyminds/yaagents-client-ts)
+
+## Install
+
+```bash
+npm install @aimpathyminds/yaagents-client@0.3.0
+```
+
+## Minimal example — result-style discriminator
+
+```typescript
+import { YaAgentsClient } from '@aimpathyminds/yaagents-client';
+
+const client = new YaAgentsClient({
+  baseUrl: 'http://localhost:8120',
+  token: 'demo-token',
+  tenantId: 'tenant-001',
+});
+
+// --- First call: missing required field ---
+const first = await client.campaigns.byId('cmp-123').optimizations.create({});
+
+if (first.type === 'clarification_required') {
+  console.log('Missing fields:', first.requiredInputs.map(i => i.field));
+  // → Missing fields: ['goal']
+
+  // Re-submit with the required field
+  const second = await client.campaigns.byId('cmp-123').optimizations.create({
+    goal: 'ctr',
+  });
+
+  if (second.type === 'created') {
+    console.log('Optimization created:', second.data);
+    // → { id: 'opt-abc', goal: 'ctr', suggestions: [...] }
+  }
+}
+```
+
+## Result-style — all discriminants
+
+`AgenticResult<T>` is a discriminated union. Switch on `.type`:
+
+```typescript
+import type { AgenticResult } from '@aimpathyminds/yaagents-client';
+
+function handleResult<T>(result: AgenticResult<T>) {
+  switch (result.type) {
+    case 'created':
+    case 'success':
+      return result.data;          // T
+    case 'accepted':
+      return result.operationId;   // async operation in flight
+    case 'clarification_required':
+      return result.requiredInputs; // prompt user for missing fields
+    case 'validation_failed':
+      return result.errors;         // field-level errors
+    case 'approval_required':
+      return result.approvers;      // human-in-the-loop
+    case 'conflict':
+      return result.message;
+    case 'error':
+      throw new Error(result.message);
+  }
+}
+```
+
+<Aside type="tip">
+  TypeScript will enforce exhaustiveness — add `default: result satisfies never` to
+  get a compile-time error if a new response type is added to the Profile.
+</Aside>
+
+## Key API symbols
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `YaAgentsClient({ baseUrl, token, tenantId })` | class | Root client |
+| `.campaigns.byId(id).optimizations.create(body)` | method | `POST /campaigns/{id}/optimizations` |
+| `AgenticResult<T>` | type | Discriminated union: `type` field narrows to the correct shape |
+| `result.type === 'clarification_required'` | discriminant | Access `.requiredInputs` |
+
+## Run against campaign-api
+
+```bash
+cd examples/campaign-api && docker compose up -d
+node --input-type=module <<'EOF'
+import { YaAgentsClient } from '@aimpathyminds/yaagents-client';
+const c = new YaAgentsClient({ baseUrl: 'http://localhost:8120', token: 'demo-token', tenantId: 'tenant-001' });
+const r = await c.campaigns.byId('cmp-1').optimizations.create({});
+console.log(r.type, r.type === 'clarification_required' ? r.requiredInputs : r.data);
+EOF
+```
+
+See [Examples](/examples/) for the full five-flow walkthrough.
