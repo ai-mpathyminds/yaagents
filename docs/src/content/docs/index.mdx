@@ -8,10 +8,54 @@ hero:
     - text: Quick Start
       link: /quickstart/
       icon: right-arrow
+    - text: Why YAAgents
+      link: /why/
+      icon: information
+      variant: minimal
     - text: Profile Spec
       link: /profile/
       icon: open-book
       variant: minimal
 ---
 
-Welcome to YAAgents. See [Quick Start](/quickstart/) to get a running agentic endpoint in 10 minutes.
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/ai-mpathyminds/yaagents/blob/main/LICENSE)
+[![Latest Release](https://img.shields.io/github/v/release/ai-mpathyminds/yaagents?label=release)](https://github.com/ai-mpathyminds/yaagents/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/ai-mpathyminds/yaagents/sdk-go-ci.yml?branch=main&label=build)](https://github.com/ai-mpathyminds/yaagents/actions/workflows/sdk-go-ci.yml)
+
+## Install
+
+```bash
+# Python server SDK + client + CLI
+pip install yaagents-fastapi yaagents-client yaagents-cli
+
+# TypeScript / Node client
+npm install @aimpathyminds/yaagents-client
+
+# Go server SDK
+go get github.com/ai-mpathyminds/yaagents-sdk-go
+
+# Go client
+go get github.com/ai-mpathyminds/yaagents-client-go
+
+# Gateway (Docker)
+docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+```
+
+## What is YAAgents?
+
+<CardGrid>
+  <Card title="Domain resources, not /agents/invoke" icon="puzzle">
+    Agentic operations are ordinary REST actions — `POST /campaigns/{id}/optimizations` —
+    not a single opaque invoke endpoint. Standard HTTP semantics throughout.
+  </Card>
+  <Card title="Typed agentic outcomes" icon="list-format">
+    Ten normative response types (`clarification_required`, `approval_required`, `conflict`, …)
+    so callers handle every outcome with a discriminator, not arbitrary JSON parsing.
+  </Card>
+  <Card title="Gateway-controlled governance" icon="shield">
+    Token-validator, tenant-injector, and license-check plugins run at the gateway.
+    Bring any agent framework behind it — governance is framework-neutral.
+  </Card>
+</CardGrid>
