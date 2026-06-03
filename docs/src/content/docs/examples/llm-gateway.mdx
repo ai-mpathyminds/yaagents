@@ -1,0 +1,41 @@
+---
+title: llm-gateway (SSE + per-tenant concurrency)
+description: LLM gateway example — SSE streaming, per-tenant concurrency, and execution-timeout flows.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Source:** [`examples/llm-gateway/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/llm-gateway)
+**Carried from:** PI2-yaa
+
+<Aside type="note" title="Carry-forward from PI2-yaa">
+  This example was authored in PI2-yaa. The documentation walkthrough is a PI4-yaa scope item.
+  For now, see the source directory directly.
+</Aside>
+
+This example demonstrates advanced YAAgents gateway capabilities not covered in the
+`campaign-api` examples:
+
+- **SSE streaming responses** — long-running agent operations that emit partial results
+  as Server-Sent Events
+- **Per-tenant concurrency limits** — the gateway's `license-check` plugin enforces
+  concurrent-operation limits per tenant
+- **Execution timeout flow** — the `execution_timeout` response type
+  (`504 application/vnd.yaagents.error+json`) when an agent exceeds its time budget
+
+## Quick reference
+
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd examples/llm-gateway
+docker compose up -d
+```
+
+For SSE, partial-result, and per-tenant-concurrency curl examples, see the
+[source README](https://github.com/ai-mpathyminds/yaagents/blob/main/examples/llm-gateway/README.md).
+
+## Related
+
+- [campaign-api (Python)](/examples/campaign-api/) — synchronous flows
+- [campaign-api-go (Go)](/examples/campaign-api-go/) — sdk-go patterns
+- [SDK Quickstarts](/sdks/) — per-language install guides

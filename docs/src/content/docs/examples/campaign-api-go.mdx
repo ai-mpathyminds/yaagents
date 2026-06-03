@@ -1,0 +1,202 @@
+---
+title: campaign-api-go (Go)
+description: Go reference example — sdk-go AgenticResponse factory across all five agentic flows.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Source:** [`examples/campaign-api-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/campaign-api-go)
+**Stack:** YAAgents gateway + Go net/http service (sdk-go) + PostgreSQL
+
+This example mirrors the [Python campaign-api](/examples/campaign-api/) using the Go server
+SDK (`sdk-go`). It demonstrates `sdkgo.AgenticResponse`, `sdkgo.FromRequest()`, and
+`sdkgo.Write()` across all five agentic flows (PRD §8.2).
+
+## Start the stack
+
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd examples/campaign-api-go
+docker compose up
+```
+
+The gateway listens on `http://localhost:8120`.
+
+---
+
+## PRD §8.2 quickstart curl
+
+```bash
+# Optimization request — happy path
+curl -X POST http://localhost:8121/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}'
+# → 201 application/json
+```
+
+---
+
+## sdk-go handler — how the flows are implemented
+
+The Go service uses `sdkgo.AgenticResponse` to produce each response type.
+Key pattern: extract gateway context with `FromRequest`, construct the response,
+write with `sdkgo.Write`:
+
+```go
+import (
+    "encoding/json"
+    "net/http"
+    "github.com/ai-mpathyminds/yaagents-sdk-go/sdkgo"
+)
+
+func CreateOptimization(w http.ResponseWriter, r *http.Request) {
+    ctx := sdkgo.FromRequest(r)    // extracts CorrelationID, TenantID, ActorID
+    var ar sdkgo.AgenticResponse
+
+    var body struct {
+        Goal string `json:"goal"`
+    }
+    json.NewDecoder(r.Body).Decode(&body)
+
+    switch {
+    case body.Goal == "":
+        sdkgo.Write(w, ar.ClarificationRequired(ctx, []sdkgo.RequiredInput{{
+            Name: "goal", Location: "body", Type: "string", Required: true,
+            Question: "Which optimization goal?",
+            AllowedValues: []string{"ctr", "cpl", "conversion_rate"},
+        }}))
+    case body.Goal == "async":
+        sdkgo.Write(w, ar.Accepted(ctx, "op-xyz789"))
+    default:
+        sdkgo.Write(w, ar.Created(ctx, map[string]any{
+            "goal": body.Goal, "suggestions": []any{},
+        }))
+    }
+}
+```
+
+---
+
+## All five flows
+
+### Flow 1 — Clarification required
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{}' | python3 -m json.tool
+```
+
+**`400 application/vnd.yaagents.clarification+json`**
+
+```json
+{
+  "type": "clarification_required",
+  "message": "Optimization goal is required.",
+  "requiredInputs": [
+    {"field": "goal", "type": "string", "required": true}
+  ]
+}
+```
+
+---
+
+### Flow 2 — Created
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}'
+```
+
+**`201 application/json`** — optimization resource in body.
+
+---
+
+### Flow 3 — Accepted (async)
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -H "Prefer: respond-async" \
+  -d '{"goal": "ctr"}'
+```
+
+**`202 application/vnd.yaagents.operation+json`**
+
+```json
+{
+  "type": "accepted",
+  "operationId": "op-xyz789",
+  "statusUrl": "/operations/op-xyz789",
+  "trace": {"correlationId": "corr-aaa111", "requestId": "req-bbb222"}
+}
+```
+
+sdk-go call: `sdkgo.Write(w, ar.Accepted(ctx, "op-xyz789"))`
+
+---
+
+### Flow 4 — Validation failed
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": 42}'
+```
+
+**`422 application/vnd.yaagents.validation-error+json`**
+
+```json
+{
+  "type": "validation_failed",
+  "errors": [{"field": "goal", "message": "expected string", "code": "type_error"}]
+}
+```
+
+sdk-go call: `sdkgo.Write(w, ar.ValidationFailed(ctx, errors))`
+
+---
+
+### Flow 5 — Auth failure
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "X-Tenant-ID: tenant-001" \
+  -d '{"goal": "ctr"}'
+```
+
+**`401`** — gateway `token-validator` plugin rejects; Go service never invoked.
+
+---
+
+<Aside type="tip">
+  Compare with [campaign-api (Python)](/examples/campaign-api/) to see the same flows
+  through the Python SDK lens.
+</Aside>
+
+## sdk-go API surface used in this example
+
+| Call | Response type |
+|------|--------------|
+| `ar.ClarificationRequired(ctx, inputs)` | `400 application/vnd.yaagents.clarification+json` |
+| `ar.Created(ctx, body)` | `201 application/json` |
+| `ar.Accepted(ctx, operationId)` | `202 application/vnd.yaagents.operation+json` |
+| `ar.ValidationFailed(ctx, errors)` | `422 application/vnd.yaagents.validation-error+json` |
+
+See [Go Server SDK Quickstart](/sdks/go-server/) for the full `sdkgo` API reference.
+
+## Next steps
+
+- [Go Server SDK (sdk-go)](/sdks/go-server/) — full API surface + adapter docs
+- [campaign-api (Python)](/examples/campaign-api/) — same flows, Python SDK
