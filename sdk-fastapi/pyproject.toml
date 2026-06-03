@@ -5,11 +5,11 @@ build-backend = "hatchling.build"
 [project]
 name = "yaagents-fastapi"
 dynamic = ["version"]
-description = "YAAgents FastAPI SDK — Agentic REST Profile v0.2 (spec/agentic-rest-profile.md)"
+description = "YAAgents FastAPI SDK — Agentic REST Profile v0.3 (spec/agentic-rest-profile.md)"
 readme = "README.md"
 requires-python = ">=3.11,<4"
 license = { text = "Apache-2.0" }
-keywords = ["yaagents", "agentic", "REST", "fastapi", "profile-v0.2"]
+keywords = ["yaagents", "agentic", "REST", "fastapi", "profile-v0.3"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -26,7 +26,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/ai-mpathyminds/yaagents"
-"Supports-YAAgents-Profile" = "v0.2"
+"Supports-YAAgents-Profile" = "v0.3"
 
 [tool.hatch.version]
 path = "src/yaagents_fastapi/__about__.py"
