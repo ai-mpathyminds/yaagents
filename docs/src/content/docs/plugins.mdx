@@ -8,7 +8,7 @@ import { Aside, Code } from '@astrojs/starlight/components';
 The YAAgents gateway is extended through a **plugin chain** — an ordered sequence of
 middleware that processes every inbound request and outbound response. Plugins implement
 the `Plugin` interface from `gateway/plugin/plugin.go` and are compiled into the
-operator binary at build time (no `plugin.Open`/`dlopen` — ADR PI2-yaa-0001 §3).
+operator binary at build time (no `plugin.Open`/`dlopen` §3).
 
 ## The Plugin interface
 
@@ -96,7 +96,7 @@ import (
 
 <Aside type="caution">
   The gateway NEVER uses `plugin.Open()` or `dlopen`. Community plugins are statically
-  linked at build time — this is a deliberate security choice (ADR PI2-yaa-0001 §3).
+  linked at build time — this is a deliberate security choice.
 </Aside>
 
 ## YAML configuration
