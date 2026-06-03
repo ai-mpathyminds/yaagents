@@ -760,7 +760,7 @@ The promise:
   Community plugins are supported via a published `plugin.Register()` contract.
 
 - **Go client SDK (`client-go/`):** Third SDK alongside `client-python` and `client-ts`;
-  published via Go modules at `github.com/ai-mpathyminds/yaagents/client-go@v0.2.0`.
+  published via Go modules at `github.com/ai-mpathyminds/yaagents-client-go@v0.3.0` (v0.2.0 was `yaagents/client-go`; module path migrated at PI3-yaa per ADR PI3-yaa-0002).
 
 - **LLM gateway convergence:** LLM-specialisation concerns from `ai-platform/ai-gateway`
   (SSE streaming, per-tenant SSE concurrency, execution timeout, CORS) absorbed into yaagents;

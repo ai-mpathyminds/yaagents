@@ -23,7 +23,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/ai-mpathyminds/yaagents/gateway/plugin"
+	"github.com/ai-mpathyminds/yaagents-gateway/plugin"
 
 	// Side-effect import: registers the community-example plugin into the global
 	// registry (plugin.Register is called from communityplugin's init function).

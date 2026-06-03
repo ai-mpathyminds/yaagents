@@ -7,7 +7,7 @@
 #
 # Flow:
 #   1. Poll proxy.golang.org until the module is indexed (≤ 30 min, backoff)
-#   2. go get github.com/ai-mpathyminds/yaagents/client-go@<version> in a
+#   2. go get github.com/ai-mpathyminds/yaagents-client-go@<version> in a
 #      fresh scratch module
 #   3. Compile + run a minimal program that imports the package and asserts
 #      ProfileVersion == expected semver tag
@@ -72,7 +72,7 @@ jobs:
         env:
           MODULE_VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          MODULE="github.com/ai-mpathyminds/yaagents-client-go"
           PROXY_URL="https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
           echo "Polling: ${PROXY_URL}"
           echo "STATUS-CLAIM: cite this URL + its JSON body as proxy.golang.org evidence"
@@ -105,21 +105,23 @@ jobs:
       # This is a go-developer lane deliverable (WI-2yaa.GOC-4 or LIC-2 sweep).
       # Fail loud rather than silently skipping: a missing LICENSE file means
       # pkg.go.dev will show "No license file found" — unacceptable for OSS.
-      - name: Verify client-go LICENSE file present
+      - name: Verify yaagents-client-go LICENSE file present
         uses: actions/checkout@v4
         with:
-          sparse-checkout: client-go/LICENSE
+          repository: ai-mpathyminds/yaagents-client-go
+          sparse-checkout: LICENSE
           sparse-checkout-cone-mode: false
+          path: client-go-repo
 
-      - name: Assert client-go/LICENSE exists
+      - name: Assert yaagents-client-go/LICENSE exists
         run: |
-          if [ ! -f client-go/LICENSE ]; then
-            echo "::error::client-go/LICENSE absent — proxy.golang.org will not serve license metadata."
-            echo "::error::go-developer must copy/symlink the repo root LICENSE to client-go/LICENSE (ADR PI2-yaa-0003)"
+          if [ ! -f client-go-repo/LICENSE ]; then
+            echo "::error::yaagents-client-go/LICENSE absent — proxy.golang.org will not serve license metadata."
+            echo "::error::go-developer must ensure LICENSE is at repo root of yaagents-client-go (ADR PI2-yaa-0003)"
             exit 1
           fi
-          head -1 client-go/LICENSE
-          echo "client-go/LICENSE: present"
+          head -1 client-go-repo/LICENSE
+          echo "yaagents-client-go/LICENSE: present"
 
       # ── go get + build + import in a scratch module ───────────────────────
       # Creates a minimal Go module, fetches the client-go package from the
@@ -133,7 +135,7 @@ jobs:
           MODULE_VERSION: ${{ steps.ver.outputs.version }}
           GOFLAGS: '-mod=mod'
         run: |
-          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          MODULE="github.com/ai-mpathyminds/yaagents-client-go"
           SCRATCH="$(mktemp -d)/scratch"
           mkdir -p "${SCRATCH}"
           cd "${SCRATCH}"
@@ -180,14 +182,14 @@ jobs:
         env:
           MODULE_VERSION: ${{ steps.ver.outputs.version }}
         run: |
-          MODULE="github.com/ai-mpathyminds/yaagents/client-go"
+          MODULE="github.com/ai-mpathyminds/yaagents-client-go"
           echo "✓ WI-2yaa.REL-4 verification PASSED"
           echo "  Module:        ${MODULE}@${MODULE_VERSION}"
           echo "  Proxy URL:     https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
-          echo "  GitHub tag:    https://github.com/ai-mpathyminds/yaagents/releases/tag/client-go%2F${MODULE_VERSION}"
+          echo "  GitHub tag:    https://github.com/ai-mpathyminds/yaagents-client-go/releases/tag/${MODULE_VERSION}"
           echo "  GHA run:       ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           echo ""
           echo "STATUS-CLAIM evidence (cite in WI-2yaa.REL-4 [DONE] close):"
-          echo "  tag URL:       https://github.com/ai-mpathyminds/yaagents/releases/tag/client-go%2F${MODULE_VERSION}"
+          echo "  tag URL:       https://github.com/ai-mpathyminds/yaagents-client-go/releases/tag/${MODULE_VERSION}"
           echo "  proxy URL:     https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
           echo "  GHA run-id:    ${{ github.run_id }}"

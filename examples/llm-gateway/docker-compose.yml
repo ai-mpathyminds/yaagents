@@ -15,7 +15,7 @@ name: yaagents-llm-gateway-demo
 
 services:
   yaagents-gateway:
-    image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.2.0
+    image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
     ports:
       - "8122:8120"      # host 8122 → container 8120 (OQ-4; portfolio band 8120-8129)
     environment:

@@ -30,7 +30,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/ai-mpathyminds/yaagents/gateway/plugin"
+	"github.com/ai-mpathyminds/yaagents-gateway/plugin"
 )
 
 // pluginVersion is the community plugin's own version string.
