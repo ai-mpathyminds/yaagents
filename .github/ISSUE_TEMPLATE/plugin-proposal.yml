@@ -1,0 +1,108 @@
+name: Plugin Proposal
+description: Propose a new community plugin for the YAAgents Gateway.
+labels: ["plugin", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose a new YAAgents Gateway plugin.
+        A plugin intercepts requests and/or responses at the gateway level and
+        implements the `Plugin` interface (see [CONTRIBUTING.md](../../CONTRIBUTING.md#plugin-contribution-path)).
+
+        **Before implementing anything**, open this issue and wait for a
+        maintainer `go-ahead` comment. That saves you from building something
+        that conflicts with the roadmap or duplicates an existing plugin.
+
+  - type: input
+    id: plugin_name
+    attributes:
+      label: Plugin name
+      description: |
+        A short, lowercase, hyphen-separated name (e.g. `rate-limiter`,
+        `prompt-sanitize`, `otel-audit`). This becomes the module path suffix
+        `yaagents-plugin-<name>`.
+      placeholder: "rate-limiter"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: hook
+    attributes:
+      label: Hook target
+      description: Which phase(s) does this plugin intercept?
+      multiple: true
+      options:
+        - Request (ProcessRequest)
+        - Response (ProcessResponse)
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem this plugin solves
+      description: |
+        Describe the production pain point. Frame it as a use-case problem, not
+        a solution. What can't you do today with the existing plugins?
+      placeholder: |
+        We expose 50+ agentic endpoints to external tenants. Without per-tenant
+        rate limiting at the gateway, a single misbehaving tenant can saturate
+        upstream agent capacity and degrade quality for everyone.
+    validations:
+      required: true
+
+  - type: textarea
+    id: api_sketch
+    attributes:
+      label: API sketch
+      description: |
+        A rough Go interface sketch or YAML config shape showing the plugin's
+        surface. Does not need to compile — just enough to discuss.
+      render: go
+      placeholder: |
+        type RateLimiterPlugin struct {
+            limits map[string]int // tenant -> req/min
+        }
+
+        func (p *RateLimiterPlugin) ProcessRequest(ctx context.Context, req *PluginRequest) (*PluginRequest, error) {
+            // check bucket; return 429 PluginError if exceeded
+        }
+
+        // YAML config:
+        // plugins:
+        //   rate-limiter:
+        //     default_rpm: 60
+        //     per_tenant: {}
+
+  - type: textarea
+    id: prior_art
+    attributes:
+      label: Prior art / references
+      description: |
+        Links to similar implementations in other API gateways (Kong, Envoy,
+        NGINX, etc.) that could inform the design.
+
+  - type: dropdown
+    id: contribution
+    attributes:
+      label: Will you contribute the implementation?
+      options:
+        - "Yes — I will author and maintain it"
+        - "Yes — I will author it; co-maintainer welcome"
+        - "No — requesting the maintainers build it"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this plugin has not already been proposed.
+          required: true
+        - label: I read CONTRIBUTING.md §Plugin contribution path.
+          required: true
+        - label: I understand I should wait for a maintainer go-ahead before implementing.
+          required: true
