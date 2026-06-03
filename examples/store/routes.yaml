@@ -1,0 +1,17 @@
+# Store example — gateway route configuration (WI-3yaa.STORE-EXAMPLE-AND-SKILLS)
+# Maps PRD §6.1-style paths to http://store:8080 (Compose service name).
+# No tenant or RBAC required for this unauthenticated demo endpoint.
+#
+# To add authentication, set tenantRequired: true and/or add roles: [...].
+# See examples/campaign-api/routes.yaml for a gated-route example.
+
+routes:
+  # ── POST /products/{id}/recommendations ──────────────────────────────────────
+  # Core agentic endpoint: returns same-category product recommendations.
+  # audit: true — every call emits a structured audit log entry via the gateway.
+  - id: store-recommendations
+    method: POST
+    path: /products/{id}/recommendations
+    target: http://store:8080
+    tenantRequired: false
+    audit: true

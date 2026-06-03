@@ -1,0 +1,105 @@
+---
+title: store (Python) — ecommerce recommendations
+description: Ecommerce product-recommendations reference example using sdk-fastapi + AI-tool skills.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+**Source:** [`examples/store/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store)
+**Stack:** YAAgents gateway + FastAPI service (sdk-fastapi)
+
+The `store` example is the recommended starting point for yaagents. It exposes one
+agentic endpoint — `POST /products/{id}/recommendations` — that returns mock product
+recommendations. The `skills/` directory contains starter prompts for replacing the
+mock with a real LLM in 10–20 minutes.
+
+For a hands-on walkthrough, see the [Quick Start](/tutorials/quick-start/).
+
+---
+
+## Start the stack
+
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd yaagents/examples/store
+docker compose up --build
+```
+
+The gateway listens on `http://localhost:8120`.
+
+---
+
+## Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/products/{id}/recommendations` | Get mock product recommendations |
+| GET | `/healthz` | Liveness probe |
+| GET | `/readyz` | Readiness probe |
+
+---
+
+## Sample calls
+
+### Basic recommendations
+
+```bash
+curl -s -X POST http://localhost:8120/products/p-1/recommendations \
+  -H "Content-Type: application/json" \
+  -d '{"limit": 3}' | python3 -m json.tool
+```
+
+**Response — 200 `application/json`:**
+
+```json
+{
+  "seed_product_id": "p-1",
+  "recommendations": [
+    {"id": "p-2", "name": "Bluetooth speaker", "category": "electronics", "price": 49.99, "brand": "AudioCore"},
+    {"id": "p-3", "name": "Smart watch", "category": "electronics", "price": 199.99, "brand": "TickTock"},
+    {"id": "p-5", "name": "Mechanical keyboard", "category": "electronics", "price": 129.99, "brand": "KeyMaster"}
+  ],
+  "reasoning": "Same category as 'Wireless headphones' (electronics)"
+}
+```
+
+### Personalised recommendations
+
+```bash
+curl -s -X POST http://localhost:8120/products/p-1/recommendations \
+  -H "Content-Type: application/json" \
+  -H "X-Customer-Id: c-1" \
+  -d '{"limit": 3}' | python3 -m json.tool
+```
+
+Customer `c-1` has purchased `p-1` and `p-4`. The response excludes `p-4` from the
+electronics list and adjusts the reasoning string.
+
+---
+
+## Make it real — AI-tool skills {#make-it-real--use-an-ai-tool-skill}
+
+Open `examples/store/skills/<your-tool>.md` for a starter prompt that extends the
+mock recommender into a real LLM-driven agent:
+
+| Tool | Skill file |
+|------|-----------|
+| Claude Code | `skills/claude-code-agent.md` |
+| Claude.ai | `skills/claude-web.md` |
+| GitHub Copilot | `skills/github-copilot.md` |
+| OpenAI / ChatGPT | `skills/openai-codex.md` |
+| Cursor | `skills/cursor.md` |
+| Other | `skills/generic-prompt.md` |
+
+---
+
+## Tear down
+
+```bash
+docker compose down
+```
+
+## See also
+
+- [store-go (Go)](/examples/store-go/) — Go mirror using sdk-go
+- [campaign-api (Python)](/examples/campaign-api/) — alternative; martech domain with RBAC

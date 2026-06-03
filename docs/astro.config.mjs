@@ -15,6 +15,26 @@ export default defineConfig({
       customCss: ['./src/styles/aimpathy-tokens.css'],
       sidebar: [
         {
+          label: '\u{1F4E6} Examples',
+          items: [
+            {
+              label: 'Recommended',
+              items: [
+                { label: 'store (Python)', link: '/examples/store/' },
+                { label: 'store-go (Go)', link: '/examples/store-go/' },
+              ],
+            },
+            {
+              label: 'Alternative',
+              items: [
+                { label: 'campaign-api (Python)', link: '/examples/campaign-api/' },
+                { label: 'campaign-api-go (Go)', link: '/examples/campaign-api-go/' },
+                { label: 'llm-gateway', link: '/examples/llm-gateway/' },
+              ],
+            },
+          ],
+        },
+        {
           label: '\u{1F393} Tutorials',
           items: [
             { label: 'Quick Start (10 min)', link: '/tutorials/quick-start/' },

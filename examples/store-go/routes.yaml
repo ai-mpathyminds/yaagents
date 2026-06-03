@@ -1,0 +1,12 @@
+# store-go example — gateway route configuration (WI-3yaa.STORE-EXAMPLE-AND-SKILLS)
+# Maps paths to http://store-go:8121 (Compose service name + port).
+# Mirrors examples/store/routes.yaml (Python equivalent).
+
+routes:
+  # ── POST /products/{id}/recommendations ──────────────────────────────────────
+  - id: store-recommendations
+    method: POST
+    path: /products/{id}/recommendations
+    target: http://store-go:8121
+    tenantRequired: false
+    audit: true

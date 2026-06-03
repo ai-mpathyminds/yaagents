@@ -1,0 +1,50 @@
+---
+title: store-go (Go) — ecommerce recommendations
+description: Go mirror of the store example using sdk-go.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Source:** [`examples/store-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store-go)
+**Stack:** YAAgents gateway + Go net/http service (sdk-go)
+
+Go mirror of [store (Python)](/examples/store/) using the Go server SDK (`sdk-go`).
+Demonstrates `sdkgo.AgenticResponse`, `sdkgo.FromRequest()`, and `sdkgo.Write()` on
+the `POST /products/{id}/recommendations` endpoint.
+
+---
+
+## Start the stack
+
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd yaagents/examples/store-go
+docker compose up --build
+```
+
+The gateway listens on `http://localhost:8120`.
+
+---
+
+## Sample call
+
+```bash
+curl -s -X POST http://localhost:8120/products/p-1/recommendations \
+  -H "Content-Type: application/json" \
+  -H "X-Customer-Id: c-1" \
+  -d '{"limit": 3}' | python3 -m json.tool
+```
+
+---
+
+## Extend with a real LLM
+
+See `examples/store/skills/` — the skill files apply equally to the Python and Go
+implementations. Use the Go-specific Starter Prompt 3 in each skill file for Go.
+
+---
+
+## See also
+
+- [store (Python)](/examples/store/) — Python mirror + 6 AI-tool skills
+- [campaign-api-go (Go)](/examples/campaign-api-go/) — alternative; martech domain

@@ -1,0 +1,64 @@
+# store-go — yaagents Go reference example Docker Compose
+# ports: 8120 (gateway), 8121 (store-go) — portfolio band 8120-8129
+# Uses published yaagents-gateway:0.3.0 from GHCR.
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET is a DEMO-ONLY value.
+# Never use this in production. Set GATEWAY_JWT_JWKS_URL instead.
+
+name: yaagents-store-go
+
+services:
+  yaagents-gateway:
+    image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+    ports:
+      - "8120:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_JWT_SECRET: "demo-secret-not-for-production"   # demo only
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./routes.yaml:/etc/yaagents/routes.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    depends_on:
+      store-go:
+        condition: service_healthy
+    restart: on-failure
+
+  store-go:
+    build:
+      context: ../..
+      dockerfile: examples/store-go/Dockerfile
+    ports:
+      - "8121:8121"
+    environment:
+      PORT: "8121"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8121/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    restart: on-failure
+
+networks:
+  yaagents-net:    # named network — intra-example isolation

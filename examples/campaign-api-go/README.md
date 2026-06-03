@@ -1,5 +1,10 @@
 # campaign-api-go
 
+> **Looking for the recommended starter?** See
+> [`examples/store-go/`](../store-go/) — the Go ecommerce product-recommendations
+> example. `campaign-api-go/` is preserved as an alternative example showing
+> the same Profile shape applied to a different domain.
+
 Go reference example for the [YAAgents Agentic REST Profile v0.3](../../spec/agentic-rest-profile.md).
 
 Mirrors `examples/campaign-api/` (Python FastAPI) using the **Go server SDK**

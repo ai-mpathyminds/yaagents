@@ -1,0 +1,22 @@
+[
+  {"id": "p-1", "name": "Wireless headphones", "category": "electronics", "price": 89.99, "brand": "AudioCore"},
+  {"id": "p-2", "name": "Bluetooth speaker", "category": "electronics", "price": 49.99, "brand": "AudioCore"},
+  {"id": "p-3", "name": "Smart watch", "category": "electronics", "price": 199.99, "brand": "TickTock"},
+  {"id": "p-4", "name": "USB-C charger 65W", "category": "electronics", "price": 24.99, "brand": "PowerUp"},
+  {"id": "p-5", "name": "Mechanical keyboard", "category": "electronics", "price": 129.99, "brand": "KeyMaster"},
+  {"id": "p-6", "name": "Running shoes", "category": "sports", "price": 79.99, "brand": "RunFast"},
+  {"id": "p-7", "name": "Yoga mat", "category": "sports", "price": 29.99, "brand": "ZenFit"},
+  {"id": "p-8", "name": "Dumbbells 10kg pair", "category": "sports", "price": 59.99, "brand": "IronCore"},
+  {"id": "p-9", "name": "Water bottle insulated", "category": "sports", "price": 19.99, "brand": "HydroPlus"},
+  {"id": "p-10", "name": "Cookbook: 30-minute meals", "category": "books", "price": 18.99, "brand": "ChefPress"},
+  {"id": "p-11", "name": "Novel: The Quiet Library", "category": "books", "price": 14.99, "brand": "PaperBound"},
+  {"id": "p-12", "name": "Tech biography: Code That Changed", "category": "books", "price": 22.99, "brand": "TechWorks"},
+  {"id": "p-13", "name": "Coffee maker drip 12-cup", "category": "home", "price": 69.99, "brand": "BrewBase"},
+  {"id": "p-14", "name": "Throw blanket fleece", "category": "home", "price": 34.99, "brand": "SoftHome"},
+  {"id": "p-15", "name": "LED desk lamp", "category": "home", "price": 39.99, "brand": "BrightSpot"},
+  {"id": "p-16", "name": "T-shirt cotton basic", "category": "fashion", "price": 19.99, "brand": "BasicWear"},
+  {"id": "p-17", "name": "Denim jacket", "category": "fashion", "price": 89.99, "brand": "BlueLine"},
+  {"id": "p-18", "name": "Leather wallet bifold", "category": "fashion", "price": 49.99, "brand": "CraftHide"},
+  {"id": "p-19", "name": "Sunglasses polarized", "category": "fashion", "price": 79.99, "brand": "ShadeView"},
+  {"id": "p-20", "name": "Wireless earbuds", "category": "electronics", "price": 119.99, "brand": "AudioCore"}
+]

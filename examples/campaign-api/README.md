@@ -1,5 +1,12 @@
 # Campaign API -- YAAgents Reference Example
 
+> **Looking for the recommended starter?** See
+> [`examples/store/`](../store/) — the ecommerce product-recommendations
+> example used in the Quick Start. `campaign-api/` is preserved as an
+> alternative example showing the same Profile shape applied to a
+> different domain (martech / campaign optimization with RBAC, tenant
+> context, and audit logging).
+
 FastAPI reference implementation of the [YAAgents Agentic REST Profile v0.1](../../spec/).
 
 Demonstrates all four PRD §6.2 flows (`created`, `clarification_required`,
