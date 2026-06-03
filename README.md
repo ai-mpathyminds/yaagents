@@ -7,7 +7,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python)](https://python.org/)
 [![CI](https://github.com/ai-mpathyminds/yaagents/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-mpathyminds/yaagents/actions)
 [![Gateway image](https://img.shields.io/badge/ghcr.io-yaagents--gateway-0d1117.svg?logo=github)](https://ghcr.io/ai-mpathyminds/yaagents-gateway)
-[![Profile version](https://img.shields.io/badge/YAAgents%20Profile-v0.2-blueviolet)](spec/)
+[![Profile version](https://img.shields.io/badge/YAAgents%20Profile-v0.3-blueviolet)](spec/)
 
 **YAAgents** is an **Agentic REST Profile** — a response contract, gateway, and client layer for exposing agentic capabilities as ordinary domain resource operations.
 
@@ -34,7 +34,7 @@ YAAgents standardizes:
 | Free-form text responses | Typed `application/vnd.yaagents.*` media types |
 | Ad hoc clarification | `clarification_required` — a machine-readable status |
 | Weak access control | Gateway RBAC with tenant context |
-| Framework-specific client code | Native Python and TypeScript client SDKs |
+| Framework-specific client code | Native Python, TypeScript, and Go client SDKs |
 | Hard-to-document agent APIs | OpenAPI-first response contracts |
 | Vendor-locked runtimes | Framework-neutral: LangGraph, Pydantic AI, Semantic Kernel, or custom logic |
 
@@ -60,7 +60,8 @@ YAAgents standardizes:
 ┌─────────────────────────────────────────────┐
 │  Agentic API Service  (any language/runtime)│
 │  FastAPI + yaagents-fastapi SDK  ← Python   │
-│  or Spring Boot · ASP.NET Core · Go Gin …   │
+│  Go net/http + yaagents-sdk-go   ← Go       │
+│  or Spring Boot · ASP.NET Core · Express …  │
 └────────────────────┬────────────────────────┘
                      │  internal call
                      ▼
@@ -116,14 +117,23 @@ curl -X POST http://localhost:8120/campaigns/c-001/optimizations \
   -d '{"budget_delta": 500}'
 ```
 
-### Install the clients
+### Install
 
 ```bash
-# Python
-pip install yaagents-client
+# Python SDK + client + CLI (server SDK, consumer client, validator)
+pip install yaagents-fastapi yaagents-client yaagents-cli
 
-# TypeScript / Node
+# TypeScript / Node client
 npm install @aimpathyminds/yaagents-client
+
+# Go client SDK
+go get github.com/ai-mpathyminds/yaagents-client-go
+
+# Go server SDK
+go get github.com/ai-mpathyminds/yaagents-sdk-go
+
+# Gateway container image
+docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
 ```
 
 ### Python client example
@@ -161,15 +171,18 @@ if (result.isClarification()) {
 
 ```
 yaagents/
-├── spec/                  ← Agentic REST Response Profile (normative)
-├── schemas/               ← JSON schemas for all response types
-├── openapi/               ← Reusable OpenAPI components
-├── gateway/               ← Go gateway source
-├── sdk-fastapi/           ← Python FastAPI server SDK (yaagents-fastapi)
-├── client-python/         ← Python client (yaagents-client)
-├── client-ts/             ← TypeScript client (@aimpathyminds/yaagents-client)
-├── cli/                   ← CLI validator (yaagents-cli)
-└── examples/campaign-api/ ← Reference example + Docker Compose demo
+├── spec/                    ← Agentic REST Response Profile (normative)
+├── schemas/                 ← JSON schemas for all response types
+├── openapi/                 ← Reusable OpenAPI components
+├── docs/                    ← Pages site source (Astro Starlight)
+├── gateway/                 ← Go gateway source                     [submodule]
+├── sdk-fastapi/             ← Python FastAPI server SDK (yaagents-fastapi) [submodule]
+├── sdk-go/                  ← Go server SDK (yaagents-sdk-go)       [submodule]
+├── client-python/           ← Python client (yaagents-client)       [submodule]
+├── client-ts/               ← TypeScript client (@aimpathyminds/yaagents-client) [submodule]
+├── client-go/               ← Go client SDK (yaagents-client-go)    [submodule]
+├── cli/                     ← CLI validator (yaagents-cli)           [submodule]
+└── examples/                ← Reference examples + Docker Compose demos
 ```
 
 ---
@@ -178,22 +191,27 @@ yaagents/
 
 | Artifact | Registry | Install |
 |---|---|---|
-| Gateway image | GHCR | `docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.1.0` |
-| Python FastAPI SDK | PyPI | `pip install yaagents-fastapi` |
-| Python client | PyPI | `pip install yaagents-client` |
-| CLI validator | PyPI | `pip install yaagents-cli` |
-| TypeScript client | npm | `npm install @aimpathyminds/yaagents-client` |
+| Gateway image | GHCR | `docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0` |
+| Python FastAPI SDK | PyPI | `pip install yaagents-fastapi==0.3.0` |
+| Python client | PyPI | `pip install yaagents-client==0.3.0` |
+| CLI validator | PyPI | `pip install yaagents-cli==0.3.0` |
+| TypeScript client | npm | `npm install @aimpathyminds/yaagents-client@0.3.0` |
+| Go client SDK | Go modules | `go get github.com/ai-mpathyminds/yaagents-client-go@v0.3.0` |
+| Go server SDK | Go modules | `go get github.com/ai-mpathyminds/yaagents-sdk-go@v0.3.0` |
 
 ---
 
 ## Documentation
 
+- [Full documentation site](https://ai-mpathyminds.github.io/yaagents/)
 - [Response Profile spec](spec/)
 - [JSON schemas](schemas/)
 - [OpenAPI components](openapi/)
 - [Gateway configuration](gateway/README.md)
 - [FastAPI SDK guide](sdk-fastapi/README.md)
-- [Campaign API example walkthrough](examples/campaign-api/README.md)
+- [Go server SDK guide](sdk-go/README.md)
+- [Campaign API example (Python)](examples/campaign-api/README.md)
+- [Campaign API example (Go)](examples/campaign-api-go/README.md)
 
 ---
 
@@ -201,13 +219,16 @@ yaagents/
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-**Note:** External contributions are not accepted until legal review of the license is complete. See the banner in CONTRIBUTING.md for details.
+Contributions are welcome under the Apache 2.0 license via the
+Developer Certificate of Origin (DCO) sign-off process. All pull requests
+must carry a `Signed-off-by:` trailer. See CONTRIBUTING.md for the full
+checklist, plugin contribution path, and legal disclaimer.
 
 ---
 
 ## License
 
-> **License:** Apache 2.0 — see `LICENSE`. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). For questions about historical v0.1.x usage, contact bhaskar@aimpathyminds.com.
+> **License:** Apache 2.0 — see `LICENSE`. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). v0.2.x+ ships under Apache 2.0. For questions about historical v0.1.x usage, contact bhaskar@aimpathyminds.com.
 
 ---
 

@@ -4,8 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| `0.1.x` (latest) | Yes |
-| Earlier pre-releases | No — upgrade to `0.1.x` |
+| `0.3.x` (latest) | Yes |
+| `0.2.x` | Yes — security fixes backported |
+| `0.1.x` and earlier | No — upgrade to `0.3.x` |
 
 ---
 
@@ -13,13 +14,22 @@
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Report vulnerabilities by e-mail to **security@aimpathyminds.com**. Include:
+You have two private channels:
+
+- **E-mail:** security@aimpathyminds.com
+- **GitHub Security Advisories:** use the
+  [Report a vulnerability](https://github.com/ai-mpathyminds/yaagents/security/advisories/new)
+  button in the Security tab of this repository (preferred — keeps tracking in one place).
+
+When reporting, include:
 
 1. **Component** — which part of YAAgents is affected:
    - Gateway (`ghcr.io/ai-mpathyminds/yaagents-gateway`)
-   - `yaagents-fastapi` (Python FastAPI SDK)
+   - `yaagents-fastapi` (Python FastAPI server SDK)
+   - `yaagents-sdk-go` (Go server SDK)
    - `yaagents-client` (Python client)
    - `@aimpathyminds/yaagents-client` (TypeScript client)
+   - `yaagents-client-go` (Go client SDK)
    - `yaagents-cli` (CLI validator)
    - Profile spec / JSON schemas
 2. **Description** — a clear summary of the vulnerability and its potential impact.
@@ -37,15 +47,19 @@ auth bypass, credential exposure) are treated as P0 and triaged immediately.
 
 ## Disclosure policy
 
-We follow **coordinated disclosure**:
+We follow **coordinated disclosure** with a **90-day disclosure SLA**:
 
-1. Reporter submits vulnerability privately.
+1. Reporter submits vulnerability privately (e-mail or GitHub Security Advisory).
 2. AimpathyMinds investigates and develops a fix.
-3. A patched release is prepared (target: within 30 days for High/Critical;
-   90 days for Medium/Low).
+3. A patched release is prepared within **90 days** of the initial report.
+   We aim to release faster for High/Critical issues, but the SLA is universal —
+   90 days applies to all severity levels.
 4. Reporter is notified before public disclosure and credited in the advisory
    unless they request anonymity.
 5. A GitHub Security Advisory is published alongside the patch release.
+
+If 90 days passes without a patch, we will coordinate with the reporter on
+a disclosure timeline that protects users as much as possible.
 
 We do not offer a bug bounty program at this time.
 
@@ -93,7 +107,7 @@ untrusted traffic.
 
 Every release runs:
 
-- `govulncheck` on the Go gateway
+- `govulncheck` on the Go gateway and Go SDK
 - `trivy` on the gateway container image
 - `pip-audit` on the Python packages
 - `npm audit` on the TypeScript package
