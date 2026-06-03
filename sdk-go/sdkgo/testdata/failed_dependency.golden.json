@@ -1,1 +1,0 @@
-{"type":"failed_dependency","code":"FAILED_DEPENDENCY","message":"[golden-svc] golden dep failure","trace":{"correlationId":"corr-golden-123","requestId":"req-golden-456"}}

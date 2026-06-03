@@ -1,0 +1,21 @@
+[submodule "gateway"]
+	path = gateway
+	url = https://github.com/ai-mpathyminds/yaagents-gateway.git
+[submodule "sdk-go"]
+	path = sdk-go
+	url = https://github.com/ai-mpathyminds/yaagents-sdk-go.git
+[submodule "sdk-fastapi"]
+	path = sdk-fastapi
+	url = https://github.com/ai-mpathyminds/yaagents-sdk-fastapi.git
+[submodule "client-python"]
+	path = client-python
+	url = https://github.com/ai-mpathyminds/yaagents-client-python.git
+[submodule "client-ts"]
+	path = client-ts
+	url = https://github.com/ai-mpathyminds/yaagents-client-ts.git
+[submodule "client-go"]
+	path = client-go
+	url = https://github.com/ai-mpathyminds/yaagents-client-go.git
+[submodule "cli"]
+	path = cli
+	url = https://github.com/ai-mpathyminds/yaagents-cli.git
