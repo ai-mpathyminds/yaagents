@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://yaagents.io/schemas/v0.1/operation-accepted.schema.json",
   "title": "Operation Accepted",
-  "description": "Body for application/vnd.yaagents.operation+json (HTTP 202). The operation was accepted for asynchronous processing. Note (ADR PI1-yaa-0002 §4): the async polling runtime is v0.2 scope; this schema ships in PI1-yaa so the contract surface is complete.",
+  "description": "Body for application/vnd.yaagents.operation+json (HTTP 202). The operation was accepted for asynchronous processing. Note: the async polling runtime is v0.2 scope; this schema ships in v0.1 so the contract surface is complete.",
   "type": "object",
   "required": ["type", "code", "message", "operationId", "statusUrl", "trace"],
   "additionalProperties": false,

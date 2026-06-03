@@ -2,7 +2,7 @@
 
 **Current profile version:** v0.3
 **Frozen backward-compat corpus:** `spec/examples/v0.2/` — validates against `schemas/v0.2/`; `spec/examples/v0.1/` — validates against `schemas/v0.1/`
-**Authority:** ADR PI1-yaa-0002 §5 — single shared conformance oracle.
+**Authority:** §5 — single shared conformance oracle.
 SDK, both clients, and CLI all test against this corpus; prevents per-component drift.
 
 Valid fixtures must **pass** their schema. Invalid fixtures must **fail** their schema.
@@ -84,7 +84,7 @@ Schema: `schemas/v0.3/agentic-error.schema.json` (frozen: `schemas/v0.2/agentic-
 
 Schema: `schemas/v0.3/operation-accepted.schema.json` (frozen: `schemas/v0.2/operation-accepted.schema.json`)
 
-> **PI1-yaa scope note (ADR PI1-yaa-0002 §4):** Schema and fixtures ship in PI1-yaa;
+> **Scope note:** Schema and fixtures ship in v0.1;
 > async polling runtime is v0.2 scope.
 
 | Fixture | Verdict | Notes |
@@ -110,13 +110,13 @@ Schema: `schemas/v0.3/operation-accepted.schema.json` (frozen: `schemas/v0.2/ope
 ## How consumers use this corpus
 
 ```bash
-# CLI validator (WI-1yaa.CLI-*) — corpus path is the version subdirectory
+# CLI validator (*) — corpus path is the version subdirectory
 yaagents-cli validate-corpus spec/examples/v0.1/   # frozen backward-compat corpus
 
-# Python (pytest, WI-1yaa.SDK-*)
+# Python (pytest, *)
 pytest tests/conformance/ --corpus spec/examples/v0.1/
 
-# TypeScript (jest, WI-1yaa.TS-*)
+# TypeScript (jest, *)
 npx jest --testPathPattern conformance
 ```
 

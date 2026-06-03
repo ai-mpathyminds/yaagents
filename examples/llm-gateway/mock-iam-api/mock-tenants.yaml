@@ -1,6 +1,6 @@
 # mock-tenants.yaml — in-memory principal→tenant map for the llm-gateway demo.
 # Used by mock-iam-api to answer tenant-injector lookup requests without an
-# external IAM dependency (ADR PI2-yaa-0006 Decision 2).
+# external IAM dependency.
 #
 # Format: principals: { "<principal>": "<tenant_id>" }
 # The gateway URL-encodes the principal before the HTTP GET, so principals

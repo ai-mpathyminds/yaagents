@@ -50,19 +50,14 @@ app = FastAPI(
 
 router = AgenticRouter()
 
-
 # ── helpers ───────────────────────────────────────────────────────────────────
-
 
 def _ctx_dep() -> type[AgenticContext]:
     return AgenticContext
 
-
 CtxDep = Annotated[AgenticContext, Depends(AgenticContext)]
 
-
 # ── POST /campaigns ───────────────────────────────────────────────────────────
-
 
 @agentic_operation(
     resource="Campaign",
@@ -118,7 +113,6 @@ async def create_campaign(
         request_id=ctx.request_id,
     )
 
-
 app.add_api_route(
     "/campaigns",
     create_campaign,
@@ -128,9 +122,7 @@ app.add_api_route(
     tags=["campaigns"],
 )
 
-
 # ── GET /campaigns/{campaign_id} ──────────────────────────────────────────────
-
 
 @app.get(
     "/campaigns/{campaign_id}",
@@ -155,9 +147,7 @@ async def get_campaign(
         request_id=ctx.request_id,
     )
 
-
 # ── POST /campaigns/{campaign_id}/optimizations ───────────────────────────────
-
 
 @agentic_operation(
     resource="Campaign",
@@ -215,7 +205,6 @@ async def create_optimization(
         request_id=ctx.request_id,
     )
 
-
 app.add_api_route(
     "/campaigns/{campaign_id}/optimizations",
     create_optimization,
@@ -225,9 +214,7 @@ app.add_api_route(
     tags=["optimizations"],
 )
 
-
 # ── GET /campaigns/{campaign_id}/optimizations/{op_id} ───────────────────────
-
 
 @app.get(
     "/campaigns/{campaign_id}/optimizations/{op_id}",
@@ -253,9 +240,7 @@ async def get_optimization(
         request_id=ctx.request_id,
     )
 
-
 # ── POST /campaigns/{campaign_id}/assets:generate ────────────────────────────
-
 
 @agentic_operation(
     resource="Campaign",
@@ -309,7 +294,6 @@ async def generate_assets(
         request_id=ctx.request_id,
     )
 
-
 app.add_api_route(
     "/campaigns/{campaign_id}/assets:generate",
     generate_assets,
@@ -319,22 +303,17 @@ app.add_api_route(
     tags=["assets"],
 )
 
-
 # ── health endpoints ──────────────────────────────────────────────────────────
-
 
 @app.get("/healthz", include_in_schema=False)
 async def healthz() -> dict[str, str]:
     return {"status": "ok"}
 
-
 @app.get("/readyz", include_in_schema=False)
 async def readyz() -> dict[str, str]:
     return {"status": "ok", "profile": _PROFILE_VERSION}
 
-
 # ── demo-only toggle endpoint ─────────────────────────────────────────────────
-
 
 @app.post(
     "/_demo/llm-down",
@@ -348,7 +327,6 @@ async def toggle_llm_down(enabled: bool = True) -> dict[str, Any]:
     """
     _store.LLM_DOWN = enabled
     return {"llmDown": _store.LLM_DOWN}
-
 
 # ── app entry-point ───────────────────────────────────────────────────────────
 

@@ -1,5 +1,4 @@
-# store-go example — gateway route configuration (WI-3yaa.STORE-EXAMPLE-AND-SKILLS)
-# Maps paths to http://store-go:8121 (Compose service name + port).
+# store-go example — gateway route configuration # Maps paths to http://store-go:8121 (Compose service name + port).
 # Mirrors examples/store/routes.yaml (Python equivalent).
 
 routes:

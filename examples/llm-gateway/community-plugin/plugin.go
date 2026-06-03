@@ -2,7 +2,7 @@
 // Copyright 2026 AimpathyMinds
 
 // Package communityplugin is an example community plugin demonstrating the
-// yaagents gateway plugin authoring contract (PRD §6.6, ADR PI2-yaa-0001 §3).
+// yaagents gateway plugin authoring contract (PRD §6.6, §3).
 //
 // # How to use this plugin in a custom gateway binary
 //
@@ -16,13 +16,13 @@
 //     replace github.com/ai-mpathyminds/yaagents/examples/llm-gateway/community-plugin => <local-path>
 //
 //  3. Build the binary — the gateway loader picks up the plugin via
-//     plugin.Registered() (ADR PI2-yaa-0001 §3).
+//     plugin.Registered().
 //
 // This plugin adds the response header X-Community-Plugin: active to every
 // proxied response, proving the community plugin authoring contract.
 //
 // The gateway NEVER uses dlopen/plugin.Open — community plugins are compiled
-// into the operator binary at build time (ADR PI2-yaa-0001 §3; PRD §10 [SEC]).
+// into the operator binary at build time.
 package communityplugin
 
 import (
@@ -35,7 +35,7 @@ import (
 
 // pluginVersion is the community plugin's own version string.
 // Decoupled from the gateway profile version — operators version their plugins
-// independently (ADR PI2-yaa-0001 §1).
+// independently.
 const pluginVersion = "0.1.0"
 
 func init() {

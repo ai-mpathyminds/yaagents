@@ -1,6 +1,5 @@
-# yaagents LLM-gateway demo — route configuration (WI-2yaa.EX-LLM-1)
-# Topology: yaagents-gateway (port 8122) → llm-api (port 8123)
-# ADR: PI2-yaa-0002 (Option A layer-atop; SSE mode activated by mode: sse)
+# yaagents LLM-gateway demo — route configuration # Topology: yaagents-gateway (port 8122) → llm-api (port 8123)
+# (Option A layer-atop; SSE mode activated by mode: sse)
 #
 # Route: POST /completions
 #   mode: sse             → gateway uses SSE pipe-and-flush proxy (LLM-1)

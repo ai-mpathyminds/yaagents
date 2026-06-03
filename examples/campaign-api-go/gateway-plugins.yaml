@@ -1,9 +1,8 @@
-# campaign-api-go — gateway plugin configuration (WI-3yaa.SG-6)
-# ADR: PI2-yaa-0001 (plugin chain), PI1-yaa-0001 (HS256 demo JWT).
+# campaign-api-go — gateway plugin configuration # (plugin chain)).
 #
 # SECURITY NOTE: jwt_secret below is a DEMO-ONLY value.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
-# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+# and remove test_mode: true.
 #
 # Plugin chain (declaration order = execution order):
 #   1. token-validator — HS256 test mode; validates demo JWT; missing token → 401
@@ -14,7 +13,7 @@
 
 plugins:
   # ── 1. token-validator ────────────────────────────────────────────────────
-  # Always-on per ADR PI2-yaa-0001 §5 (gateway exits 1 if enabled: false).
+  # Always-on per §5 (gateway exits 1 if enabled: false).
   # test_mode: true activates HS256 validation against jwt_secret below.
   # Missing or invalid Authorization Bearer token → 401 (flow 5 demo trigger).
   # For production: remove test_mode + jwt_secret; set GATEWAY_JWT_JWKS_URL.

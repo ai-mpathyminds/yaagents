@@ -13,7 +13,7 @@ Demonstrates all four PRD §6.2 flows (`created`, `clarification_required`,
 `validation_failed`, `failed_dependency`) through the yaagents gateway with
 HS256 auth, route-level RBAC, tenant context, and audit logging.
 
-See `yaagents/docs/PI1-yaa/examples-campaign-api.md` for WI details.
+See
 
 ---
 
@@ -22,7 +22,7 @@ See `yaagents/docs/PI1-yaa/examples-campaign-api.md` for WI details.
 > **SECURITY NOTE — demo token only.**
 > `GATEWAY_JWT_SECRET=demo-secret-not-for-production` is hard-coded for local
 > demos. **Never use this value in production.** Set `GATEWAY_JWT_JWKS_URL`
-> instead (ADR PI1-yaa-0001 §3). No `.env` file with a real secret should
+> instead. No `.env` file with a real secret should
 > ever be committed.
 
 ```bash

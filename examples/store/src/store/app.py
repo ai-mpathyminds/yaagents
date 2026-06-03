@@ -30,7 +30,6 @@ app = FastAPI(
     ),
 )
 
-
 class RecommendBody(BaseModel):
     """Request body for POST /products/{id}/recommendations."""
 
@@ -38,7 +37,6 @@ class RecommendBody(BaseModel):
     """Maximum number of recommendations to return."""
     exclude_purchased: bool = True
     """When true and X-Customer-Id is set, filter already-purchased products."""
-
 
 @app.post(
     "/products/{product_id}/recommendations",
@@ -80,12 +78,10 @@ async def recommend(
         request_id=request.headers.get("X-Request-ID", ""),
     )
 
-
 @app.get("/healthz", include_in_schema=False)
 async def healthz() -> dict[str, str]:
     """Liveness probe."""
     return {"status": "ok"}
-
 
 @app.get("/readyz", include_in_schema=False)
 async def readyz() -> dict[str, str]:

@@ -1,9 +1,8 @@
-# yaagents LLM-gateway demo — plugin configuration (WI-2yaa.EX-LLM-1)
-# ADR: PI2-yaa-0001 (plugin chain), PI2-yaa-0002 (LLM specialisation)
+# yaagents LLM-gateway demo — plugin configuration # (plugin chain))
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET / jwt_secret below are DEMO-ONLY hardcoded
 # values. Never use in production. For production, set GATEWAY_JWT_JWKS_URL
-# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+# and remove test_mode: true.
 #
 # Plugin chain (declaration order = execution order):
 #   1. token-validator  — HS256 test mode; validates the demo JWT
@@ -12,12 +11,12 @@
 #
 # Disabled (commented-out) plugins:
 #   license-check  — requires an external license server (not included in demo)
-#   prompt-sanitize — stub; full implementation deferred to PI3-yaa
-#   otel-audit      — stub; OTel export deferred to PI3-yaa
+#   prompt-sanitize — stub; full implementation deferred to a future release
+#   otel-audit      — stub; OTel export deferred to a future release
 
 plugins:
   # ── 1. token-validator ────────────────────────────────────────────────────
-  # Always-on per ADR PI2-yaa-0001 §5 (gateway exits 1 if enabled: false).
+  # Always-on per §5 (gateway exits 1 if enabled: false).
   # test_mode: true activates HS256 validation against jwt_secret below.
   # For production: remove test_mode + jwt_secret; set GATEWAY_JWT_JWKS_URL.
   - name: token-validator
@@ -27,7 +26,7 @@ plugins:
 
   # ── 2. tenant-injector ────────────────────────────────────────────────────
   # Resolves the JWT sub claim to a tenant ID via the mock-iam-api lookup
-  # service (ADR PI2-yaa-0006 Decision 2).
+  # service.
   # allowlist restricts to demo tenants only; remove in production.
   - name: tenant-injector
     enabled: true
@@ -68,12 +67,12 @@ plugins:
   #   header: X-License-Token
   #   cache_ttl_seconds: 300
 
-  # prompt-sanitize: stub — passes all requests through (PI3-yaa full impl).
+  # prompt-sanitize: stub — passes all requests through (full implementation planned).
   # Uncomment to include the stub in the chain (no functional effect today).
   # - name: prompt-sanitize
   #   enabled: false
 
-  # otel-audit: stub — OTel span export deferred to PI3-yaa.
+  # otel-audit: stub — OTel span export deferred to a future release.
   # Uncomment and set endpoint to wire up a real exporter.
   # - name: otel-audit
   #   enabled: false

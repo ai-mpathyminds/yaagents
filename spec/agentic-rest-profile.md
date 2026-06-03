@@ -2,8 +2,7 @@
 
 **Profile version:** v0.3
 **Profile header literal:** `X-YAAgents-Profile: v0.3`
-**Authoritative source:** `spec/` (ADR PI1-yaa-0002 §1 — sole table source; no other
-component may redefine or paraphrase the normative table below)
+**Authoritative source:** `spec/`
 **Version file:** `spec/VERSION` = `0.2`
 **Date adopted:** 2026-06-02 (v0.3 profile bump; sdk-go server SDK component added — see §Changelog)
 **Prior version:** v0.2 adopted 2026-06-01; frozen schemas at `schemas/v0.2/`; v0.1 adopted 2026-05-17; frozen schemas at `schemas/v0.1/`
@@ -174,9 +173,9 @@ The operation was accepted for asynchronous processing. The body MUST include:
 - `statusUrl`: string (URL to poll; relative or absolute)
 - `trace`: object (mandatory)
 
-> **PI1-yaa scope note (ADR PI1-yaa-0002 §4):** The schema and SDK factory for this
-> type ship in PI1-yaa. The async polling runtime (`GET …/{opId}/status`) is v0.3 scope
-> and is not built in PI1-yaa. The reference example does not exercise a 202 flow.
+> **Scope note:** The schema and SDK factory for this
+> type ship in v0.1. The async polling runtime (`GET …/{opId}/status`) is v0.3 scope
+> and is not built in v0.1. The reference example does not exercise a 202 flow.
 
 ### 7.4 `clarification_required` — 400 `application/vnd.yaagents.clarification+json`
 
@@ -254,7 +253,7 @@ A component is **conformant** with YAAgents Profile v0.3 if and only if:
    in its metadata (`pyproject.toml`, `package.json`, or equivalent).
 
 6. **Schema conformance** — every vendor-typed response body validates against its
-   corresponding JSON schema in `schemas/v0.3/` (ADR PI1-yaa-0002 §2). The frozen
+   corresponding JSON schema in `schemas/v0.3/`. The frozen
    backward-compat schemas at `schemas/v0.2/` remain valid for v0.2.x consumers;
    `schemas/v0.1/` remain valid for v0.1.x consumers.
 
@@ -275,7 +274,7 @@ A component is **conformant** with YAAgents Profile v0.3 if and only if:
 8. **Golden corpus** — every valid fixture in the versioned example corpus
    (`spec/examples/{version}/*.valid.json`) passes its corresponding schema in
    `schemas/{version}/`; every invalid fixture fails. This corpus is the
-   cross-component contract test (ADR PI1-yaa-0002 §5). The frozen backward-compat
+   cross-component contract test. The frozen backward-compat
    corpus validates against `schemas/v0.1/`.
 
 ---
@@ -293,7 +292,7 @@ A component is **conformant** with YAAgents Profile v0.3 if and only if:
 
 ---
 
-## 10. Authoritative Source Rule (ADR PI1-yaa-0002 §1)
+## 10. Authoritative Source Rule
 
 `spec/` is the **single authoritative source** of the Response Profile prose and
 normative table. Every other component references it; **none redefine or paraphrase**
@@ -301,7 +300,7 @@ the §4 table. This rule is enforced at:
 
 - PR review (manual) and the EX-4 grep gate (§8 criterion 7).
 - `yaagents-cli validate --conformance` output references this file on failure.
-- The golden corpus under `spec/examples/` is owned by this component (WI-1yaa.SPEC-5);
+- The golden corpus under `spec/examples/` is owned by this component ;
   fixtures are organised by profile version subdirectory.
 
 ---
@@ -309,7 +308,7 @@ the §4 table. This rule is enforced at:
 ## 11. SSE Streaming Contract (normative since v0.2)
 
 SSE streaming through the plugin chain is a normative gateway feature first introduced in
-Profile v0.2 (PRD §5.1, §7 LLM Gateway; WI-2yaa.BUMP-3); carried forward unchanged in v0.3.
+Profile v0.2 (PRD §5.1, §7 LLM Gateway; ); carried forward unchanged in v0.3.
 
 ### 11.1 Activation
 

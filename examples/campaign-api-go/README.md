@@ -11,8 +11,8 @@ Mirrors `examples/campaign-api/` (Python FastAPI) using the **Go server SDK**
 (`sdk-go`) with `net/http` — no router framework. Demonstrates all five §8.1 / §13.2
 demo flows for `POST /campaigns/{id}/optimizations`.
 
-**SDK:** [`github.com/ai-mpathyminds/yaagents-sdk-go`](https://github.com/ai-mpathyminds/yaagents-sdk-go)  
-**Port:** `8121` (direct) · `8120` (via gateway)  
+**SDK:** [`github.com/ai-mpathyminds/yaagents-sdk-go`](https://github.com/ai-mpathyminds/yaagents-sdk-go)
+**Port:** `8121` (direct) · `8120` (via gateway)
 **Profile:** `v0.3` (`X-YAAgents-Profile: v0.3` on every response)
 
 ---

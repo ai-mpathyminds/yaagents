@@ -2,7 +2,7 @@
 
 ---
 
-> **Legal disclaimer (verbatim — ADR PI2-yaa-0003 §3, GTM README §Appendix):**
+> **Legal disclaimer (verbatim — §3, GTM README §Appendix):**
 > This includes a draft licensing strategy for product planning. It is not
 > legal advice. Before publishing the license publicly or accepting external
 > contributions, consult a qualified software licensing lawyer.

@@ -1,14 +1,13 @@
 # yaagents Compose Demo — llm-gateway reference example
 # ports: 8122 (gateway, host) — portfolio band 8120-8129 (OQ-4 confirmed)
-# See: yaagents/docs/PI2-yaa/examples-llm-gateway.md (WI-2yaa.EX-LLM-2)
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
-# instead (ADR PI1-yaa-0001 §3). The token-validator plugin runs with
+# instead. The token-validator plugin runs with
 # test_mode: true — see plugins.yaml. DO NOT copy this configuration to a
 # production environment.
 #
-# NFR-refined by platform-engineer at A-4 (WI-2yaa.NFR-EX-LLM-1 + NFR-EX-LLM-2;
+# NFR-refined by platform-engineer at A-4 (+ NFR-EX-LLM-2;
 # compose-linter clean, all checks PASS).
 
 name: yaagents-llm-gateway-demo

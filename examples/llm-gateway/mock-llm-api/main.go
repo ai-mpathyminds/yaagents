@@ -2,7 +2,7 @@
 // Copyright 2026 AimpathyMinds
 
 // mock-llm-api is a canned LLM backend stub for the yaagents llm-gateway demo
-// (WI-2yaa.EX-LLM-1 / ADR PI2-yaa-0002).
+// (/).
 //
 // Endpoints:
 //

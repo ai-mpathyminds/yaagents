@@ -3,8 +3,6 @@
 Demonstrates the yaagents gateway acting as an LLM proxy with the plugin chain
 (token-validator → tenant-injector → CORS) and SSE streaming support.
 
-**ADR:** PI2-yaa-0002 (Option A layer-atop; SSE + concurrency + CORS absorbed from ai-platform/ai-gateway)
-
 ## Architecture
 
 ```
@@ -26,7 +24,7 @@ docker compose up
 > demo value (`demo-secret-not-for-production`) in `docker-compose.yml` and
 > `plugins.yaml`. **Never use this value in production.** For production
 > deployments, set `GATEWAY_JWT_JWKS_URL` and remove `test_mode: true` from
-> the token-validator plugin (ADR PI1-yaa-0001 §3).
+> the token-validator plugin.
 
 The demo uses a pre-signed HS256 JWT (sub: `user-alice@example.com`, tenant: `tenant-001`):
 

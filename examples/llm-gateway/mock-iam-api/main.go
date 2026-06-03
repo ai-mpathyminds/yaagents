@@ -3,7 +3,7 @@
 
 // mock-iam-api is a tiny tenant-directory stub for the yaagents llm-gateway
 // compose demo. It implements the tenant-injector lookup-service contract
-// (WI-2yaa.PLG-4b / ADR PI2-yaa-0006 Decision 2) so the demo runs green
+// (b / Decision 2) so the demo runs green
 // without an external IAM dependency.
 //
 // Endpoint:

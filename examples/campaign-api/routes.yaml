@@ -1,6 +1,5 @@
-# Campaign API — gateway route configuration (WI-1yaa.EX-2)
-# Maps PRD §6.1 paths to http://campaign-api:8121 (Compose service name).
-# ADR: PI1-yaa-0001 (HS256 demo JWT; tenantRequired; RBAC on optimizations).
+# Campaign API — gateway route configuration # Maps PRD §6.1 paths to http://campaign-api:8121 (Compose service name).
+# (HS256 demo JWT; tenantRequired; RBAC on optimizations).
 #
 # §6.2 demo flows enabled by this file:
 #   gateway-RBAC 403 — call POST /campaigns/{id}/optimizations with a token

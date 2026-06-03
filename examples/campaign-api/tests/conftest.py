@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""Shared fixtures for campaign-api tests (WI-1yaa.EX-4 gate)."""
+"""Shared fixtures for campaign-api tests (gate)."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import pytest
 
 _DEFAULT_GATEWAY = "http://localhost:8120"
 
-
 def _is_gateway_up(base_url: str) -> bool:
     """Return True if the gateway healthz endpoint responds."""
     try:
@@ -23,12 +22,10 @@ def _is_gateway_up(base_url: str) -> bool:
     except Exception:
         return False
 
-
 @pytest.fixture(scope="session")
 def gateway_base_url() -> str:
     """Base URL of the running gateway (env: GATEWAY_URL; default localhost:8120)."""
     return os.environ.get("GATEWAY_URL", _DEFAULT_GATEWAY).rstrip("/")
-
 
 @pytest.fixture(scope="session")
 def gateway_live(gateway_base_url: str) -> str:

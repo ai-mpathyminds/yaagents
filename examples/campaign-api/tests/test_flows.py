@@ -20,7 +20,6 @@ from fastapi.testclient import TestClient
 
 from campaign_api.app import app
 
-
 @pytest.fixture(autouse=True)
 def reset_state() -> None:  # type: ignore[return]
     """Reset in-memory store and LLM flag between tests."""
@@ -34,11 +33,9 @@ def reset_state() -> None:  # type: ignore[return]
     s._optimizations.clear()
     s.LLM_DOWN = False
 
-
 @pytest.fixture()
 def client() -> TestClient:
     return TestClient(app, raise_server_exceptions=True)
-
 
 # ── helper ────────────────────────────────────────────────────────────────────
 
@@ -49,14 +46,11 @@ _VALID_CAMPAIGN = {
     "successMetric": "ctr",
 }
 
-
 def _post_campaign(client: TestClient, **overrides: object) -> object:
     body = {**_VALID_CAMPAIGN, **overrides}
     return client.post("/campaigns", json=body)
 
-
 # ── flow 1: success / created ─────────────────────────────────────────────────
-
 
 def test_flow1_create_campaign_returns_201(client: TestClient) -> None:
     r = _post_campaign(client)
@@ -68,14 +62,12 @@ def test_flow1_create_campaign_returns_201(client: TestClient) -> None:
     # trace block present (correlation-id generated standalone)
     assert "trace" in data
 
-
 def test_flow1_get_campaign_returns_200(client: TestClient) -> None:
     create_r = _post_campaign(client)
     cid = create_r.json()["campaign"]["id"]
     r = client.get(f"/campaigns/{cid}")
     assert r.status_code == 200
     assert r.json()["campaign"]["id"] == cid
-
 
 def test_flow1_create_optimization_returns_201(client: TestClient) -> None:
     create_r = _post_campaign(client)
@@ -89,7 +81,6 @@ def test_flow1_create_optimization_returns_201(client: TestClient) -> None:
     assert "optimization" in data
     assert len(data["optimization"]["suggestions"]) == 2
 
-
 def test_flow1_get_optimization_returns_200(client: TestClient) -> None:
     create_r = _post_campaign(client)
     cid = create_r.json()["campaign"]["id"]
@@ -101,7 +92,6 @@ def test_flow1_get_optimization_returns_200(client: TestClient) -> None:
     r = client.get(f"/campaigns/{cid}/optimizations/{oid}")
     assert r.status_code == 200
     assert r.json()["optimization"]["id"] == oid
-
 
 def test_flow1_generate_assets_returns_201(client: TestClient) -> None:
     create_r = _post_campaign(client)
@@ -115,9 +105,7 @@ def test_flow1_generate_assets_returns_201(client: TestClient) -> None:
     assert len(data["assets"]) == 2
     assert data["assets"][0]["type"] == "banner"
 
-
 # ── flow 2: clarification_required ───────────────────────────────────────────
-
 
 def test_flow2_missing_success_metric_returns_400(client: TestClient) -> None:
     r = _post_campaign(client, successMetric=None)
@@ -134,15 +122,12 @@ def test_flow2_missing_success_metric_returns_400(client: TestClient) -> None:
     assert "allowedValues" in inputs[0]
     assert "trace" in data
 
-
 # ── flow 3: validation_failed ─────────────────────────────────────────────────
-
 
 def test_flow3_negative_budget_returns_422(client: TestClient) -> None:
     """Pydantic field_validator rejects negative budget → 422."""
     r = _post_campaign(client, budget=-100)
     assert r.status_code == 422
-
 
 def test_flow3_empty_objectives_returns_422(client: TestClient) -> None:
     """Empty objectives list fails validation → 422."""
@@ -154,7 +139,6 @@ def test_flow3_empty_objectives_returns_422(client: TestClient) -> None:
     )
     assert r.status_code == 422
 
-
 def test_flow3_bad_objectives_type_returns_422(client: TestClient) -> None:
     """objectives must be a list; sending a plain string → 422."""
     create_r = _post_campaign(client)
@@ -165,9 +149,7 @@ def test_flow3_bad_objectives_type_returns_422(client: TestClient) -> None:
     )
     assert r.status_code == 422
 
-
 # ── flow 4: failed_dependency ─────────────────────────────────────────────────
-
 
 def test_flow4_optimization_llm_down_returns_424(client: TestClient) -> None:
     import campaign_api.store as s
@@ -188,7 +170,6 @@ def test_flow4_optimization_llm_down_returns_424(client: TestClient) -> None:
     assert data["code"] == "LLM_UNAVAILABLE"
     assert "trace" in data
 
-
 def test_flow4_assets_llm_down_returns_424(client: TestClient) -> None:
     import campaign_api.store as s
 
@@ -204,24 +185,19 @@ def test_flow4_assets_llm_down_returns_424(client: TestClient) -> None:
         "application/vnd.yaagents.error+json"
     )
 
-
 # ── health endpoints ──────────────────────────────────────────────────────────
-
 
 def test_healthz(client: TestClient) -> None:
     r = client.get("/healthz")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
 
-
 def test_readyz(client: TestClient) -> None:
     r = client.get("/readyz")
     assert r.status_code == 200
     assert r.json()["profile"] == "v0.1"
 
-
 # ── /openapi.json passes validate-openapi ─────────────────────────────────────
-
 
 def test_openapi_json_passes_validate_openapi(
     tmp_path: object,
@@ -247,14 +223,11 @@ def test_openapi_json_passes_validate_openapi(
         )
         pytest.fail(f"validate-openapi FAIL:\n{findings_txt}")
 
-
 # ── 404 smoke tests ───────────────────────────────────────────────────────────
-
 
 def test_get_nonexistent_campaign(client: TestClient) -> None:
     r = client.get("/campaigns/does-not-exist")
     assert r.status_code == 404
-
 
 def test_get_nonexistent_optimization(client: TestClient) -> None:
     create_r = _post_campaign(client)

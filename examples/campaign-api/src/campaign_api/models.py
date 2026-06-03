@@ -12,7 +12,6 @@ from typing import Any
 
 from pydantic import BaseModel, field_validator
 
-
 class CreateCampaignRequest(BaseModel):
     """POST /campaigns request body."""
 
@@ -30,7 +29,6 @@ class CreateCampaignRequest(BaseModel):
             raise ValueError("budget must be positive")
         return v
 
-
 class CreateOptimizationRequest(BaseModel):
     """POST /campaigns/{id}/optimizations request body.
 
@@ -47,7 +45,6 @@ class CreateOptimizationRequest(BaseModel):
         if not v:
             raise ValueError("objectives must contain at least one item")
         return v
-
 
 class GenerateAssetsRequest(BaseModel):
     """POST /campaigns/{id}/assets:generate request body."""

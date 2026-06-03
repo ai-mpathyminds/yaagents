@@ -1,10 +1,9 @@
 # yaagents Compose Demo -- campaign-api reference example
 # ports: 8120 (gateway), 8121 (campaign-api) -- portfolio band 8120-8129
-# See: yaagents/docs/PI1-yaa/examples-campaign-api.md (WI-1yaa.EX-3)
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
-# instead (ADR PI1-yaa-0001 sec 3).
+# instead.
 #
 # NFR-refined by platform-engineer at A-4 (compose-linter clean, 11/11 checks).
 
@@ -54,8 +53,7 @@ services:
       - "8121"
     environment:
       PORT: "8121"
-      YAAGENTS_PROFILE_VERSION: "v0.2"   # bumped to v0.2 (WI-2yaa.REL-1)
-    healthcheck:
+      YAAGENTS_PROFILE_VERSION: "v0.2"   # bumped to v0.2 healthcheck:
       # python:slim images do not ship wget; use python3 urllib instead
       test: ["CMD", "python3", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:8121/healthz')"]

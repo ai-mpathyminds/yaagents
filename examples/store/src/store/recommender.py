@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from .data import get_customer, get_product, load_products
 
-
 def mock_recommend(
     product_id: str,
     customer_id: str | None = None,

@@ -1,6 +1,5 @@
-# campaign-api-go — gateway route configuration (WI-3yaa.SG-6)
-# Maps POST /campaigns/{id}/optimizations to http://campaign-api-go:8121.
-# ADR: PI1-yaa-0001 (HS256 demo JWT; tenantRequired; RBAC on optimizations).
+# campaign-api-go — gateway route configuration # Maps POST /campaigns/{id}/optimizations to http://campaign-api-go:8121.
+# (HS256 demo JWT; tenantRequired; RBAC on optimizations).
 #
 # Demo flows enabled by this file:
 #   flow 5 (auth-failure 401) — POST /campaigns/{id}/optimizations without

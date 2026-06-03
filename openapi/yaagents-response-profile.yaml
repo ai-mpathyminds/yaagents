@@ -7,7 +7,7 @@ info:
     a worked example operation surface for POST /campaigns/{campaignId}/optimizations
     wiring each response type to its vendor Content-Type and schema $ref per
     YAAgents Agentic REST Response Profile v0.3 (PRD §5.3).
-    Authoritative source: spec/agentic-rest-profile.md (ADR PI1-yaa-0002).
+    Authoritative source: spec/agentic-rest-profile.md.
     v0.3 adds SSE streaming contract (§11); schema refs updated to schemas/v0.3/.
 
 # -----------------------------------------------------------------------

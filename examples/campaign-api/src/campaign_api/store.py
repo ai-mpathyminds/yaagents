@@ -27,9 +27,7 @@ _campaigns: dict[str, dict[str, Any]] = {}
 # { campaign_id: { optimization_id: { id, status, suggestions? } } }
 _optimizations: dict[str, dict[str, dict[str, Any]]] = {}
 
-
 # ── campaigns ─────────────────────────────────────────────────────────────────
-
 
 def create_campaign(name: str, budget: float, target_audience: str,
                     success_metric: str | None) -> dict[str, Any]:
@@ -47,15 +45,12 @@ def create_campaign(name: str, budget: float, target_audience: str,
         _campaigns[cid] = record
         return dict(record)
 
-
 def get_campaign(campaign_id: str) -> dict[str, Any] | None:
     with _lock:
         rec = _campaigns.get(campaign_id)
         return dict(rec) if rec else None
 
-
 # ── optimizations ─────────────────────────────────────────────────────────────
-
 
 def create_optimization(campaign_id: str,
                         suggestions: list[dict[str, Any]]) -> dict[str, Any]:
@@ -69,7 +64,6 @@ def create_optimization(campaign_id: str,
         }
         _optimizations.setdefault(campaign_id, {})[oid] = record
         return dict(record)
-
 
 def get_optimization(campaign_id: str,
                      op_id: str) -> dict[str, Any] | None:

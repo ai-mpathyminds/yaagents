@@ -1,14 +1,13 @@
-# campaign-api-go — Compose demo (WI-3yaa.SG-6)
-# ports: 8120 (gateway), 8121 (campaign-api-go) — portfolio band 8120-8129
+# campaign-api-go — Compose demo # ports: 8120 (gateway), 8121 (campaign-api-go) — portfolio band 8120-8129
 # Mirrors examples/campaign-api/ (Python) using the Go sdk-go reference example.
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
-# instead (ADR PI1-yaa-0001 sec 3).
+# instead.
 #
 # NFR-refined by platform-engineer at A-4 (compose-linter clean).
 # Both demos (campaign-api + campaign-api-go) share ports 8120/8121 and run
-# mutually-exclusively (WI-3yaa.SG-6 brief; platform-engineer A-4 confirmation).
+# mutually-exclusively (brief; platform-engineer A-4 confirmation).
 
 name: yaagents-campaign-go
 

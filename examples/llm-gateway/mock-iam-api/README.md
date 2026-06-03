@@ -4,7 +4,7 @@ Tiny mock tenant-directory service for the yaagents `examples/llm-gateway/`
 compose demo.
 
 Implements the lookup-service contract documented in
-`yaagents/docs/PI2-yaa/plugins.md §PLG-4b` so the `tenant-injector` plugin
+so the `tenant-injector` plugin
 (b) has a working backend in the OSS demo without an external IAM
 dependency. The plugin itself is generic; the mock is just one possible
 implementation of the contract.
@@ -46,14 +46,12 @@ demo compose; not published to GHCR — demo-only).
 
 ## Source
 
-Implemented at runbook entry B-11a (WI-2yaa.PLG-4b) alongside the
+Implemented at runbook entry B-11a (b) alongside the
 tenant-injector v2 plugin. Target: ~80 LOC Go binary; single endpoint;
 in-memory map; no external dependencies beyond `net/http` and a YAML
 parser.
 
-## Why this exists
-
-ADR PI2-yaa-0006 Decision 2 (default-plugin design principle):
+## Why this exists Decision 2 (default-plugin design principle):
 > Demo via mock services — the `examples/llm-gateway/` compose demo
 > ships a tiny mock-IAM service so the demo runs green out-of-the-box
 > without an external IAM dependency.

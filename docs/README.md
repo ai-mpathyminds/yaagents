@@ -28,6 +28,6 @@ pnpm preview
 ## Hosting
 
 GitHub Pages at `https://ai-mpathyminds.github.io/yaagents/` via
-`.github/workflows/pages.yml` (ADR PI3-yaa-0004).
+`.github/workflows/pages.yml`.
 
-Custom domain (`yaagents.dev`) is deferred post-traction — see ADR PI3-yaa-0004 §Migration.
+Custom domain (`yaagents.dev`) is deferred post-traction — see §Migration.

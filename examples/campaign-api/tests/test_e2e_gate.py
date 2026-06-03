@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 AimpathyMinds
 
-"""PI1-yaa acceptance gate — WI-1yaa.EX-4.
+"""End-to-end acceptance tests.
 
 Runs against the live Compose demo (yaagents-gateway at http://localhost:8120).
 Tests are automatically skipped when the gateway is unreachable (see conftest.py).
@@ -58,11 +58,9 @@ _REPO_ROOT = pathlib.Path(__file__).parent.parent.parent.parent.resolve()
 _SPEC_DIR = _REPO_ROOT / "spec"
 _TS_E2E_SCRIPT = pathlib.Path(__file__).parent.parent / "scripts" / "ts_client_e2e.mjs"
 
-
 # ---------------------------------------------------------------------------
 # HTTP helper (urllib — no extra deps needed at test runtime)
 # ---------------------------------------------------------------------------
-
 
 def _http(
     method: str,
@@ -83,11 +81,9 @@ def _http(
     except urllib.error.HTTPError as e:
         return e.code, {k.lower(): v for k, v in e.headers.items()}, e.read()
 
-
 def _ct_base(hdrs: dict[str, str]) -> str:
     ct = hdrs.get("Content-Type", hdrs.get("content-type", ""))
     return ct.split(";")[0].strip()
-
 
 def _auth_headers(
     token: str,
@@ -103,11 +99,9 @@ def _auth_headers(
         h["X-Correlation-ID"] = corr_id
     return h
 
-
 # ---------------------------------------------------------------------------
 # Session fixture: create one campaign so sub-resource tests can use its id
 # ---------------------------------------------------------------------------
-
 
 @pytest.fixture(scope="module")
 def campaign_id(gateway_live: str) -> str:
@@ -131,11 +125,9 @@ def campaign_id(gateway_live: str) -> str:
     cid = json.loads(resp_bytes)["campaign"]["id"]
     return cid
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 9 — yaagents conformance-test PASS
 # ---------------------------------------------------------------------------
-
 
 def test_conformance_test_pass(gateway_live: str) -> None:
     """PRD §12 crit 9: `yaagents conformance-test <url>` → Overall: PASS."""
@@ -146,11 +138,9 @@ def test_conformance_test_pass(gateway_live: str) -> None:
         )
         pytest.fail(f"conformance-test FAIL:\n{detail}")
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 8 — Compose demo is running (gateway_live already proves this)
 # ---------------------------------------------------------------------------
-
 
 def test_compose_demo_both_services_healthy(gateway_live: str) -> None:
     """PRD §12 crit 8: docker compose up → gateway + campaign-api healthy."""
@@ -158,11 +148,9 @@ def test_compose_demo_both_services_healthy(gateway_live: str) -> None:
     status, _, _ = _http("GET", f"{gateway_live}/healthz")
     assert status == 200, f"gateway /healthz returned {status}"
 
-
 # ---------------------------------------------------------------------------
 # §6.2 flow 1 — success / created through gateway
 # ---------------------------------------------------------------------------
-
 
 def test_flow1_created_through_gateway(gateway_live: str) -> None:
     """Flow 1 through gateway: POST /campaigns (full body) → 201 + X-YAAgents-Profile."""
@@ -185,11 +173,9 @@ def test_flow1_created_through_gateway(gateway_live: str) -> None:
     profile = hdrs.get(_PROFILE_HEADER.lower(), "")
     assert profile == "v0.1", f"X-YAAgents-Profile: {profile!r} (expected v0.1)"
 
-
 # ---------------------------------------------------------------------------
 # §6.2 flow 2 — clarification_required through gateway
 # ---------------------------------------------------------------------------
-
 
 def test_flow2_clarification_required_through_gateway(gateway_live: str) -> None:
     """Flow 2 through gateway: POST /campaigns (no successMetric) → 400 vendor CT."""
@@ -214,11 +200,9 @@ def test_flow2_clarification_required_through_gateway(gateway_live: str) -> None
     )
     assert "trace" in data, "trace block missing from clarification body"
 
-
 # ---------------------------------------------------------------------------
 # §6.2 flow 3 — validation_failed through gateway
 # ---------------------------------------------------------------------------
-
 
 def test_flow3_validation_failed_through_gateway(
     gateway_live: str, campaign_id: str
@@ -234,11 +218,9 @@ def test_flow3_validation_failed_through_gateway(
     )
     assert status == 422, f"expected 422 (validation_failed), got {status}"
 
-
 # ---------------------------------------------------------------------------
 # §6.2 flow 4 — failed_dependency through gateway (via /_demo/llm-down toggle)
 # ---------------------------------------------------------------------------
-
 
 def test_flow4_failed_dependency_through_gateway(
     gateway_live: str, campaign_id: str
@@ -277,11 +259,9 @@ def test_flow4_failed_dependency_through_gateway(
             headers={"Authorization": f"Bearer {token}", "Content-Type": _CT_JSON},
         )
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 5 — RBAC 403 through gateway
 # ---------------------------------------------------------------------------
-
 
 def test_gateway_rbac_403(gateway_live: str, campaign_id: str) -> None:
     """PRD §12 crit 5: token missing campaign:optimize role → 403 vendor error."""
@@ -301,11 +281,9 @@ def test_gateway_rbac_403(gateway_live: str, campaign_id: str) -> None:
         f"body.type: {data.get('type')!r}"
     )
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 6 — correlation-id propagated through gateway
 # ---------------------------------------------------------------------------
-
 
 def test_gateway_correlation_id_propagated(gateway_live: str) -> None:
     """PRD §12 crit 6: X-Correlation-ID sent → echoed in response headers."""
@@ -327,11 +305,9 @@ def test_gateway_correlation_id_propagated(gateway_live: str) -> None:
     echoed = resp_hdrs.get("x-correlation-id", "")
     assert echoed == _CORR_ID, f"sent {_CORR_ID!r}; got {echoed!r}"
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 7a — Python client handles clarification natively
 # ---------------------------------------------------------------------------
-
 
 def test_python_client_clarification_required(gateway_live: str) -> None:
     """PRD §12 crit 7: YaAgentsClient maps 400 vendor body → ClarificationRequired."""
@@ -361,11 +337,9 @@ def test_python_client_clarification_required(gateway_live: str) -> None:
         f"successMetric not in required_inputs: {inputs}"
     )
 
-
 # ---------------------------------------------------------------------------
 # §12 criterion 7b — TS client handles typed results natively (Node subprocess)
 # ---------------------------------------------------------------------------
-
 
 def test_ts_client_e2e(gateway_live: str) -> None:
     """PRD §12 crit 7: TS client discriminated union + strict ForbiddenError live."""
@@ -382,11 +356,9 @@ def test_ts_client_e2e(gateway_live: str) -> None:
         msg = result.stdout + "\n" + result.stderr
         pytest.fail(f"TS client e2e FAIL (exit {result.returncode}):\n{msg.strip()}")
 
-
 # ---------------------------------------------------------------------------
 # §4 table spec/-only grep proof (no live gateway needed)
 # ---------------------------------------------------------------------------
-
 
 @pytest.mark.parametrize(
     "vendor_type",
@@ -409,7 +381,6 @@ def test_spec_section4_vendor_types_defined_in_spec(vendor_type: str) -> None:
         if f.is_file()
     )
     assert found, f"vendor type {vendor_type!r} not found in spec/"
-
 
 def test_spec_section4_table_not_redefined_in_component_source() -> None:
     """grep proof: §4 normative table not embedded in component source code.
@@ -459,11 +430,9 @@ def test_spec_section4_table_not_redefined_in_component_source() -> None:
         + "\n".join(f"  {f}" for f in offenders)
     )
 
-
 # ---------------------------------------------------------------------------
 # PRD §12 criteria 1–9 explicit checklist (cross-reference)
 # ---------------------------------------------------------------------------
-
 
 def test_prd_section12_criteria_checklist(gateway_live: str) -> None:
     """Explicit §12 criteria 1–9 cross-reference map (documentation test).
