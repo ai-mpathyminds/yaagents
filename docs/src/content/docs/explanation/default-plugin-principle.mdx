@@ -1,0 +1,24 @@
+---
+title: Default-plugin design principle
+description: Why yaagents ships with five opinionated first-party plugins enabled by default — and why that makes governance cheaper.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- Why the five first-party plugins are on by default (not opt-in)
+- The security argument: opt-out is safer than opt-in for auth + audit
+- Cost argument: shared middleware is cheaper than per-service implementations
+- Override philosophy: any plugin can be replaced without touching agent service code
+- "Paved road" principle — sane defaults, escapable via configuration
+
+## In the meantime
+
+- [The plugin model →](/yaagents/explanation/plugin-model/) — how plugins work
+- [Replace a first-party plugin →](/yaagents/how-to/replace-plugin/) — how to override
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

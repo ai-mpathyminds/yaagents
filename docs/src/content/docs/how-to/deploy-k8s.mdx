@@ -1,0 +1,24 @@
+---
+title: Deploy on Kubernetes
+description: Deploy the yaagents gateway and your agent services on Kubernetes using the official Helm chart.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- Helm chart for the yaagents gateway (`charts/yaagents-gateway`)
+- Per-route TLS termination via Kubernetes Ingress
+- Horizontal Pod Autoscaling based on plugin chain latency
+- Service mesh integration (Linkerd, Istio sidecar injection)
+- Secrets management for JWKS endpoints and OTLP credentials
+
+## In the meantime
+
+- [Gateway config →](/yaagents/reference/gateway-config/) — all gateway configuration options
+- [Quick Start →](/yaagents/tutorials/quick-start/) — Docker Compose baseline
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

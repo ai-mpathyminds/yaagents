@@ -1,0 +1,23 @@
+---
+title: Write a custom JWT validator plugin
+description: Implement the yaagents Plugin interface to replace the default token-validator with your own JWT validation logic.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- Implementing the `Plugin` interface (`Init`, `Handler`, `Shutdown`)
+- Registering your plugin via Go `init()` import side-effect
+- Writing a JWT validator that supports a custom JWKS endpoint
+- Testing your plugin with the gateway integration test suite
+
+## In the meantime
+
+- [Plugin interface reference →](/yaagents/reference/plugin-interface/) — the Plugin contract
+- [The plugin model →](/yaagents/explanation/plugin-model/) — design philosophy
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

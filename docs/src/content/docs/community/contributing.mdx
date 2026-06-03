@@ -1,0 +1,43 @@
+---
+title: Contributing
+description: How to contribute to yaagents — DCO sign-off, PR checklist, and the plugin contribution path.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="Legal review pending">
+The yaagents project contributor agreement is under legal review. Until it is published,
+contributions are accepted under the Apache 2.0 license terms. By submitting a pull request,
+you agree that your contribution may be distributed under those terms.
+</Aside>
+
+## Contributing to yaagents
+
+We welcome contributions! Please read this guide before opening a pull request.
+
+### DCO sign-off
+
+All commits must be signed off with `git commit -s` (Developer Certificate of Origin). This certifies that you have the right to submit the contribution.
+
+### PR checklist
+
+Before opening a pull request, verify:
+
+- [ ] Tests pass: `pnpm test` (TypeScript client) / `go test ./...` (gateway/SDK) / `pytest` (Python SDK/client)
+- [ ] Linter clean: `pnpm lint` / `golangci-lint run` / `ruff check`
+- [ ] DCO sign-off present on all commits
+- [ ] `CHANGELOG.md` updated for user-visible changes
+- [ ] Documentation updated if adding or changing public API
+
+### Contributing a plugin
+
+If you're contributing a new first-party plugin or proposing an existing plugin be bundled with the gateway, please open a discussion on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions) first. We evaluate plugins against the default-plugin design principle before bundling.
+
+Community plugins (not bundled but linked from the registry) are welcome without prior discussion — publish to GitHub with the topic `yaagents-plugin`.
+
+### Getting help
+
+- [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions) — questions, ideas, feedback
+- [GitHub Issues](https://github.com/ai-mpathyminds/yaagents/issues) — bug reports
+
+Apache 2.0 · [View on GitHub](https://github.com/ai-mpathyminds/yaagents)

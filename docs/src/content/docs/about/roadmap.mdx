@@ -1,0 +1,36 @@
+---
+title: Roadmap
+description: The yaagents public roadmap — what shipped in v0.3, what's planned for v0.4, and how to influence the direction.
+---
+
+## v0.3 — Shipped
+
+The v0.3 release delivered the core yaagents profile and gateway:
+
+- **Profile v0.3** — 10 normative agentic response types with typed `Content-Type` values and body shapes
+- **Gateway** — pluggable middleware with 5 first-party plugins (token-validator, tenant-injector, license-check, prompt-sanitize, otel-audit)
+- **sdk-fastapi** (Python) — `@agentic_operation` decorator + all 10 response types
+- **sdk-go** (Go) — `AgenticHandler` middleware + all 10 `AgenticResult` types
+- **client-python** — `YaAgentsClient` with result-style and exception-style APIs
+- **client-ts** — `@aimpathyminds/yaagents-client` (ESM + CJS, browser + Node.js)
+- **client-go** — fluent builder API
+- **CLI** — `validate-openapi`, `conformance-test`, `init fastapi`, `init go`
+- **campaign-api examples** (Python + Go) — reference implementations
+
+## v0.4 — Planned (Q3 2026)
+
+Priorities based on community feedback and internal roadmap:
+
+- **Helm chart** — Kubernetes deployment for the gateway
+- **Cosign image signing** — supply-chain hardening for gateway images
+- **prompt-sanitize implementation** — replace stub with real pattern-filter engine
+- **otel-audit production hardening** — sampling, batching, and back-pressure handling
+- **Multi-backend license-check** — PostgreSQL + Redis backend options
+- **Streaming support** — SSE + WebSocket protocol in the Profile spec
+- **Full reference documentation** — complete the stub pages in this docs site
+
+## Community-requested
+
+Have a feature you'd like to see? Start a discussion on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions).
+
+We track community requests and consider them when planning each release. The most-discussed features get prioritized.

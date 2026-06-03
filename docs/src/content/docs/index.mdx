@@ -1,61 +1,89 @@
 ---
-title: YAAgents
-description: Source-available Agentic REST Profile — govern AI agents like ordinary APIs.
+title: yaagents
+description: A source-available REST profile + gateway + SDKs that exposes agent operations as typed resource endpoints — with auth, tenancy, licensing, and audit handled by a pluggable gateway.
 template: splash
 hero:
-  tagline: Agentic REST Profile — govern AI agents like ordinary APIs
+  title: Build agentic capabilities into ordinary REST APIs
+  tagline: |
+    Stop treating agents as a special endpoint. yaagents is a
+    source-available REST profile + gateway + SDKs that exposes
+    agent operations as typed resource operations like
+    POST /campaigns/{id}/optimizations — with auth, tenancy,
+    licensing, and audit handled by a pluggable gateway.
   actions:
-    - text: Quick Start
-      link: /quickstart/
+    - text: Get started in 10 min
+      link: /yaagents/tutorials/quick-start/
+      variant: primary
       icon: right-arrow
-    - text: Why YAAgents
-      link: /why/
-      icon: information
+    - text: Read the spec
+      link: /yaagents/reference/profile-v03/
+      variant: secondary
+    - text: GitHub
+      link: https://github.com/ai-mpathyminds/yaagents
       variant: minimal
-    - text: Profile Spec
-      link: /profile/
-      icon: open-book
-      variant: minimal
+      icon: external
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import AgentCard from '../../components/aimpathy/AgentCard.tsx';
 
-[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/ai-mpathyminds/yaagents/blob/main/LICENSE)
-[![Latest Release](https://img.shields.io/github/v/release/ai-mpathyminds/yaagents?label=release)](https://github.com/ai-mpathyminds/yaagents/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/ai-mpathyminds/yaagents/sdk-go-ci.yml?branch=main&label=build)](https://github.com/ai-mpathyminds/yaagents/actions/workflows/sdk-go-ci.yml)
+<AgentCard
+  client:visible
+  name="campaign-optimizer"
+  role="optimization"
+  status="done"
+  scope="tenant-001"
+  trail={[
+    { label: "POST /campaigns/c-42/optimizations", time: "0s" },
+    { label: "3 candidate variations enumerated", time: "120ms" },
+    { label: "2 approved by approval-spine", time: "340ms" },
+    { label: "$0.12 spent · response 201 Created", time: "1.4s" }
+  ]}
+/>
 
-## Install
-
-```bash
-# Python server SDK + client + CLI
-pip install yaagents-fastapi yaagents-client yaagents-cli
-
-# TypeScript / Node client
-npm install @aimpathyminds/yaagents-client
-
-# Go server SDK
-go get github.com/ai-mpathyminds/yaagents-sdk-go
-
-# Go client
-go get github.com/ai-mpathyminds/yaagents-client-go
-
-# Gateway (Docker)
-docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
-```
-
-## What is YAAgents?
+## What brings you here today?
 
 <CardGrid>
-  <Card title="Domain resources, not /agents/invoke" icon="puzzle">
-    Agentic operations are ordinary REST actions — `POST /campaigns/{id}/optimizations` —
-    not a single opaque invoke endpoint. Standard HTTP semantics throughout.
+  <Card title="🎓 Learn" icon="open-book">
+    **Tutorials.** Get from zero to a working agent service in 10 minutes.
+
+    [Start the tutorial →](/yaagents/tutorials/quick-start/)
   </Card>
-  <Card title="Typed agentic outcomes" icon="list-format">
-    Ten normative response types (`clarification_required`, `approval_required`, `conflict`, …)
-    so callers handle every outcome with a discriminator, not arbitrary JSON parsing.
+  <Card title="🎯 Solve" icon="puzzle">
+    **How-to Guides.** Add OAuth. Deploy to K8s. Wire OTEL. Seven worked recipes.
+
+    [Browse how-tos →](/yaagents/how-to/tenant-injection/)
   </Card>
-  <Card title="Gateway-controlled governance" icon="shield">
-    Token-validator, tenant-injector, and license-check plugins run at the gateway.
-    Bring any agent framework behind it — governance is framework-neutral.
+  <Card title="📚 Reference" icon="document">
+    **Profile spec, gateway config, plugin API, all five SDKs, OpenAPI, JSON Schemas.**
+
+    [Open reference →](/yaagents/reference/profile-v03/)
+  </Card>
+  <Card title="🧠 Understand" icon="rocket">
+    **Why resource-oriented?** How the plugin model works. Comparison to LangChain / Anthropic / OpenAI.
+
+    [Read the explanations →](/yaagents/explanation/why-yaagents/)
   </Card>
 </CardGrid>
+
+## Try it in 30 seconds
+
+```bash
+# Run the gateway
+docker run -p 8120:8080 ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+
+# Build an agent service (Python)
+pip install yaagents-fastapi
+
+# OR (Go)
+go get github.com/ai-mpathyminds/yaagents-sdk-go
+
+# Call from your app
+pip install yaagents-client
+```
+
+[Continue with Quick Start →](/yaagents/tutorials/quick-start/)
+
+---
+
+Apache 2.0 · v0.3.0 · Python · Go · TypeScript

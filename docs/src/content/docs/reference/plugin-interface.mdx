@@ -1,0 +1,24 @@
+---
+title: Plugin interface
+description: Go interface specification for yaagents gateway plugins — Init, Handler, Shutdown lifecycle and configuration schema.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- The `Plugin` interface (`Init(cfg map[string]any) error`, `Handler(next http.Handler) http.Handler`, `Shutdown(ctx context.Context) error`)
+- Plugin registration via Go `init()` import side-effect
+- Configuration schema (YAML key mapping, type coercion)
+- Context key conventions for passing data between plugins
+- Error handling and short-circuit semantics
+
+## In the meantime
+
+- [Write a custom JWT validator →](/yaagents/how-to/custom-jwt-validator/) — worked plugin implementation
+- [The plugin model →](/yaagents/explanation/plugin-model/) — design philosophy
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest
