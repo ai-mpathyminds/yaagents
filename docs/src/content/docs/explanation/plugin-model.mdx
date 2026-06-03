@@ -1,0 +1,24 @@
+---
+title: The plugin model
+description: How yaagents gateway plugins work — the Init/Handler/Shutdown lifecycle, plugin pipeline composition, and the principle of zero required code in agent services.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- Plugin lifecycle (`Init` at startup, `Handler` per request, `Shutdown` on drain)
+- Plugin pipeline ordering — default plugin chain for a new gateway deployment
+- How plugins share context via the `context.Context` key convention
+- Short-circuit semantics — when a plugin returns early (e.g. `token-validator` rejects)
+- The "zero required code in agent services" principle — all cross-cutting concerns in plugins
+
+## In the meantime
+
+- [Plugin interface reference →](/yaagents/reference/plugin-interface/) — the Go interface
+- [Write a custom JWT validator →](/yaagents/how-to/custom-jwt-validator/) — worked example
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

@@ -1,0 +1,24 @@
+---
+title: yaagents-client-go (Go)
+description: Full API reference for the yaagents-client-go package — typed Go client with fluent builder API.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- `client.New(config)` — base URL, auth token, tenant ID, HTTP client override
+- Fluent builder API: `client.Campaigns().ByID(id).Optimizations().Create(ctx, body)`
+- All 10 `AgenticResult` subtypes and their Go type assertions
+- `AgenticError` — wrapping non-2xx responses for error-style handling
+- Context propagation and cancellation
+
+## In the meantime
+
+- [Your first Go agent →](/yaagents/tutorials/go-first-agent/) — tutorial
+- [Quick Start →](/yaagents/tutorials/quick-start/) — baseline example
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

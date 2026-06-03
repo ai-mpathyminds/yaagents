@@ -1,0 +1,89 @@
+---
+title: Why yaagents?
+description: The design philosophy behind yaagents — why resource-oriented agentic APIs beat the opaque /agents/invoke pattern.
+---
+
+## TL;DR
+
+When you add AI agents to a REST API, the temptation is to add a single `POST /agents/invoke` endpoint. It's fast to build and flexible. But as soon as multiple teams, tenants, or compliance requirements enter the picture, the opaque invoke endpoint becomes a liability. yaagents is the answer to that liability: a REST profile that expresses agentic operations as ordinary typed resource actions, with governance handled by a pluggable gateway.
+
+## The opaque-invoke problem
+
+The most common pattern for exposing agent capabilities looks like this:
+
+```http
+POST /agents/invoke
+Content-Type: application/json
+
+{
+  "agent": "campaign-optimizer",
+  "input": { "campaignId": "cmp-123", "goal": "ctr" }
+}
+```
+
+This works for a demo. In production, it creates five interconnected problems:
+
+1. **Auth is per-call, not per-resource** — every call carries the same token regardless of what it's optimizing; you can't scope permissions to `campaigns/cmp-123` specifically
+2. **Tenancy is manual** — every agent implementation must extract and validate `X-Tenant-ID` independently; there's no enforcement point
+3. **Audit is incomplete** — you know an agent was invoked, but you don't know _which resource_ was affected; cross-tenant queries become impossible
+4. **Versioning is opaque** — when the `campaign-optimizer` agent changes behavior, there's no resource-level changelog; API consumers get silent behavior drift
+5. **Discovery is absent** — clients can't introspect what agentic operations are available on a campaign without reading documentation; there's no OpenAPI path for `/agents/invoke` that maps to a resource
+
+## The yaagents stance
+
+yaagents makes a single design decision and follows it consistently: **agentic operations are resource operations**.
+
+`POST /campaigns/{id}/optimizations` instead of `POST /agents/invoke`
+
+This one change unlocks four standardizations:
+
+1. **Typed outcomes** — instead of returning arbitrary JSON, every agentic endpoint returns one of 10 normative response types (`clarification_required`, `validation_failed`, `approval_required`, `conflict`, `created`, `accepted`, `no_change`, `partial_success`, `rate_limited`, `execution_timeout`). Clients handle these by type, not by parsing free-form messages.
+
+2. **Gateway-controlled governance** — auth (token validation), tenancy injection, license checks, and audit emission are handled by first-party plugins in the gateway. Your agent service code doesn't need to implement any of this.
+
+3. **Standard HTTP semantics** — `POST` creates resources, `GET` retrieves them, `DELETE` removes them. Caches, proxies, and monitoring tools understand your agentic API without special handling.
+
+4. **Version-surfaced via `X-YAAgents-Profile` header** — every response carries the Profile version, making behavior drift visible and auditable.
+
+We do **NOT** prescribe:
+- Which AI model or framework powers your agent (bring Anthropic, OpenAI, LangChain, or your own)
+- How you store agent state internally
+- Whether your agent is synchronous or async (both patterns are supported by the Profile)
+- What your domain resources look like (campaigns, documents, orders — all work)
+
+## Why a gateway?
+
+Cross-cutting concerns that appear in every agentic service:
+
+| Concern | Without gateway | With gateway |
+|---------|----------------|--------------|
+| Token validation | Each service implements JWKS fetch + RS256 verify | `token-validator` plugin, once |
+| Tenant injection | Each service parses `X-Tenant-ID`, validates claims | `tenant-injector` plugin, once |
+| License enforcement | Each service checks quota, deducts balance | `license-check` plugin, once |
+| Prompt sanitization | Each service implements pattern filtering | `prompt-sanitize` plugin, once |
+| Audit trail | Each service emits its own event format | `otel-audit` plugin, once |
+
+The gateway is not a service mesh — it's a thin, fast middleware layer (~1ms overhead) that handles these concerns in a single pluggable pipeline.
+
+## Framework-neutral
+
+SDKs are helpers, not requirements. The five yaagents SDKs (`sdk-fastapi`, `sdk-go`, `client-python`, `client-ts`, `client-go`) make it easy to consume the Profile, but any service that returns the correct `Content-Type` + body shape is a conformant yaagents service. The gateway doesn't care what framework your agent runs on.
+
+## Comparison
+
+| | LangChain | Anthropic SDK | OpenAI Assistants | **yaagents** |
+|---|---|---|---|---|
+| REST profile | No | No | Partial (Assistants API) | **Yes — normative spec** |
+| Resource-oriented endpoints | No | No | No | **Yes** |
+| Typed agentic outcomes | No | No | No | **Yes (10 types)** |
+| Pluggable gateway | No | No | No | **Yes (5 first-party plugins)** |
+| Framework-neutral | No (Python) | No (Python/TS) | No (REST only) | **Yes** |
+| Source-available | LangChain OSS | No | No | **Yes (Apache 2.0)** |
+
+LangChain, the Anthropic SDK, and OpenAI Assistants are excellent tools for building agents. yaagents is the REST profile that governs how those agents are _exposed_ to API consumers — they're complementary, not competing.
+
+## Where to go next
+
+- [Quick Start →](/yaagents/tutorials/quick-start/) — see the typed outcome flow in 10 minutes
+- [Resource-oriented vs operation-oriented →](/yaagents/explanation/resource-vs-operation/) — deep dive on the URL design decision
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — normative reference for all 10 typed outcomes

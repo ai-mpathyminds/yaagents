@@ -1,0 +1,152 @@
+---
+title: Quick Start (10 min)
+description: Get a running agentic endpoint in 10 minutes with yaagents — gateway, Python SDK, and your first agentic call.
+---
+
+import { Steps, Aside, Code } from '@astrojs/starlight/components';
+
+Get from zero to a live agentic endpoint in 10 minutes.
+
+## Prerequisites
+
+- **Docker** (to run the yaagents gateway)
+- **Python 3.11+** and `pip`
+- **5 minutes of focused attention** — this walkthrough is intentionally short
+
+## What you'll build
+
+A Python agent service that accepts `POST /campaigns/{id}/optimizations`, returns a typed `clarification_required` response when the request is underspecified, and a `201 Created` with an optimization result when given a goal.
+
+The gateway sits in front of your service and handles auth (token validation), tenancy injection, and audit emission automatically.
+
+<Steps>
+
+1. **Pull the gateway and campaign-api example**
+
+   ```bash
+   # Pull the gateway image
+   docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+
+   # Clone the repo to get the example
+   git clone --depth 1 https://github.com/ai-mpathyminds/yaagents.git
+   cd yaagents/examples/campaign-api
+   ```
+
+2. **Start the stack**
+
+   The example includes a pre-configured gateway + Python agent service:
+
+   ```bash
+   docker compose up -d
+   ```
+
+   Wait ~10 seconds for services to be healthy:
+
+   ```bash
+   docker compose ps
+   # Both yaagents-gateway and campaign-api should show "healthy"
+   ```
+
+3. **Make your first agentic call — clarification flow**
+
+   Send an underspecified request (no `goal` field):
+
+   ```bash
+   curl -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+     -H "Authorization: Bearer demo-token" \
+     -H "X-Tenant-ID: tenant-001" \
+     -H "Content-Type: application/json" \
+     -d '{}'
+   ```
+
+   Expected response (HTTP 400 — not an error, a typed outcome):
+
+   ```json
+   {
+     "type": "clarification_required",
+     "message": "Please specify the optimization goal",
+     "requiredInputs": [
+       {
+         "field": "goal",
+         "type": "string",
+         "options": ["ctr", "conversion", "revenue"],
+         "description": "The metric to optimize for"
+       }
+     ],
+     "requestId": "req-abc-001"
+   }
+   ```
+
+   The `Content-Type` header will be `application/vnd.yaagents.clarification+json`.
+
+4. **Happy path — send a complete request**
+
+   ```bash
+   curl -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+     -H "Authorization: Bearer demo-token" \
+     -H "X-Tenant-ID: tenant-001" \
+     -H "Content-Type: application/json" \
+     -d '{"goal": "ctr"}'
+   ```
+
+   Expected response (HTTP 201):
+
+   ```json
+   {
+     "optimizationId": "opt-001",
+     "campaignId": "cmp-123",
+     "goal": "ctr",
+     "variations": [
+       {"headline": "Drive clicks with urgency", "score": 0.87},
+       {"headline": "Limited-time offer — act now", "score": 0.82}
+     ],
+     "approved": 2,
+     "cost": 0.12,
+     "tenantId": "tenant-001"
+   }
+   ```
+
+</Steps>
+
+## What just happened?
+
+Your request went through several layers automatically:
+
+1. **Token validation** — the gateway verified `demo-token` (configured for demo mode)
+2. **Tenant injection** — `X-Tenant-ID: tenant-001` was validated and injected into the request context
+3. **Routing** — the gateway forwarded the request to your campaign-api service based on the path pattern `/campaigns/{id}/optimizations`
+4. **Typed response** — when the service returned `clarification_required`, the gateway preserved the semantic type in `Content-Type: application/vnd.yaagents.clarification+json`
+
+None of that was in your agent service code — it's all handled by the gateway via first-party plugins.
+
+## Build your own agent service
+
+Instead of using the example, try building a minimal agent service:
+
+```python
+# pip install yaagents-fastapi
+from fastapi import FastAPI
+from yaagents.fastapi import agentic_operation, AgenticResponse, ClarificationRequired
+
+app = FastAPI()
+
+@app.post("/campaigns/{campaign_id}/optimizations")
+@agentic_operation
+async def optimize_campaign(campaign_id: str, body: dict) -> AgenticResponse:
+    if not body.get("goal"):
+        return ClarificationRequired(
+            message="Specify the optimization goal",
+            required_inputs=[{"field": "goal", "type": "string"}]
+        )
+    # ... your agent logic here ...
+    return {"optimizationId": "opt-001", "goal": body["goal"]}
+```
+
+The `@agentic_operation` decorator handles the typed response negotiation automatically.
+
+## Next steps
+
+- [Your first Python agent →](/yaagents/tutorials/python-first-agent/) — build a full agent service from scratch
+- [Your first Go agent →](/yaagents/tutorials/go-first-agent/) — same walkthrough in Go
+- [Why yaagents? →](/yaagents/explanation/why-yaagents/) — understand the design philosophy
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — normative reference for all typed outcomes

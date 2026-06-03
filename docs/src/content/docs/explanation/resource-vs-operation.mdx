@@ -1,0 +1,165 @@
+---
+title: Resource-oriented vs operation-oriented
+description: Why URL shape matters for agentic APIs — and why yaagents chose the resource-oriented path.
+---
+
+## The two URL shapes
+
+When you want to expose an AI agent capability over HTTP, you face a fork in the road immediately. The two paths look different and feel different:
+
+**Operation-oriented** (the common path):
+```http
+POST /agents/invoke
+POST /agents/run
+POST /agent/execute
+POST /v1/agentic
+```
+
+**Resource-oriented** (the yaagents path):
+```http
+POST /campaigns/{id}/optimizations
+POST /documents/{id}/summaries
+POST /orders/{id}/fulfillment-plans
+POST /tickets/{id}/resolutions
+```
+
+Both can deliver the same agentic result. The difference is what each shape enables downstream.
+
+## Why URL shape matters
+
+URL shape affects five cross-cutting concerns that only surface at scale:
+
+### 1. Auth scoping
+
+Operation-oriented: `POST /agents/invoke` — you know an agent was invoked; you don't know _which resource_. Scoping token permissions to specific campaigns, documents, or orders requires custom middleware in every service.
+
+Resource-oriented: `POST /campaigns/{id}/optimizations` — standard OAuth resource scoping works. A token can have `campaigns:optimize` scope, and `campaign_id` is in the path. Standard API gateways handle this without custom code.
+
+### 2. Tenancy isolation
+
+Operation-oriented: tenant context is in the request body. Every agent implementation extracts it; every implementation is a potential misimplementation.
+
+Resource-oriented: the path is tenant-namespaced by convention (or a gateway injects `X-Tenant-ID` validated against the token). Tenancy is enforced at the infrastructure layer, not in agent code.
+
+### 3. Audit trail quality
+
+Operation-oriented: your audit log says "agent invoked, input: `{...}`" — you can't answer "which campaigns were optimized by tenant-001 last week?" without parsing free-form inputs.
+
+Resource-oriented: your audit log says "`POST /campaigns/cmp-123/optimizations` by tenant-001" — resource identity is in the path. Cross-tenant queries, compliance reports, and rate-limit counters work without custom extraction.
+
+### 4. Migration and versioning
+
+Operation-oriented: when your agent changes behavior, every consumer must read changelog notes describing behavioral drift. There's no HTTP-native signal.
+
+Resource-oriented: you version at the resource level (`/v2/campaigns/{id}/optimizations`) or signal via the `X-YAAgents-Profile` header. API consumers can detect the change from the response without documentation.
+
+### 5. Discovery
+
+Operation-oriented: there's no OpenAPI path for `/agents/invoke` that maps to a resource. Documentation is the only discovery mechanism.
+
+Resource-oriented: your OpenAPI spec has `POST /campaigns/{id}/optimizations` with a `requestBody` schema and `responses` for each typed outcome. OpenAPI tooling works. Auto-generated client SDKs work.
+
+## Worked example: campaign optimization
+
+### ❌ Operation-oriented design
+
+```http
+POST /agents/invoke
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "agent": "campaign-optimizer",
+  "version": "2.1",
+  "input": {
+    "campaignId": "cmp-123",
+    "tenantId": "tenant-001",
+    "goal": "ctr"
+  }
+}
+```
+
+**Problems with this shape:**
+- `tenantId` in the body — enforced by what? Whoever reads it in agent code
+- `version: "2.1"` — custom versioning scheme, not HTTP-native
+- Auth scope: `invoke_agent` — cannot scope to campaign cmp-123
+- Audit: "agent invoked" — which campaign? Parse the body
+
+### ✓ Resource-oriented design (yaagents)
+
+```http
+POST /campaigns/cmp-123/optimizations
+Content-Type: application/json
+Authorization: Bearer <token>
+X-Tenant-ID: tenant-001
+X-YAAgents-Profile: 0.3
+
+{
+  "goal": "ctr"
+}
+```
+
+**What this unlocks:**
+- `cmp-123` is in the path — gateway enforces auth scope `campaigns:write:cmp-123`
+- `X-Tenant-ID` validated against token claims in gateway middleware
+- Audit path is `POST /campaigns/cmp-123/optimizations` — queryable without body parsing
+- `X-YAAgents-Profile: 0.3` — client knows which behavior version to expect
+
+The response is typed:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+X-YAAgents-Profile: 0.3
+
+{
+  "optimizationId": "opt-001",
+  "campaignId": "cmp-123",
+  "goal": "ctr",
+  "variations": [{"headline": "Drive clicks with urgency", "score": 0.87}]
+}
+```
+
+Or, if the request was ambiguous:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.yaagents.clarification+json
+X-YAAgents-Profile: 0.3
+
+{
+  "type": "clarification_required",
+  "message": "Specify the optimization goal",
+  "requiredInputs": [{"field": "goal", "options": ["ctr", "conversion", "revenue"]}]
+}
+```
+
+The `clarification_required` type is normative — clients handle it the same way regardless of which agent produced it.
+
+## When operation-oriented is acceptable
+
+Resource-orientation is the default for multi-tenant, regulated, or public-facing environments. Operation-oriented design is acceptable when ALL of the following hold:
+
+- **Single tenant** — no cross-tenant isolation requirements
+- **Internal-only** — not exposed to external API consumers
+- **Short lifecycle** — not expected to be maintained beyond a single project
+- **No audit requirements** — compliance or audit is not a concern
+
+If any of these conditions fails, resource-orientation pays for itself within the first compliance incident or scale event.
+
+## Profile contract
+
+yaagents Profile v0.3 specifies exactly which HTTP status codes, `Content-Type` values, and body shapes correspond to each of the 10 normative agentic outcomes. The contract is symmetric: producers and consumers implement against the same spec, independently.
+
+The profile does _not_ specify:
+- Your URL path structure (that's your domain model)
+- Your request body shape (that's your API contract)
+- Which AI framework or model powers your agent
+
+It specifies only what comes _back_ — and that's enough to make agentic APIs interoperable.
+
+## References
+
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — all 10 normative outcome types
+- [The plugin model →](/yaagents/explanation/plugin-model/) — how gateway plugins enforce resource-oriented governance
+- [Why yaagents? →](/yaagents/explanation/why-yaagents/) — the design philosophy from first principles

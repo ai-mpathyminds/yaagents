@@ -1,0 +1,23 @@
+---
+title: Versioning & profile evolution
+description: How the YAAgents Profile versioning model works — backward compatibility guarantees, X-YAAgents-Profile header, and the deprecation policy.
+---
+
+:::note[Coming in v0.4]
+This page is on the v0.4 roadmap. We'd love your input — start a
+conversation on [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions)
+to tell us what you'd find most useful here.
+:::
+
+## What this page will cover
+
+- `X-YAAgents-Profile` response header — version string format and semantics
+- Backward compatibility guarantees (additive-only changes within a minor version)
+- Breaking change policy — new major version, 6-month deprecation window
+- Producer versioning — how agent services declare the Profile version they implement
+- Consumer versioning — how clients handle unknown response types gracefully
+
+## In the meantime
+
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — normative reference
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask + suggest

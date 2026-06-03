@@ -1,0 +1,93 @@
+/* aimpathy-design token overrides for Starlight — gold theme */
+:root {
+  /* Theme: gold (aimpathy-design THEMES.gold) */
+  --aimpathy-page-bg: #f5f5f7;
+  --aimpathy-page-tint: rgba(200, 162, 74, 0.10);
+  --aimpathy-accent-deep: #9a6b23;
+  --aimpathy-accent-mid: #c8a24a;
+  --aimpathy-accent-light: #f8e9b2;
+  --aimpathy-accent-text-on-ink: #f8e9b2;
+  --aimpathy-ink-grad: linear-gradient(135deg, #111 0%, #2b2925 48%, #9a6b23 100%);
+  --aimpathy-page-grad: radial-gradient(circle at 18% 4%, rgba(211,171,79,0.22), transparent 28%),
+    radial-gradient(circle at 82% 12%, rgba(255,255,255,0.9), transparent 24%),
+    linear-gradient(180deg, #fbfbfd, #f5f5f7 38%, #efeff2);
+
+  /* Semantic palette — SEM_GOLD */
+  --aimpathy-good-bg: linear-gradient(135deg, #dff6e5, #b6e8c4 100%);
+  --aimpathy-warn-bg: linear-gradient(135deg, #fef1c8, #f7d57a 100%);
+  --aimpathy-bad-bg:  linear-gradient(135deg, #fde0e0, #f7b4b4 100%);
+  --aimpathy-info-bg: linear-gradient(135deg, #e6e9f5, #c4cce8 100%);
+
+  /* Override Starlight chrome with aimpathy gold palette */
+  --sl-color-accent:        var(--aimpathy-accent-mid);
+  --sl-color-accent-low:    var(--aimpathy-accent-light);
+  --sl-color-accent-high:   var(--aimpathy-accent-deep);
+  --sl-color-bg:            var(--aimpathy-page-bg);
+  --sl-color-bg-nav:        var(--aimpathy-page-bg);
+  --sl-color-bg-sidebar:    var(--aimpathy-page-bg);
+  --sl-font:                'Inter', system-ui, sans-serif;
+  --sl-font-system-mono:    'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Dark mode: invert page background for visibility */
+:root[data-theme='dark'] {
+  --sl-color-bg:         #111007;
+  --sl-color-bg-sidebar: #111007;
+  --sl-color-bg-nav:     #111007;
+}
+
+/* Custom hero strip — used on landing page */
+.hero-strip {
+  background: var(--aimpathy-page-grad);
+  border-bottom: 1px solid var(--aimpathy-accent-light);
+  padding: 4rem 2rem;
+}
+
+/* Agent card demo widget */
+.agent-card-demo {
+  background: var(--aimpathy-page-bg);
+  border: 1px solid var(--aimpathy-accent-light);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  font-family: var(--sl-font-system-mono);
+  font-size: 0.85rem;
+}
+
+.agent-card-demo .acd-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: var(--aimpathy-accent-deep);
+}
+
+.agent-card-demo .acd-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background: var(--aimpathy-good-bg);
+  color: #0f6230;
+  font-size: 0.75rem;
+}
+
+.agent-card-demo .acd-trail {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: 2px solid var(--aimpathy-accent-light);
+  padding-left: 1rem;
+}
+
+.agent-card-demo .acd-trail li {
+  padding: 0.2rem 0;
+  color: var(--sl-color-text-accent, #333);
+  display: flex;
+  justify-content: space-between;
+}
+
+.agent-card-demo .acd-trail li .acd-time {
+  color: var(--aimpathy-accent-mid);
+  font-size: 0.75rem;
+}

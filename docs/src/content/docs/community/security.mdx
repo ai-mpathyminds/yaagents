@@ -1,0 +1,29 @@
+---
+title: Security
+description: How to report security vulnerabilities in yaagents — responsible disclosure process and response timeline.
+---
+
+## Reporting a vulnerability
+
+If you discover a security vulnerability in yaagents, please **do not** open a public GitHub issue. Instead, report it privately via one of these channels:
+
+- **GitHub Security Advisories** — [Report a vulnerability](https://github.com/ai-mpathyminds/yaagents/security/advisories/new)
+- **Email** — security contact listed in the [repository SECURITY.md](https://github.com/ai-mpathyminds/yaagents/blob/main/SECURITY.md)
+
+### Response timeline
+
+| Step | Target time |
+|------|-------------|
+| Acknowledgment | 48 hours |
+| Initial assessment | 5 business days |
+| Fix + advisory | Depends on severity; typically 14–30 days |
+| Public disclosure | After fix is available |
+
+### Scope
+
+Security reports are accepted for:
+- yaagents gateway (authentication bypass, injection, privilege escalation)
+- First-party plugins (token-validator, tenant-injector, license-check, prompt-sanitize, otel-audit)
+- Python + TypeScript + Go client SDKs
+
+Scope does not include: third-party plugins, downstream services built on yaagents, or infrastructure outside the project's control.
