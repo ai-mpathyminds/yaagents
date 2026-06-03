@@ -1,0 +1,30 @@
+---
+/**
+ * CocContent.astro
+ *
+ * Reads CODE_OF_CONDUCT.md from the meta-repo root at build time and renders it
+ * as HTML. Single source of truth — no copy/paste.
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const filePath = join(__dirname, '../../../CODE_OF_CONDUCT.md');
+const text = readFileSync(filePath, 'utf-8');
+
+const result = await unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkRehype)
+  .use(rehypeStringify)
+  .process(text);
+
+const html = String(result);
+---
+<div class="coc-content" set:html={html} />

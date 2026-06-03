@@ -1,6 +1,90 @@
 ---
 title: Public Roadmap
-description: What shipped in v0.3 and what's planned for v0.4.
+description: What shipped in v0.3, what's planned for v0.4, and how to shape the roadmap.
 ---
 
-Coming soon — see [WI-3yaa.PG-7](/why/).
+import { Aside } from '@astrojs/starlight/components';
+
+This roadmap is framed by release and quarter — not by internal sprint IDs.
+Community input drives prioritization: open a
+[GitHub Discussion](https://github.com/ai-mpathyminds/yaagents/discussions) to propose
+features, vote on existing requests, or share your use case.
+
+---
+
+## v0.3 shipped (this release)
+
+**Core**
+- Go server SDK (`sdk-go`) — router-agnostic, stdlib only, zero runtime deps
+- Gateway plugin chain: `token-validator`, `tenant-injector`, `license-check`, `cors`
+- Profile v0.3 header (`X-YAAgents-Profile: v0.3`) on all agentic responses
+
+**Packages published**
+- `yaagents-fastapi 0.3.0` (PyPI)
+- `yaagents-client 0.3.0` (PyPI)
+- `yaagents-cli 0.3.0` (PyPI)
+- `@aimpathyminds/yaagents-client 0.3.0` (npm)
+- `github.com/ai-mpathyminds/yaagents-sdk-go v0.3.0` (Go modules)
+- `github.com/ai-mpathyminds/yaagents-client-go v0.3.0` (Go modules)
+- `ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0` (GHCR, multi-arch)
+
+**Open-source posture**
+- Apache 2.0 license across all packages and repos
+- 8 public repos (meta-repo + 7 component submodules)
+- Community health files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`
+- DCO sign-off policy; no CLA
+
+**Reference examples**
+- `campaign-api` — Python FastAPI reference (all 5 agentic flows)
+- `campaign-api-go` — Go net/http reference (sdk-go, all 5 flows)
+
+**Docs**
+- This site (Astro Starlight, GitHub Pages)
+- Quick Start, Profile Spec, SDK Quickstarts × 6, Examples × 2, Plugin Authoring
+
+---
+
+## Planned for v0.4 / Q3 2026
+
+<Aside>
+  Dates and scope are subject to change. Watch
+  [GitHub Releases](https://github.com/ai-mpathyminds/yaagents/releases) for confirmed
+  milestones.
+</Aside>
+
+**Deployment**
+- Kubernetes Helm chart for the gateway (values: replica count, resource limits, plugins config)
+- Official `ghcr.io/ai-mpathyminds/yaagents-gateway` chart in Artifact Hub
+
+**Security hardening**
+- Full Cosign signing + SLSA provenance on every published artifact
+- SBOM attached to GHCR image at publish time (Syft)
+- Signed npm provenance attestation
+
+**Observability plugins (first-party)**
+- `otel-audit` — OpenTelemetry span per agentic operation; tenant + correlation-ID attributes
+- `prompt-sanitize` — PII scrubbing before LLM backend calls (configurable patterns)
+
+**License & governance**
+- `license-check` plugin: multi-backend support (HTTP, Postgres) in addition to current SSM/static
+- Per-tenant rate limiting as a first-party plugin
+
+**Custom domain**
+- `yaagents.dev` (or equivalent) — deferred until traction signal met (≥500 GitHub stars
+  or ≥1 000 monthly PyPI/npm downloads)
+
+---
+
+## Community-requested
+
+Shape the roadmap through
+[GitHub Discussions → Ideas](https://github.com/ai-mpathyminds/yaagents/discussions/categories/ideas):
+
+- **Framework adapters** — Spring Boot, ASP.NET Core, Express.js, NestJS
+- **Additional SDK targets** — Ruby, Java, Rust
+- **Streaming enhancements** — partial-result pagination, SSE backpressure
+- **Multi-region gateway** — cross-region tenant routing
+- **OpenTelemetry metrics** — per-tenant token and latency histograms
+
+Vote on existing proposals or open a new Discussion. High-vote proposals are reviewed at
+each release planning cycle.

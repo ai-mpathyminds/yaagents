@@ -1,6 +1,48 @@
 ---
 title: Community
-description: Join the YAAgents community.
+description: Join the YAAgents community — GitHub Discussions, Code of Conduct, contribution paths.
 ---
 
-Coming soon — see [WI-3yaa.PG-7](/why/).
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+import CocContent from '../../components/CocContent.astro';
+
+## Join the conversation
+
+<CardGrid>
+  <LinkCard
+    title="GitHub Discussions"
+    description="Ask questions, propose ideas, share use cases, vote on roadmap features."
+    href="https://github.com/ai-mpathyminds/yaagents/discussions"
+  />
+  <LinkCard
+    title="GitHub Issues"
+    description="Report bugs, request features, or propose new adapters and plugins."
+    href="https://github.com/ai-mpathyminds/yaagents/issues"
+  />
+</CardGrid>
+
+## Real-time chat
+
+<Aside>
+  A Discord / Slack server is planned once community adoption warrants moderation overhead.
+  For now, all async discussion happens in
+  [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions).
+  Watch the repo or subscribe to Discussions notifications to stay current.
+</Aside>
+
+## Contributing
+
+See the [Contributing guide](/contributing/) for:
+
+- **DCO sign-off** — how to certify your commits
+- **PR checklist** — what reviewers look for
+- **Plugin contribution path** — open a Plugin Proposal, implement, sign off
+
+## Code of Conduct
+
+All participants in YAAgents spaces are expected to follow the Code of Conduct below.
+To report a violation, email **conduct@aimpathyminds.com**.
+
+---
+
+<CocContent />
