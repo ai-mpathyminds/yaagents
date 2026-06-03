@@ -10,6 +10,11 @@
   "dependencies": {
     "astro": "^5.18.2",
     "@astrojs/starlight": "^0.30.6",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "unified": "^11.0.5",
+    "remark-parse": "^11.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-rehype": "^11.1.2",
+    "rehype-stringify": "^10.0.1"
   }
 }
