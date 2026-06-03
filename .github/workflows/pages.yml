@@ -3,9 +3,10 @@
 # ADR PI3-yaa-0004: site hosted at ai-mpathyminds.github.io/yaagents/
 # (project-pages mode; astro base: '/yaagents').
 #
-# Stub: platform-engineer A-4 (B-34 NFR-SRE-2) appends:
-#   - Lighthouse CI step (≥90 Perf + A11y budget gate)
-#   - build-failure-blocks-PR enforcement on PR triggers
+# Jobs:
+#   build     — runs on push + PR (paths: docs/**)
+#   deploy    — runs on push/workflow_dispatch only (needs: build)
+#   lighthouse — runs on PRs only; budget gate ≥90 Perf+A11y (needs: build)
 #
 # Actions used:
 #   actions/checkout@v4
@@ -14,6 +15,8 @@
 #   actions/configure-pages@v5
 #   actions/upload-pages-artifact@v3
 #   actions/deploy-pages@v4
+#   actions/download-artifact@v4
+#   treosh/lighthouse-ci-action@v12
 
 name: Deploy Pages site
 
@@ -25,6 +28,10 @@ on:
       - 'spec/**'
       - 'schemas/**'
       - 'openapi/**'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -38,11 +45,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -64,11 +68,36 @@ jobs:
         run: pnpm build
         working-directory: docs
 
-      - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
           path: docs/dist
 
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  lighthouse:
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./dist
+
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          uploadArtifacts: true
+          budgetPath: .github/lighthouse-budget.json
