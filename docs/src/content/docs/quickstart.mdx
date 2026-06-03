@@ -1,6 +1,172 @@
 ---
 title: Quick Start
-description: Get a running agentic endpoint in 10 minutes.
+description: Get a running agentic endpoint in 10 minutes — gateway + sdk-fastapi + campaign-api example.
 ---
 
-Coming soon — see [WI-3yaa.PG-3](/why/).
+import { Steps, Aside, TabItem, Tabs } from '@astrojs/starlight/components';
+
+This walkthrough takes a developer from zero to a running agentic endpoint in ≤10 minutes.
+You will install the gateway and the Python SDK, start the `campaign-api` reference example,
+and make your first agentic call — including the clarification handshake.
+
+---
+
+## 1. Prerequisites
+
+Before you begin, confirm you have:
+
+- **Docker** (Desktop or Engine) — `docker --version`
+- **Python 3.11+** — `python3 --version`
+- **pip** — `pip --version`
+- **git** — `git --version`
+
+No cloud account or API key is required for local development.
+
+---
+
+## 2. Install
+
+<Steps>
+
+1. **Install the Python server SDK, client library, and CLI:**
+
+   ```bash
+   pip install yaagents-fastapi yaagents-client yaagents-cli
+   ```
+
+2. **Pull the gateway image:**
+
+   ```bash
+   docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+   ```
+
+</Steps>
+
+---
+
+## 3. Run the campaign-api example
+
+The `campaign-api` example bundles the gateway, the FastAPI service, and a Postgres
+database into a single `docker compose` stack.
+
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd yaagents/examples/campaign-api
+docker compose up -d
+```
+
+Wait ~10 seconds for the gateway and the Python service to become healthy, then verify:
+
+```bash
+docker compose ps
+```
+
+You should see all three containers in the `running` / `healthy` state.
+
+<Aside>
+  The gateway listens on `localhost:8120`; the campaign-api FastAPI service listens on
+  `localhost:8121` (internal, not exposed directly). All agentic traffic routes through
+  the gateway.
+</Aside>
+
+---
+
+## 4. First agentic call — clarification flow
+
+POST to the `/campaigns/{id}/optimizations` endpoint **with an empty body**.
+The agent does not have enough information to proceed, so the gateway returns
+`400 application/vnd.yaagents.clarification+json` with a `requiredInputs` array.
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  | python3 -m json.tool
+```
+
+**Expected response — 400 `application/vnd.yaagents.clarification+json`:**
+
+```json
+{
+  "type": "clarification_required",
+  "message": "Optimization goal is required to proceed.",
+  "requiredInputs": [
+    {
+      "field": "goal",
+      "description": "Optimization goal (e.g. 'ctr', 'conversions', 'reach')",
+      "type": "string"
+    }
+  ]
+}
+```
+
+<Aside type="tip">
+  The `type: "clarification_required"` discriminator lets client code switch cleanly:
+
+  ```python
+  result = client.campaigns.by_id("cmp-123").optimizations.create({})
+  if result.type == "clarification_required":
+      # prompt the user for the missing fields
+      missing = result.required_inputs
+  ```
+</Aside>
+
+---
+
+## 5. Happy path — submit the goal
+
+Retry the POST with `{"goal": "ctr"}`. The agent now has sufficient context
+and returns `201 application/json` with the created optimization resource.
+
+```bash
+curl -s -X POST http://localhost:8120/campaigns/cmp-123/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}' \
+  | python3 -m json.tool
+```
+
+**Expected response — 201 `application/json`:**
+
+```json
+{
+  "id": "opt-abc123",
+  "campaignId": "cmp-123",
+  "goal": "ctr",
+  "status": "accepted",
+  "suggestions": [
+    {
+      "type": "bid_adjustment",
+      "description": "Increase bids on top-performing keywords by 15%",
+      "estimatedCtrLift": 0.12
+    }
+  ],
+  "createdAt": "2026-06-03T09:00:00Z"
+}
+```
+
+The optimization resource is now accessible at
+`GET /campaigns/cmp-123/optimizations/opt-abc123`.
+
+---
+
+## 6. Next steps
+
+You have made your first agentic call using the YAAgents Profile. From here:
+
+- **[SDK Quickstarts](/sdks/)** — language-specific install + minimal snippet for all 6
+  SDK targets (Python server, Go server, Python client, TypeScript client, Go client, CLI).
+- **[Examples](/examples/)** — full walkthroughs of the `campaign-api` and
+  `campaign-api-go` reference examples, including all five agentic flows
+  (clarification, created, accepted, validation-failed, auth-failure).
+- **[Profile Spec](/profile/)** — normative status × Content-Type × body shape table for
+  all 10 agentic response types.
+
+To tear down the example stack:
+
+```bash
+docker compose down -v
+```
