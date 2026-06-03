@@ -1,0 +1,89 @@
+---
+title: Python Server SDK (sdk-fastapi)
+description: Add YAAgents-compliant agentic endpoints to a FastAPI service in minutes.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Package:** `yaagents-fastapi` on PyPI
+**Full API reference:** [github.com/ai-mpathyminds/yaagents-sdk-fastapi](https://github.com/ai-mpathyminds/yaagents-sdk-fastapi)
+
+## Install
+
+```bash
+pip install yaagents-fastapi==0.3.0
+```
+
+## Minimal example
+
+```python
+from fastapi import FastAPI
+from yaagents_fastapi import agentic_operation, AgenticResponse, AgenticContext, RequiredInput
+
+app = FastAPI()
+
+@app.post("/campaigns/{campaign_id}/optimizations")
+@agentic_operation(
+    operation_id="create-optimization",
+    description="Generate optimization suggestions for a campaign.",
+)
+async def create_optimization(
+    campaign_id: str,
+    body: dict,
+    ctx: AgenticContext,           # injected by @agentic_operation
+    ar: AgenticResponse,           # injected by @agentic_operation
+):
+    goal = body.get("goal")
+    if not goal:
+        return ar.clarification_required([
+            RequiredInput(
+                field="goal",
+                description="Optimization goal (e.g. 'ctr', 'conversions', 'reach')",
+                type="string",
+                required=True,
+            )
+        ])
+
+    # ... run agent logic ...
+    result = {"campaignId": campaign_id, "goal": goal, "suggestions": []}
+    return ar.created(result)
+```
+
+<Aside type="tip">
+  `@agentic_operation` automatically generates OpenAPI response stanzas for all 10
+  normative response types and injects `X-YAAgents-Profile: v0.3` on every response.
+</Aside>
+
+## Key API symbols
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `@agentic_operation(...)` | decorator | Declare agentic endpoint; injects `AgenticContext` + `AgenticResponse` |
+| `AgenticResponse` | class | Factory — `.clarification_required()`, `.created()`, `.accepted()`, `.validation_failed()`, … |
+| `AgenticContext` | class | Gateway-injected context: `tenant_id`, `actor_id`, `correlation_id`, `request_id` |
+| `RequiredInput` | dataclass | Clarification input descriptor |
+
+## Run against campaign-api
+
+```bash
+# Start the campaign-api example stack (includes a FastAPI service using this SDK)
+cd examples/campaign-api && docker compose up -d
+
+# Trigger clarification
+curl -X POST http://localhost:8120/campaigns/cmp-1/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+# → 400 application/vnd.yaagents.clarification+json
+
+# Happy path
+curl -X POST http://localhost:8120/campaigns/cmp-1/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}'
+# → 201 application/json
+```
+
+See [Examples](/examples/) for the full five-flow walkthrough.

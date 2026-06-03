@@ -1,0 +1,109 @@
+---
+title: CLI (yaagents-cli)
+description: Validate OpenAPI specs and test agentic endpoint conformance from the terminal.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Package:** `yaagents-cli` on PyPI
+**Full reference:** [github.com/ai-mpathyminds/yaagents-cli](https://github.com/ai-mpathyminds/yaagents-cli)
+
+## Install
+
+```bash
+pip install yaagents-cli==0.3.0
+```
+
+Verify installation:
+
+```bash
+yaagents --version
+# yaagents-cli 0.3.0 (Profile v0.3)
+```
+
+## Commands
+
+### `yaagents validate-openapi`
+
+Validates an OpenAPI 3.x YAML/JSON file for YAAgents compliance:
+`x-yaagents` metadata, correct `Content-Type` per response type, schema `$ref` targets.
+
+```bash
+yaagents validate-openapi openapi/campaigns.yaml
+# ✓ 3 agentic operations found
+# ✓ All response content-types match Profile v0.3 table
+# ✓ Schema refs resolve to schemas/v0.3/*.json
+```
+
+Exits non-zero on validation failure — CI-safe.
+
+### `yaagents validate-response`
+
+Validates a saved JSON response body against the appropriate Profile schema:
+
+```bash
+# Save a live response body
+curl -s http://localhost:8120/campaigns/cmp-1/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -d '{}' > response.json
+
+yaagents validate-response response.json
+# ✓ type: clarification_required
+# ✓ Body matches clarification-required.schema.json
+```
+
+### `yaagents conformance-test`
+
+Exercises all mandatory agentic response types against a live endpoint.
+Checks HTTP status, `Content-Type`, `X-YAAgents-Profile` header, and `X-Correlation-ID`.
+
+```bash
+# Requires the campaign-api example to be running
+cd examples/campaign-api && docker compose up -d
+
+yaagents conformance-test http://localhost:8120 \
+  --token demo-token \
+  --tenant-id tenant-001
+# ✓ clarification_required  400 application/vnd.yaagents.clarification+json
+# ✓ created                 201 application/json
+# ✓ accepted                202 application/vnd.yaagents.operation+json
+# ✓ validation_failed       422 application/vnd.yaagents.validation-error+json
+# ✓ forbidden               403 application/vnd.yaagents.error+json
+# 5/5 conformance checks passed
+```
+
+<Aside type="tip">
+  Run `yaagents conformance-test` in CI after deploying a new service version to catch
+  Profile regressions before they reach production.
+</Aside>
+
+### `yaagents init fastapi`
+
+Scaffolds a new FastAPI service wired for Profile compliance:
+
+```bash
+yaagents init fastapi --name campaign-optimizer --port 8121
+# Created campaign-optimizer/
+#   main.py         ← FastAPI app with @agentic_operation example
+#   requirements.txt ← yaagents-fastapi==0.3.0
+#   openapi.yaml    ← pre-wired with x-yaagents metadata
+#   Dockerfile
+```
+
+<Aside>
+  The generated `main.py` includes a stub `POST /campaigns/{id}/optimizations` endpoint
+  that you can run immediately: `pip install -r requirements.txt && uvicorn main:app`.
+</Aside>
+
+## All subcommands
+
+| Command | Purpose |
+|---------|---------|
+| `yaagents validate-openapi <file>` | Validate `x-yaagents` metadata + response content-types + schema refs |
+| `yaagents validate-response <file>` | Validate a JSON response body against the Profile schema |
+| `yaagents conformance-test <base-url>` | Live endpoint: exercise all mandatory response types + headers |
+| `yaagents init fastapi` | Scaffold a new FastAPI service with Profile-compliant wiring |
+
+See [SDK Quickstarts](/sdks/) for per-language install guides, or [Examples](/examples/) for
+end-to-end walkthroughs.

@@ -1,0 +1,107 @@
+---
+title: Go Server SDK (sdk-go)
+description: Router-agnostic Go SDK for serving YAAgents-compliant agentic endpoints.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Module:** `github.com/ai-mpathyminds/yaagents-sdk-go`
+**Minimum Go:** 1.22
+**Full API reference:** [github.com/ai-mpathyminds/yaagents-sdk-go](https://github.com/ai-mpathyminds/yaagents-sdk-go)
+
+## Install
+
+```bash
+go get github.com/ai-mpathyminds/yaagents-sdk-go@v0.3.0
+```
+
+## Minimal example — net/http
+
+The core package `sdkgo` is router-agnostic (net/http, chi, gin, echo all work):
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+
+    "github.com/ai-mpathyminds/yaagents-sdk-go/sdkgo"
+)
+
+func CreateOptimization(w http.ResponseWriter, r *http.Request) {
+    ctx := sdkgo.FromRequest(r) // extracts gateway-injected headers
+    var ar sdkgo.AgenticResponse
+
+    var body struct {
+        Goal string `json:"goal"`
+    }
+    json.NewDecoder(r.Body).Decode(&body)
+
+    if body.Goal == "" {
+        sdkgo.Write(w, ar.ClarificationRequired(ctx, []sdkgo.RequiredInput{{
+            Name:          "goal",
+            Location:      "body",
+            Type:          "string",
+            Required:      true,
+            Question:      "Which optimization goal?",
+            AllowedValues: []string{"ctr", "cpl", "conversion_rate"},
+        }}))
+        return
+    }
+
+    // ... run agent logic ...
+    result := map[string]any{
+        "goal":        body.Goal,
+        "suggestions": []any{},
+    }
+    sdkgo.Write(w, ar.Created(ctx, result))
+}
+
+func main() {
+    http.HandleFunc("POST /campaigns/{campaignId}/optimizations", CreateOptimization)
+    http.ListenAndServe(":8121", nil)
+}
+```
+
+<Aside type="tip">
+  `sdkgo.Write` sets the correct HTTP status, `Content-Type` (e.g.
+  `application/vnd.yaagents.clarification+json`), and `X-YAAgents-Profile: v0.3`
+  automatically.
+</Aside>
+
+## Router adapters
+
+Chi, gin, and echo adapters wrap the core package and re-export the same API:
+
+```go
+// Chi
+import "github.com/ai-mpathyminds/yaagents-sdk-go/adapters/chi"
+
+// Gin
+import "github.com/ai-mpathyminds/yaagents-sdk-go/adapters/gin"
+```
+
+## Key API symbols
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `sdkgo.ProfileVersion` | `const` | `"v0.3"` |
+| `sdkgo.FromRequest(r)` | func | Extract `AgenticContext` from gateway headers |
+| `sdkgo.AgenticResponse` | struct | Factory — `.ClarificationRequired()`, `.Created()`, `.Accepted()`, … |
+| `sdkgo.Write(w, resp)` | func | Serialize response; sets status + Content-Type + profile header |
+
+## Run against campaign-api-go
+
+```bash
+cd examples/campaign-api-go && docker compose up -d
+
+curl -X POST http://localhost:8120/campaigns/cmp-1/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}'
+# → 201 application/json
+```
+
+See [Examples](/examples/) for the full five-flow walkthrough.
