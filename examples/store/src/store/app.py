@@ -3,23 +3,34 @@
 
 """yaagents store example FastAPI service — YAAgents Agentic REST Profile v0.3.
 
-Exposes POST /products/{id}/recommendations — returns mock product recommendations
-from the same category as the seed product.
+Exposes POST /products/{id}/recommendations — returns mock product
+recommendations from the same category as the seed product.
 
-To extend with a real LLM, open examples/store/skills/<your-ai-tool>.md and
-follow the starter prompts. The Profile contract (response shape, headers) is
-preserved by the sdk-fastapi helpers used here.
+To extend with a real LLM, see examples/store/skills/.
 """
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Header, HTTPException, Request
+from typing import Annotated, Any
+
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
-from yaagents_fastapi import AgenticResponse
+from yaagents_fastapi import (
+    AgenticContext,
+    AgenticResponse,
+    AgenticResponses,
+    AgenticRouter,
+    agentic_operation,
+    agentic_route_kwargs,
+)
 
 from .data import get_product
 from .recommender import mock_recommend
+
+
+_PROFILE_VERSION = "v0.3"
 
 app = FastAPI(
     title="yaagents store example",
@@ -30,40 +41,45 @@ app = FastAPI(
     ),
 )
 
+router = AgenticRouter()
+
+
+CtxDep = Annotated[AgenticContext, Depends(AgenticContext)]
+
+
 class RecommendBody(BaseModel):
     """Request body for POST /products/{id}/recommendations."""
 
     limit: int = 3
-    """Maximum number of recommendations to return."""
     exclude_purchased: bool = True
-    """When true and X-Customer-Id is set, filter already-purchased products."""
 
-@app.post(
-    "/products/{product_id}/recommendations",
-    summary="Get product recommendations",
-    responses={
-        200: {"description": "Recommendations returned."},
-        404: {"description": "Product not found."},
-    },
+
+@agentic_operation(
+    resource="ProductRecommendations",
+    operation_kind="recommendation",
+    mutating=False,
+    responses=AgenticResponses(
+        success=True,
+    ),
 )
-async def recommend(
+async def recommend_products(
     product_id: str,
     body: RecommendBody,
-    request: Request,
-    x_customer_id: str | None = Header(None),
-) -> dict:
-    """Return same-category product recommendations for a given product.
+    ctx: CtxDep,
+) -> Response:
+    """Return 3 product recommendations for the given seed product.
 
-    - Pass ``X-Customer-Id`` header to personalise (filters purchased items).
-    - Replace ``mock_recommend()`` in ``recommender.py`` with a real LLM call;
-      see ``examples/store/skills/`` for AI-tool starter prompts.
+    Mock implementation returns same-category products excluding the seed
+    and (when X-Actor-Subject identifies a known customer) any in that
+    customer's purchase history. Real implementations replace
+    ``mock_recommend()`` with LLM calls — see examples/store/skills/.
     """
-    if not get_product(product_id):
-        raise HTTPException(status_code=404, detail=f"Product '{product_id}' not found.")
+    if get_product(product_id) is None:
+        raise HTTPException(status_code=404, detail=f"Product {product_id} not found.")
 
-    recommendations, reason = mock_recommend(
+    recommendations, reasoning = mock_recommend(
         product_id=product_id,
-        customer_id=x_customer_id,
+        customer_id=ctx.actor_id,
         limit=body.limit,
         exclude_purchased=body.exclude_purchased,
     )
@@ -72,18 +88,23 @@ async def recommend(
         body={
             "seed_product_id": product_id,
             "recommendations": recommendations,
-            "reasoning": reason,
+            "reasoning": reasoning,
         },
-        correlation_id=request.headers.get("X-Correlation-ID", ""),
-        request_id=request.headers.get("X-Request-ID", ""),
+        correlation_id=ctx.correlation_id,
+        request_id=ctx.request_id,
     )
 
-@app.get("/healthz", include_in_schema=False)
-async def healthz() -> dict[str, str]:
-    """Liveness probe."""
-    return {"status": "ok"}
 
-@app.get("/readyz", include_in_schema=False)
-async def readyz() -> dict[str, str]:
-    """Readiness probe — reports Profile version."""
-    return {"status": "ok", "profile": "v0.3"}
+app.add_api_route(
+    "/products/{product_id}/recommendations",
+    recommend_products,
+    methods=["POST"],
+    **agentic_route_kwargs(recommend_products),
+    summary="Get product recommendations",
+    tags=["products"],
+)
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, str]:
+    return {"status": "ok"}
