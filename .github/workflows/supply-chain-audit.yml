@@ -1,0 +1,242 @@
+# .github/workflows/supply-chain-audit.yml
+# WI-3yaa.NFR-SUP-1 — OIDC-only publish audit + scrub-verify CI integration
+# WI-3yaa.NFR-SUP-2 — Apache-2.0 license-clean CI gate across all source files
+#
+# Three sequential checks in one job:
+#   Check A — OIDC-only publish audit    (no long-lived registry tokens in any workflow)
+#   Check B — scrub-verify integration   (bin/yaagents-public-mirror-verify.sh; 0 artifact leaks)
+#   Check C — Apache-2.0 license-clean  (no "Community License" text; SPDX header WARN)
+#
+# Trigger: push to main (post-TRACK-REPO) + workflow_dispatch (pre-flip manual gate)
+#
+# ADR refs:
+#   PI1-yaa-0005 — OIDC trusted publishing; GITHUB_TOKEN + NODE_AUTH_TOKEN are allowed
+#   PI2-yaa-0003 — Apache 2.0 supersedes Community License from v0.2.0+
+#   PI3-yaa-0001 — meta-repo + 7 submodule topology (8 repos total)
+#   PI3-yaa-0003 — portfolio scrub; bin/yaagents-public-mirror-verify.sh is the acceptance gate
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  supply-chain-audit:
+    name: Supply-chain audit (A + B + C)
+    runs-on: ubuntu-24.04
+
+    steps:
+      # ── 0. Check out all 8 repos ──────────────────────────────────────────
+      - name: Checkout meta-repo (yaagents)
+        uses: actions/checkout@v4
+        with:
+          path: repos/yaagents
+
+      - name: Checkout yaagents-gateway
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-gateway
+          path: repos/yaagents-gateway
+
+      - name: Checkout yaagents-sdk-fastapi
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-sdk-fastapi
+          path: repos/yaagents-sdk-fastapi
+
+      - name: Checkout yaagents-sdk-go
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-sdk-go
+          path: repos/yaagents-sdk-go
+
+      - name: Checkout yaagents-client-python
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-client-python
+          path: repos/yaagents-client-python
+
+      - name: Checkout yaagents-client-ts
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-client-ts
+          path: repos/yaagents-client-ts
+
+      - name: Checkout yaagents-client-go
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-client-go
+          path: repos/yaagents-client-go
+
+      - name: Checkout yaagents-cli
+        uses: actions/checkout@v4
+        with:
+          repository: ai-mpathyminds/yaagents-cli
+          path: repos/yaagents-cli
+
+      # ── Check A — OIDC-only publish (no long-lived registry tokens) ────────
+      # Forbidden: REGISTRY_PASSWORD | PYPI_API_TOKEN | NPM_TOKEN | --password.*secrets
+      # Allowed:   GITHUB_TOKEN, NODE_AUTH_TOKEN (OIDC npm provenance flow only)
+      # ADR PI1-yaa-0005: all publish paths use OIDC Trusted Publishing; zero stored tokens.
+      - name: "Check A: OIDC-only publish audit"
+        run: |
+          set -euo pipefail
+
+          REPOS=(
+            repos/yaagents
+            repos/yaagents-gateway
+            repos/yaagents-sdk-fastapi
+            repos/yaagents-sdk-go
+            repos/yaagents-client-python
+            repos/yaagents-client-ts
+            repos/yaagents-client-go
+            repos/yaagents-cli
+          )
+
+          echo "=== Check A: OIDC-only publish audit ==="
+          echo "Forbidden: REGISTRY_PASSWORD | PYPI_API_TOKEN | NPM_TOKEN | --password.*secrets"
+          echo "Allowed:   GITHUB_TOKEN, NODE_AUTH_TOKEN (OIDC npm provenance)"
+          echo "Ref:       ADR PI1-yaa-0005"
+          echo ""
+
+          TOTAL_HITS=0
+          for REPO in "${REPOS[@]}"; do
+            WORKFLOW_DIR="${REPO}/.github/workflows"
+            if [ ! -d "${WORKFLOW_DIR}" ]; then
+              echo "  [SKIP] ${REPO} — no .github/workflows/"
+              continue
+            fi
+            HITS=$(grep -rn \
+              -e 'REGISTRY_PASSWORD' \
+              -e 'PYPI_API_TOKEN' \
+              -e 'NPM_TOKEN' \
+              -e '\-\-password.*secrets' \
+              "${WORKFLOW_DIR}" 2>/dev/null || true)
+            if [ -n "${HITS}" ]; then
+              echo "  [FAIL] ${REPO}:"
+              echo "${HITS}" | sed 's/^/    /'
+              TOTAL_HITS=$(( TOTAL_HITS + 1 ))
+            else
+              echo "  [PASS] ${REPO}"
+            fi
+          done
+
+          echo ""
+          if [ "${TOTAL_HITS}" -gt 0 ]; then
+            echo "Check A FAIL: ${TOTAL_HITS} repo(s) carry forbidden long-lived token references."
+            echo "Replace with OIDC Trusted Publishing (ADR PI1-yaa-0005)."
+            exit 1
+          fi
+          echo "Check A PASS: 0 forbidden token patterns in .github/workflows/ across 8 repos."
+
+      # ── Check B — bin/yaagents-public-mirror-verify.sh scrub-verify ──────
+      # Verifies no internal AimpathyMinds planning artifacts leaked into
+      # any public-mirror working tree (ADR PI3-yaa-0003).
+      # Script lives at meta-repo bin/yaagents-public-mirror-verify.sh;
+      # checked out at repos/yaagents/bin/ by step 0.
+      - name: "Check B: Public mirror scrub verify"
+        run: |
+          set -euo pipefail
+
+          echo "=== Check B: Public mirror scrub verify ==="
+          echo "Script: bin/yaagents-public-mirror-verify.sh"
+          echo "Ref:    ADR PI3-yaa-0003 (portfolio scrub + orphan-baseline mirror)"
+          echo ""
+
+          chmod +x repos/yaagents/bin/yaagents-public-mirror-verify.sh
+          repos/yaagents/bin/yaagents-public-mirror-verify.sh \
+            repos/yaagents \
+            repos/yaagents-gateway \
+            repos/yaagents-sdk-fastapi \
+            repos/yaagents-sdk-go \
+            repos/yaagents-client-python \
+            repos/yaagents-client-ts \
+            repos/yaagents-client-go \
+            repos/yaagents-cli
+
+      # ── Check C — Apache-2.0 license-clean scan ───────────────────────────
+      # C-1 (FAIL): "Community License" must not appear in any v0.3.0 source file.
+      # C-2 (WARN): SPDX Apache-2.0 header coverage on Go files; non-blocking at v0.3.0.
+      # ADR PI2-yaa-0003: Community License superseded by Apache 2.0 from v0.2.0+.
+      - name: "Check C: Apache-2.0 license-clean scan"
+        run: |
+          set -euo pipefail
+
+          REPOS=(
+            repos/yaagents
+            repos/yaagents-gateway
+            repos/yaagents-sdk-fastapi
+            repos/yaagents-sdk-go
+            repos/yaagents-client-python
+            repos/yaagents-client-ts
+            repos/yaagents-client-go
+            repos/yaagents-cli
+          )
+
+          echo "=== Check C-1: Community License scan (FAIL on any hit) ==="
+          echo "Pattern: 'Community License'"
+          echo "Scope:   *.go *.py *.ts *.md *.toml"
+          echo "Ref:     ADR PI2-yaa-0003 (Apache 2.0 supersedes Community License)"
+          echo ""
+
+          TOTAL_HITS=0
+          for REPO in "${REPOS[@]}"; do
+            HITS=$(grep -rn "Community License" \
+              --include="*.go" --include="*.py" --include="*.ts" \
+              --include="*.md" --include="*.toml" \
+              "${REPO}" 2>/dev/null || true)
+            if [ -n "${HITS}" ]; then
+              echo "  [FAIL] ${REPO}:"
+              echo "${HITS}" | sed 's/^/    /'
+              TOTAL_HITS=$(( TOTAL_HITS + 1 ))
+            else
+              echo "  [PASS] ${REPO}"
+            fi
+          done
+
+          echo ""
+          if [ "${TOTAL_HITS}" -gt 0 ]; then
+            echo "Check C-1 FAIL: 'Community License' found in ${TOTAL_HITS} repo(s)."
+            echo "Replace with Apache-2.0 text per ADR PI2-yaa-0003."
+            exit 1
+          fi
+          echo "Check C-1 PASS: 0 'Community License' hits across all 8 repos."
+
+          echo ""
+          echo "=== Check C-2: SPDX Apache-2.0 header coverage on Go source files (WARN only) ==="
+          echo "Pattern: 'SPDX-License-Identifier: Apache-2.0'"
+          echo "Scope:   *.go files in sdk-go + gateway + client-go repos + meta-repo Go files"
+          echo "Severity: WARN — non-blocking at v0.3.0; progressive adoption per ADR PI2-yaa-0003"
+          echo ""
+
+          # Only repos with Go source carry the SPDX-header expectation
+          GO_REPOS=(
+            repos/yaagents
+            repos/yaagents-gateway
+            repos/yaagents-sdk-go
+            repos/yaagents-client-go
+          )
+
+          SPDX_WARN_COUNT=0
+          for REPO in "${GO_REPOS[@]}"; do
+            MISSING=$(find "${REPO}" -name "*.go" -not -path "*/.git/*" -print0 \
+              | xargs -0 --no-run-if-empty grep -L "SPDX-License-Identifier: Apache-2.0" \
+              2>/dev/null | head -5 || true)
+            if [ -n "${MISSING}" ]; then
+              FILE_COUNT=$(echo "${MISSING}" | wc -l)
+              SPDX_WARN_COUNT=$(( SPDX_WARN_COUNT + FILE_COUNT ))
+              echo "  [WARN] ${REPO} — ${FILE_COUNT} Go file(s) missing SPDX header (showing ≤5):"
+              echo "${MISSING}" | sed 's/^/    /'
+            else
+              echo "  [PASS] ${REPO} — all Go files carry SPDX header"
+            fi
+          done
+
+          echo ""
+          echo "Check C-2 SPDX summary: ${SPDX_WARN_COUNT} Go file(s) missing SPDX header (WARN — non-blocking)"
+          echo "Operator: acknowledge count and track toward 0 before v0.4.0."
+          echo "Check C complete."
