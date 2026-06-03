@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://yaagents.io/schemas/v0.2/approval-required.schema.json",
+  "title": "Approval Required",
+  "description": "Body for application/vnd.yaagents.approval-required+json (HTTP 412). The operation requires explicit human approval before execution.",
+  "type": "object",
+  "required": ["type", "code", "message", "approvalToken", "trace"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "approval_required",
+      "description": "Discriminator identifying this response type."
+    },
+    "code": {
+      "type": "string",
+      "const": "APPROVAL_REQUIRED",
+      "description": "Machine-readable error code."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable description of what requires approval."
+    },
+    "approvalToken": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque token the approver supplies to the continuation endpoint to proceed."
+    },
+    "trace": {
+      "$ref": "#/definitions/trace"
+    }
+  },
+  "definitions": {
+    "trace": {
+      "type": "object",
+      "description": "Correlation identifiers propagated from the inbound request.",
+      "required": ["correlationId", "requestId"],
+      "additionalProperties": false,
+      "properties": {
+        "correlationId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Cross-service correlation identifier (X-Correlation-ID header)."
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Per-request unique identifier (X-Request-ID header)."
+        }
+      }
+    }
+  }
+}

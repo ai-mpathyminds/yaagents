@@ -1,0 +1,10 @@
+{
+  "type": "clarification_required",
+  "code": "CLARIFICATION_REQUIRED",
+  "message": "Additional information is required.",
+  "requiredInputs": [],
+  "trace": {
+    "correlationId": "corr-004",
+    "requestId": "req-004"
+  }
+}

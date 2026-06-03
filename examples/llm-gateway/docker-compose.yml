@@ -1,0 +1,105 @@
+# yaagents Compose Demo — llm-gateway reference example
+# ports: 8122 (gateway, host) — portfolio band 8120-8129 (OQ-4 confirmed)
+# See: yaagents/docs/PI2-yaa/examples-llm-gateway.md (WI-2yaa.EX-LLM-2)
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
+# Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
+# instead (ADR PI1-yaa-0001 §3). The token-validator plugin runs with
+# test_mode: true — see plugins.yaml. DO NOT copy this configuration to a
+# production environment.
+#
+# NFR-refined by platform-engineer at A-4 (WI-2yaa.NFR-EX-LLM-1 + NFR-EX-LLM-2;
+# compose-linter clean, all checks PASS).
+
+name: yaagents-llm-gateway-demo
+
+services:
+  yaagents-gateway:
+    image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
+    ports:
+      - "8122:8120"      # host 8122 → container 8120 (OQ-4; portfolio band 8120-8129)
+    environment:
+      GATEWAY_PORT: "8120"
+      GATEWAY_ROUTES_FILE: /cfg/routes.yaml
+      GATEWAY_PLUGINS_FILE: /cfg/plugins.yaml
+      GATEWAY_JWT_SECRET: "demo-secret-not-for-production"   # DEMO ONLY — see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./routes.yaml:/cfg/routes.yaml:ro
+      - ./plugins.yaml:/cfg/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8120/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-llm-net
+    depends_on:
+      llm-api:
+        condition: service_healthy
+      mock-iam-api:
+        condition: service_healthy
+    restart: on-failure
+
+  llm-api:
+    build:
+      context: ./mock-llm-api
+      dockerfile: Dockerfile
+    expose:
+      - "8123"      # internal only — NOT exposed to host; gateway proxies /completions
+    environment:
+      PORT: "8123"
+      STREAM_CHUNKS: "5"
+      STREAM_DELAY_MS: "100"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8123/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+    volumes:
+      - mock-llm-data:/app/data   # named volume — no anonymous volumes (NFR-EX-LLM-1)
+    networks:
+      - yaagents-llm-net
+    restart: on-failure
+
+  mock-iam-api:
+    build:
+      context: ./mock-iam-api
+      dockerfile: Dockerfile
+    expose:
+      - "8122"      # internal only; tenant-injector plugin resolves principals here
+    environment:
+      PORT: "8122"
+      TENANTS_FILE: /app/mock-tenants.yaml
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8122/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+          cpus: "0.25"
+    networks:
+      - yaagents-llm-net
+    restart: on-failure
+
+volumes:
+  mock-llm-data:      # named — no anonymous volumes (NFR-EX-LLM-1)
+
+networks:
+  yaagents-llm-net:   # named network — intra-product isolation

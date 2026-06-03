@@ -1,0 +1,35 @@
+---
+/**
+ * SpecContent.astro
+ *
+ * Reads `spec/agentic-rest-profile.md` from the meta-repo root at build time,
+ * processes it through the remark → rehype pipeline (already installed as
+ * transitive deps of Astro), and renders the result as HTML.
+ *
+ * Single source of truth: editing the spec file is reflected on the next
+ * `pnpm build` — no copy/paste, no manual sync (ADR PI1-yaa-0002 §1).
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import remarkRehype from 'remark-rehype';
+import rehypeStringify from 'rehype-stringify';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+// docs/src/components/ → up 3 levels → yaagents/ (repo root)
+const specPath = join(__dirname, '../../../spec/agentic-rest-profile.md');
+const specText = readFileSync(specPath, 'utf-8');
+
+const result = await unified()
+  .use(remarkParse)
+  .use(remarkGfm)          // GFM tables, strikethrough, task lists
+  .use(remarkRehype)
+  .use(rehypeStringify)
+  .process(specText);
+
+const html = String(result);
+---
+<div class="spec-content" set:html={html} />

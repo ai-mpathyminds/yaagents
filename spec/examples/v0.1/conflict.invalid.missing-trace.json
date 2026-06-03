@@ -1,0 +1,6 @@
+{
+  "type": "conflict",
+  "code": "CAMPAIGN_LOCKED",
+  "message": "Campaign is currently locked.",
+  "conflictingResourceId": "camp-001"
+}

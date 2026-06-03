@@ -1,0 +1,8 @@
+{
+  "type": "validation_failed",
+  "code": "VALIDATION_FAILED",
+  "trace": {
+    "correlationId": "corr-104",
+    "requestId": "req-104"
+  }
+}

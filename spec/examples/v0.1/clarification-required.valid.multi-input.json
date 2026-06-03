@@ -1,0 +1,33 @@
+{
+  "type": "clarification_required",
+  "code": "CLARIFICATION_REQUIRED",
+  "message": "Multiple inputs are required before this optimization can proceed.",
+  "requiredInputs": [
+    {
+      "name": "successMetric",
+      "location": "body",
+      "type": "string",
+      "required": true,
+      "question": "Which success metric should be optimized?",
+      "allowedValues": ["ctr", "cpl", "conversion_rate", "lead_quality"]
+    },
+    {
+      "name": "targetAudience",
+      "location": "body",
+      "type": "string",
+      "required": false,
+      "question": "Which audience segment should this campaign target?"
+    },
+    {
+      "name": "maxBudgetDelta",
+      "location": "body",
+      "type": "integer",
+      "required": false,
+      "question": "What is the maximum allowed budget change in percent?"
+    }
+  ],
+  "trace": {
+    "correlationId": "corr-002",
+    "requestId": "req-002"
+  }
+}

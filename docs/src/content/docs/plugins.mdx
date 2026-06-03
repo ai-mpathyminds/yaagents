@@ -1,0 +1,148 @@
+---
+title: Plugin Authoring
+description: Build and register custom YAAgents gateway plugins using the Plugin interface.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+
+The YAAgents gateway is extended through a **plugin chain** — an ordered sequence of
+middleware that processes every inbound request and outbound response. Plugins implement
+the `Plugin` interface from `gateway/plugin/plugin.go` and are compiled into the
+operator binary at build time (no `plugin.Open`/`dlopen` — ADR PI2-yaa-0001 §3).
+
+## The Plugin interface
+
+```go
+// Package: github.com/ai-mpathyminds/yaagents-gateway/plugin
+type Plugin interface {
+    // Name returns the unique, stable identifier for this plugin.
+    // Used for YAML config block matching and structured log labels.
+    Name() string
+
+    // Init is called once at gateway startup with the plugin's YAML config block.
+    // A non-nil return causes the gateway to exit 1.
+    Init(cfg PluginConfig) error
+
+    // Handler wraps next to implement this plugin's middleware behaviour.
+    // Declaration order in gateway.yaml equals execution order.
+    Handler(next http.Handler) http.Handler
+
+    // Shutdown is called in reverse declaration order on SIGTERM.
+    // ctx carries the graceful-shutdown deadline.
+    Shutdown(ctx context.Context) error
+}
+```
+
+**Lifecycle:**
+
+1. **`init()` side-effect** — your package calls `plugin.Register(&MyPlugin{})` inside an
+   `init()` function. The binary author imports the package for its side effect; no
+   `plugin.Open` or dynamic loading occurs.
+2. **`Init(cfg)`** — called once at gateway startup. Validate config, open connections,
+   start background goroutines. Return non-nil to abort boot.
+3. **`Handler(next)`** — wraps the downstream handler. Called on every request in
+   declaration order.
+4. **`Shutdown(ctx)`** — called in reverse declaration order on `SIGTERM`. Close
+   connections, flush queues, stop goroutines. Respect the deadline.
+
+## Registering a plugin
+
+```go
+// mycompany/yaagents-plugin-ratelimit/plugin.go
+package ratelimit
+
+import (
+    "context"
+    "net/http"
+    "github.com/ai-mpathyminds/yaagents-gateway/plugin"
+)
+
+func init() {
+    plugin.Register(&RateLimitPlugin{})
+}
+
+type RateLimitPlugin struct {
+    maxRPM int
+}
+
+func (p *RateLimitPlugin) Name() string { return "rate-limit" }
+
+func (p *RateLimitPlugin) Init(cfg plugin.PluginConfig) error {
+    p.maxRPM = cfg.GetInt("max_rpm")
+    if p.maxRPM <= 0 {
+        p.maxRPM = 60 // default
+    }
+    return nil
+}
+
+func (p *RateLimitPlugin) Handler(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // ... rate limiting logic ...
+        next.ServeHTTP(w, r)
+    })
+}
+
+func (p *RateLimitPlugin) Shutdown(_ context.Context) error { return nil }
+```
+
+Import the plugin into the binary for its `init()` side effect:
+
+```go
+// gateway binary main.go (or a separate plugins.go in the same package)
+import (
+    _ "github.com/mycompany/yaagents-plugin-ratelimit"
+)
+```
+
+<Aside type="caution">
+  The gateway NEVER uses `plugin.Open()` or `dlopen`. Community plugins are statically
+  linked at build time — this is a deliberate security choice (ADR PI2-yaa-0001 §3).
+</Aside>
+
+## YAML configuration
+
+Plugins read their config from `gateway.yaml` under a `plugins:` sequence. Each entry
+maps `name:` to the plugin's `Name()` return value; remaining keys are passed to `Init`:
+
+```yaml
+plugins:
+  - name: token-validator          # always-on; must be first
+    jwks_url: https://auth.example.com/.well-known/jwks.json
+
+  - name: tenant-injector          # injects X-Tenant-ID from JWT claims
+
+  - name: license-check            # per-tenant feature entitlements
+    backend: ssm                   # or: static, http
+    ssm_prefix: /myorg/licenses/
+
+  - name: rate-limit               # community plugin example
+    max_rpm: 100
+```
+
+The `PluginConfig` accessor provides typed reads (`GetString`, `GetBool`, `GetInt`,
+`GetStringSlice`) with graceful zero-value fallback on missing keys.
+
+## Community plugin module path convention
+
+Standalone community plugins should use the module path:
+
+```
+github.com/<you>/yaagents-plugin-<name>
+```
+
+Examples: `github.com/myorg/yaagents-plugin-otel-tracing`,
+`github.com/myorg/yaagents-plugin-prompt-sanitize`.
+
+## Reference implementation
+
+First-party plugins live at
+[`gateway/internal/plugins/`](https://github.com/ai-mpathyminds/yaagents/tree/main/gateway/internal/plugins):
+
+| Plugin | Purpose |
+|--------|---------|
+| `token-validator` | Validates bearer tokens via JWKS or shared secret |
+| `tenant-injector` | Extracts `X-Tenant-ID` from JWT `sub`/`tenant_id` claim |
+| `license-check` | Per-tenant feature entitlement gate |
+| `cors` | CORS headers for browser clients |
+
+See the [Contributing guide](/contributing/) for the plugin contribution path and PR checklist.

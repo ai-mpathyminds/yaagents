@@ -1,0 +1,9 @@
+{
+  "type": "error",
+  "code": "",
+  "message": "An unexpected error occurred.",
+  "trace": {
+    "correlationId": "corr-405",
+    "requestId": "req-405"
+  }
+}

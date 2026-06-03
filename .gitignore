@@ -1,0 +1,27 @@
+# Claude Code local settings (machine-specific; not for version control)
+.claude/settings.local.json
+
+# Secret files — must never be committed (NFR-GW-1)
+# Runtime credentials are injected by the orchestrator, never stored in files.
+.env
+.env.*
+!.env.example
+*.secret
+
+
+# Go build artifacts
+*.exe
+coverage.out
+cov.out
+covgw.out
+
+# Python build artifacts (2026-05-24, pre-first-push hygiene)
+__pycache__/
+*.pyc
+*.pyo
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

@@ -1,0 +1,9 @@
+{
+  "type": "approval_required",
+  "code": "APPROVAL_REQUIRED",
+  "message": "Human approval is required.",
+  "trace": {
+    "correlationId": "corr-204",
+    "requestId": "req-204"
+  }
+}

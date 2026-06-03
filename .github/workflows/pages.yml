@@ -1,0 +1,103 @@
+# Deploy Pages site — Astro Starlight → GitHub Pages
+#
+# ADR PI3-yaa-0004: site hosted at ai-mpathyminds.github.io/yaagents/
+# (project-pages mode; astro base: '/yaagents').
+#
+# Jobs:
+#   build     — runs on push + PR (paths: docs/**)
+#   deploy    — runs on push/workflow_dispatch only (needs: build)
+#   lighthouse — runs on PRs only; budget gate ≥90 Perf+A11y (needs: build)
+#
+# Actions used:
+#   actions/checkout@v4
+#   pnpm/action-setup@v3
+#   actions/setup-node@v4
+#   actions/configure-pages@v5
+#   actions/upload-pages-artifact@v3
+#   actions/deploy-pages@v4
+#   actions/download-artifact@v4
+#   treosh/lighthouse-ci-action@v12
+
+name: Deploy Pages site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'spec/**'
+      - 'schemas/**'
+      - 'openapi/**'
+      - '.github/workflows/pages.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: docs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: docs
+
+      - name: Build site
+        run: pnpm build
+        working-directory: docs
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dist
+
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name != 'pull_request'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  lighthouse:
+    runs-on: ubuntu-24.04
+    needs: build
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./dist
+
+      - uses: treosh/lighthouse-ci-action@v12
+        with:
+          uploadArtifacts: true
+          budgetPath: .github/lighthouse-budget.json

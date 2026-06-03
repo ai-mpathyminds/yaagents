@@ -1,0 +1,52 @@
+# campaign-api-go — gateway plugin configuration (WI-3yaa.SG-6)
+# ADR: PI2-yaa-0001 (plugin chain), PI1-yaa-0001 (HS256 demo JWT).
+#
+# SECURITY NOTE: jwt_secret below is a DEMO-ONLY value.
+# Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
+# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+#
+# Plugin chain (declaration order = execution order):
+#   1. token-validator — HS256 test mode; validates demo JWT; missing token → 401
+#
+# Disabled (commented-out) plugins:
+#   tenant-injector — requires a mock-iam-api lookup service (not in this demo)
+#   license-check   — requires an external license server (not in this demo)
+
+plugins:
+  # ── 1. token-validator ────────────────────────────────────────────────────
+  # Always-on per ADR PI2-yaa-0001 §5 (gateway exits 1 if enabled: false).
+  # test_mode: true activates HS256 validation against jwt_secret below.
+  # Missing or invalid Authorization Bearer token → 401 (flow 5 demo trigger).
+  # For production: remove test_mode + jwt_secret; set GATEWAY_JWT_JWKS_URL.
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: "demo-secret-not-for-production"   # DEMO ONLY — see SECURITY NOTE
+
+  # ── Disabled plugins ──────────────────────────────────────────────────────
+
+  # tenant-injector: requires mock-iam-api service; disabled for this demo.
+  # When enabling, add mock-iam-api to docker-compose.yml and set lookup.url.
+  # - name: tenant-injector
+  #   enabled: true
+  #   principal:
+  #     claim: sub
+  #   lookup:
+  #     url: "http://mock-iam-api:8122/api/v1/principals/{principal}/tenant"
+  #     method: GET
+  #     timeout_ms: 500
+  #     response:
+  #       mode: single
+  #       tenant_id_field: tenant_id
+  #     cache:
+  #       ttl_seconds: 60
+  #       max_entries: 100
+  #   inject:
+  #     tenant_header: X-Tenant-ID
+
+  # license-check: requires an external license server; disabled for demo.
+  # - name: license-check
+  #   enabled: true
+  #   license_url: http://license-server:8099/verify
+  #   header: X-License-Token
+  #   cache_ttl_seconds: 300

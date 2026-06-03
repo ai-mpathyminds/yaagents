@@ -1,0 +1,71 @@
+# Campaign API — gateway route configuration (WI-1yaa.EX-2)
+# Maps PRD §6.1 paths to http://campaign-api:8121 (Compose service name).
+# ADR: PI1-yaa-0001 (HS256 demo JWT; tenantRequired; RBAC on optimizations).
+#
+# §6.2 demo flows enabled by this file:
+#   gateway-RBAC 403 — call POST /campaigns/{id}/optimizations with a token
+#                       that lacks the "campaign:optimize" role claim.
+#   tenant-missing    — call any route without X-Tenant-ID header.
+#   audit event       — any call to /optimizations emits a structured audit log.
+
+routes:
+  # ── POST /campaigns ──────────────────────────────────────────────────────────
+  - id: create-campaign
+    method: POST
+    path: /campaigns
+    target: http://campaign-api:8121
+    tenantRequired: true
+    audit: false
+
+  # ── GET /campaigns/{campaignId} ──────────────────────────────────────────────
+  - id: get-campaign
+    method: GET
+    path: /campaigns/{campaignId}
+    target: http://campaign-api:8121
+    tenantRequired: true
+    audit: false
+
+  # ── POST /campaigns/{campaignId}/optimizations ───────────────────────────────
+  # roles: non-empty → gateway enforces RBAC; token missing "campaign:optimize"
+  # → 403 application/vnd.yaagents.error+json (§6.2 gateway-RBAC demo flow).
+  # tenantRequired: true  → request without X-Tenant-ID header is rejected.
+  # audit: true           → every call emits a structured audit log entry.
+  - id: create-optimization
+    method: POST
+    path: /campaigns/{campaignId}/optimizations
+    target: http://campaign-api:8121
+    roles:
+      - campaign:optimize
+    tenantRequired: true
+    audit: true
+
+  # ── GET /campaigns/{campaignId}/optimizations/{opId} ─────────────────────────
+  - id: get-optimization
+    method: GET
+    path: /campaigns/{campaignId}/optimizations/{opId}
+    target: http://campaign-api:8121
+    roles:
+      - campaign:optimize
+    tenantRequired: true
+    audit: true
+
+  # ── POST /campaigns/{campaignId}/assets:generate ─────────────────────────────
+  # Colon-action suffix is part of the literal path segment per §6.1.
+  - id: generate-assets
+    method: POST
+    path: /campaigns/{campaignId}/assets:generate
+    target: http://campaign-api:8121
+    tenantRequired: true
+    audit: false
+
+  # ── POST /_demo/llm-down ─────────────────────── demo-only; NOT profile API ─
+  # Toggle the in-process LLM_DOWN flag on the campaign-api to drive flow 4
+  # (failed_dependency) through the gateway in the EX-4 acceptance gate.
+  # tenantRequired:false — no domain context needed for an internal toggle.
+  # NEVER add this route to production deployments.
+  - id: demo-llm-toggle
+    method: POST
+    path: /_demo/llm-down
+    target: http://campaign-api:8121
+    tenantRequired: false
+    audit: false

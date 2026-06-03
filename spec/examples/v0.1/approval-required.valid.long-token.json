@@ -1,0 +1,10 @@
+{
+  "type": "approval_required",
+  "code": "APPROVAL_REQUIRED",
+  "message": "This operation will pause all active ad groups. Explicit approval required before execution.",
+  "approvalToken": "apptok-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcCI6InBhdXNlLWFkLWdyb3VwcyIsImNhbXBhaWduSWQiOiJjYW1wLTAwMSJ9",
+  "trace": {
+    "correlationId": "corr-202",
+    "requestId": "req-202"
+  }
+}

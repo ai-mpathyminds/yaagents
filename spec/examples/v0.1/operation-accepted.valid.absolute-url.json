@@ -1,0 +1,11 @@
+{
+  "type": "operation_accepted",
+  "code": "OPERATION_ACCEPTED",
+  "message": "Your optimization request has been queued for processing.",
+  "operationId": "op-camp-002-20260517-002",
+  "statusUrl": "https://api.example.com/operations/op-camp-002-20260517-002/status",
+  "trace": {
+    "correlationId": "corr-502",
+    "requestId": "req-502"
+  }
+}

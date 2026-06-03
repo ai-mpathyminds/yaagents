@@ -1,0 +1,116 @@
+---
+title: Go Client (client-go)
+description: Idiomatic Go client for calling YAAgents-compliant agentic endpoints.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+**Module:** `github.com/ai-mpathyminds/yaagents-client-go`
+**Full API reference:** [github.com/ai-mpathyminds/yaagents-client-go](https://github.com/ai-mpathyminds/yaagents-client-go)
+
+## Install
+
+```bash
+go get github.com/ai-mpathyminds/yaagents-client-go@v0.3.0
+```
+
+## Minimal example — clarification handling
+
+```go
+package main
+
+import (
+    "context"
+    "errors"
+    "fmt"
+    "log"
+
+    client "github.com/ai-mpathyminds/yaagents-client-go"
+)
+
+func main() {
+    c := client.New(
+        "http://localhost:8120",
+        client.WithToken("demo-token"),
+        client.WithTenantID("tenant-001"),
+    )
+
+    ctx := context.Background()
+
+    // First call: missing required field
+    result, err := c.Campaigns().ByID("cmp-123").Optimizations().Create(ctx, map[string]any{})
+    if err != nil {
+        var clarErr *client.ClarificationRequiredError
+        if errors.As(err, &clarErr) {
+            fmt.Println("Missing fields:")
+            for _, inp := range clarErr.RequiredInputs {
+                fmt.Printf("  - %s (%s)\n", inp.Name, inp.Question)
+            }
+            // Re-submit with the required field
+            result, err = c.Campaigns().ByID("cmp-123").Optimizations().Create(ctx, map[string]any{
+                "goal": "ctr",
+            })
+        }
+        if err != nil {
+            log.Fatal(err)
+        }
+    }
+
+    if result.Err() == nil {
+        fmt.Printf("Created: %+v\n", result.Data())
+    }
+}
+```
+
+## Error-type switching
+
+```go
+var (
+    clarErr    *client.ClarificationRequiredError
+    validErr   *client.ValidationFailedError
+    forbidErr  *client.ForbiddenError
+)
+
+switch {
+case errors.As(err, &clarErr):
+    // prompt user for clarErr.RequiredInputs
+case errors.As(err, &validErr):
+    // surface validErr.Errors to caller
+case errors.As(err, &forbidErr):
+    // permission denied
+default:
+    log.Fatal(err)
+}
+```
+
+## Key API symbols
+
+| Symbol | Kind | Purpose |
+|--------|------|---------|
+| `client.New(baseURL, opts...)` | constructor | Root client |
+| `client.WithToken(token)` | option | Bearer token |
+| `client.WithTenantID(id)` | option | `X-Tenant-ID` header |
+| `c.Campaigns().ByID(id).Optimizations().Create(ctx, body)` | method | `POST /campaigns/{id}/optimizations` |
+| `(*AgenticResult).Err()` | method | Non-nil for every non-success outcome |
+| `(*AgenticResult).Data()` | method | Decoded response body on success |
+
+<Aside>
+  The module path changed at v0.3.0 from the monorepo sub-path
+  (`github.com/ai-mpathyminds/yaagents/client-go`) to its own module
+  (`github.com/ai-mpathyminds/yaagents-client-go`). Update your `go.mod` accordingly.
+</Aside>
+
+## Run against campaign-api-go
+
+```bash
+cd examples/campaign-api-go && docker compose up -d
+
+curl -X POST http://localhost:8120/campaigns/cmp-1/optimizations \
+  -H "Authorization: Bearer demo-token" \
+  -H "X-Tenant-ID: tenant-001" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "ctr"}'
+# → 201 application/json
+```
+
+See [Examples](/examples/) for the full five-flow walkthrough.

@@ -1,0 +1,86 @@
+name: Feature Request
+description: Suggest a new capability for the profile, gateway, SDK, or client.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to propose new capabilities for YAAgents.
+        Frame your request as a **use-case problem**, not a specific solution —
+        that helps maintainers evaluate it against the profile design principles.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of YAAgents does this feature affect?
+      multiple: true
+      options:
+        - Agentic REST Response Profile (spec / schemas)
+        - gateway (Go)
+        - sdk-fastapi (Python FastAPI server SDK)
+        - client-python (Python client)
+        - client-ts (TypeScript client)
+        - cli (yaagents-cli validator)
+        - OpenAPI components
+        - examples / Docker Compose demo
+        - documentation
+        - other / cross-cutting
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: |
+        Describe the agentic API pattern you are trying to build and what the current
+        profile or tooling forces you to do today. Be specific about the HTTP
+        interaction model.
+      placeholder: |
+        I am building a document-review API. The agent sometimes returns partial
+        results while still processing. Currently the profile has no standard way
+        to represent streaming progress with typed intermediate payloads — I have
+        to return 202 and poll, which loses intermediate context for the client.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution (optional)
+      description: |
+        If you have a concrete proposal — a new media type, a gateway config option,
+        a client API shape — describe it here. Include OpenAPI or HTTP semantics
+        references if relevant.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds have you tried? Why are they insufficient?
+
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Agent framework (if relevant)
+      description: Which agent runtime or framework does this relate to?
+      multiple: true
+      options:
+        - LangGraph
+        - Pydantic AI
+        - Semantic Kernel
+        - LangChain
+        - Direct LLM SDK (OpenAI / Anthropic / etc.)
+        - Custom / rules-based logic
+        - Not framework-specific
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: This is a feature request, not a bug report.
+          required: true

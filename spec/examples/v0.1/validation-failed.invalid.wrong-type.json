@@ -1,0 +1,9 @@
+{
+  "type": "clarification_required",
+  "code": "VALIDATION_FAILED",
+  "message": "The request inputs failed validation.",
+  "trace": {
+    "correlationId": "corr-103",
+    "requestId": "req-103"
+  }
+}

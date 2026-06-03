@@ -1,0 +1,10 @@
+{
+  "type": "operation_accepted",
+  "code": "OPERATION_ACCEPTED",
+  "message": "Operation accepted for asynchronous processing.",
+  "statusUrl": "/operations/op-001/status",
+  "trace": {
+    "correlationId": "corr-504",
+    "requestId": "req-504"
+  }
+}
