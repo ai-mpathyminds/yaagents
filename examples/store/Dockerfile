@@ -21,8 +21,9 @@ RUN pip install --no-cache-dir "fastapi>=0.115" "uvicorn[standard]>=0.32" "yaage
 COPY src/ src/
 COPY data/ data/
 
-# Install the local store package (no-deps — PyPI packages already installed above).
-RUN pip install --no-cache-dir -e . --no-deps
+# Expose src/ on PYTHONPATH so 'import store' resolves to src/store/
+# without requiring a package install step (keeps data path relative to source).
+ENV PYTHONPATH=/app/src
 
 # Non-root runtime user (security best practice).
 RUN adduser --disabled-password --gecos "" appuser && \
