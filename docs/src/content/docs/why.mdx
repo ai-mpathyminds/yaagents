@@ -1,6 +1,83 @@
 ---
 title: Why YAAgents
-description: Three reasons to use the Agentic REST Profile.
+description: Three reasons to adopt the Agentic REST Profile over ad-hoc agent APIs.
 ---
 
-Coming soon — see [WI-3yaa.PG-2](/quickstart/).
+import { Aside } from '@astrojs/starlight/components';
+
+Most "AI agent" integrations today expose a single `/agents/invoke` endpoint that accepts
+freeform JSON and returns freeform JSON. That works for demos — it breaks down the moment
+you need governance, observability, or multi-framework interoperability.
+
+YAAgents is a thin, normative REST profile that closes the gap with three properties:
+
+---
+
+## 1. Domain resources, not `/agents/invoke`
+
+Agentic operations are expressed as ordinary REST resource actions:
+
+```
+POST /campaigns/{id}/optimizations
+POST /contracts/{id}/reviews
+POST /inventory/{id}/reorder-suggestions
+```
+
+Standard HTTP semantics apply: `POST` creates a resource, `GET` retrieves it, `DELETE`
+cancels it. Clients, gateways, load balancers, and API management tools treat agentic
+endpoints exactly like any other REST endpoint — no special-casing required.
+
+<Aside type="tip">
+  Because routes are resource-scoped, authorization is resource-scoped too.
+  A token can be granted access to `POST /campaigns/*/optimizations` without touching
+  any other agentic surface.
+</Aside>
+
+---
+
+## 2. Typed responses for every agentic outcome
+
+The Profile defines **10 normative response types** — each with a fixed HTTP status,
+`Content-Type` header, and JSON body shape:
+
+| Type | Status | When |
+|---|---|---|
+| `clarification_required` | 400 | Agent needs more input before proceeding |
+| `validation_failed` | 422 | Inputs are structurally invalid |
+| `approval_required` | 202 | Human-in-the-loop approval gate |
+| `conflict` | 409 | Conflicting state prevents the operation |
+| `execution_timeout` | 504 | Agent exceeded its time budget |
+| `partial_result` | 206 | Streaming / incremental output available |
+| `resource_exhausted` | 429 | Rate limit or quota exceeded |
+| `policy_violation` | 403 | Governance rule rejected the request |
+| `delegated` | 303 | Redirected to a sub-agent or sub-resource |
+| *(success)* | 201 / 200 | Operation completed; result in body |
+
+Every response carries a discriminator field (`type`) so clients can `switch` cleanly —
+no guessing at status-code ranges or parsing error strings.
+
+<Aside>
+  See the full [Profile Spec](/profile/) for the normative status × Content-Type × body
+  shape table.
+</Aside>
+
+---
+
+## 3. Gateway-controlled access + framework-neutral runtime
+
+The YAAgents gateway enforces governance at the edge via a plugin chain:
+
+- **`token-validator`** — validates bearer tokens; rejects unauthenticated requests before
+  they reach any agent code.
+- **`tenant-injector`** — extracts and propagates `X-Tenant-ID`; scopes every agentic
+  operation to the correct tenant context automatically.
+- **`license-check`** — verifies feature entitlements per tenant; returns `policy_violation`
+  (403) for unlicensed operations at the gateway — agent code never runs.
+
+Because governance is a gateway concern, **any agent framework runs behind it**:
+LangChain, LlamaIndex, custom Python, Go, Node — all serve the same Profile-compliant
+responses through the same gateway plugin chain.
+
+<Aside type="tip">
+  See [Plugin Authoring](/plugins/) to build your own gateway plugin.
+</Aside>
