@@ -84,6 +84,39 @@ flowchart TD
 
 *yaagents governs the application&harr;agent boundary. Agent frameworks, A2A, AGNTCY, and MCP can still operate behind that boundary.*
 
+## Who uses yaagents?
+
+<CardGrid>
+  <Card title="🏗️ SaaS product teams" icon="rocket">
+    Add AI agents behind your existing product APIs without rebuilding your auth or tenant stack.
+
+    **Example:** `POST /campaigns/{id}/optimizations` — the agent proposes campaign changes; your existing RBAC decides who can trigger it.
+
+    [See the campaign-api example →](/yaagents/examples/campaign-api/)
+  </Card>
+  <Card title="🔒 Platform engineering teams" icon="setting">
+    Govern every agent API centrally — one gateway config for auth, tenancy, license quotas, and audit.
+
+    **Plugin chain:** `token-validator → tenant-injector → license-check → audit`
+
+    [Plugin interface reference →](/yaagents/reference/plugin-interface/)
+  </Card>
+  <Card title="📐 API architects" icon="document">
+    Keep your OpenAPI contracts and SDK discipline intact even as the implementation becomes agentic.
+
+    **Media types:** `application/vnd.yaagents.clarification+json`, `application/vnd.yaagents.agentic+json`
+
+    [Profile v0.3 spec →](/yaagents/reference/profile-v03/)
+  </Card>
+  <Card title="🤖 Multi-agent builders" icon="puzzle">
+    Hide internal agent collaboration behind stable REST APIs — downstream callers don't need to know you have 5 agents inside.
+
+    **v0.4 example:** `POST /claims/{id}/reviews` — one endpoint; arbitrarily complex agent graph behind it.
+
+    [yaagents vs A2A / AGNTCY / MCP →](/yaagents/explanation/yaagents-vs-a2a-agntcy-mcp/)
+  </Card>
+</CardGrid>
+
 ## What brings you here today?
 
 <CardGrid>

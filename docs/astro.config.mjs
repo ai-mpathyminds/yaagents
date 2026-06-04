@@ -39,6 +39,7 @@ export default defineConfig({
           label: '\u{1F393} Tutorials',
           items: [
             { label: 'Quick Start (10 min)', link: '/tutorials/quick-start/' },
+            { label: 'Build an Agentic REST API in 30 Min', link: '/tutorials/build-an-agentic-rest-api-in-30-min/' },
             { label: 'Your first Python agent', link: '/tutorials/python-first-agent/' },
             { label: 'Your first Go agent', link: '/tutorials/go-first-agent/' },
             { label: 'Calling agents from TypeScript', link: '/tutorials/ts-client/' },
@@ -97,6 +98,8 @@ export default defineConfig({
           items: [
             { label: 'Why yaagents?', link: '/explanation/why-yaagents/' },
             { label: 'yaagents vs A2A / AGNTCY / MCP / frameworks', link: '/explanation/yaagents-vs-a2a-agntcy-mcp/' },
+            { label: 'Agentic REST Patterns', link: '/explanation/agentic-rest-patterns/' },
+            { label: 'Production Agent API Checklist', link: '/explanation/production-agent-api-checklist/' },
             { label: 'Resource-oriented vs operation-oriented', link: '/explanation/resource-vs-operation/' },
             { label: 'The plugin model', link: '/explanation/plugin-model/' },
             { label: 'Default-plugin design principle', link: '/explanation/default-plugin-principle/' },
