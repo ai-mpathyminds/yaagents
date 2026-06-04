@@ -23,6 +23,35 @@ Typed responses. Gateway RBAC. OpenAPI contracts. Native clients. Framework-neut
 
 ---
 
+## How yaagents differs from A2A, AGNTCY, MCP, and frameworks
+
+yaagents is not an agent framework and not an agent-to-agent protocol.
+
+- **LangGraph, CrewAI, Semantic Kernel, LangChain** — build agent logic
+- **MCP** — connects agents to tools and context
+- **A2A, AGNTCY** — help agents discover, communicate, collaborate
+- **yaagents** — exposes agentic capabilities as governed REST APIs
+
+In short:
+
+```
+A2A / AGNTCY = agent ↔ agent
+MCP = agent ↔ tool/context
+yaagents = application ↔ agentic capability
+```
+
+A yaagents endpoint can internally use A2A, AGNTCY, MCP, LangGraph, CrewAI, direct LLM SDKs, or custom code. yaagents governs the external business API boundary.
+
+```mermaid
+flowchart TD
+    A["Enterprise Apps<br/>SaaS Products<br/>Workflows"] -->|"REST / OpenAPI / SDKs"| B["yaagents Gateway"]
+    B -->|"Auth + Tenant + Audit + License"| C["Agentic API Service"]
+    C --> D["Your Agent Implementation"]
+    D -.->|"Optionally"| E["A2A / AGNTCY / MCP / Tools / Frameworks"]
+```
+
+---
+
 ## Why YAAgents?
 
 Production systems are resource-oriented. Chat is a poor integration surface for business workflows. Agentic capabilities should live behind domain resource operations, not generic `/agents/invoke` endpoints.

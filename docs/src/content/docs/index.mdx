@@ -3,13 +3,9 @@ title: yaagents
 description: A source-available REST profile + gateway + SDKs that exposes agent operations as typed resource endpoints — with auth, tenancy, licensing, and audit handled by a pluggable gateway.
 template: splash
 hero:
-  title: Build agentic capabilities into ordinary REST APIs
+  title: Governed REST APIs for production AI agents
   tagline: |
-    Stop treating agents as a special endpoint. yaagents is a
-    source-available REST profile + gateway + SDKs that exposes
-    agent operations as typed resource operations like
-    POST /campaigns/{id}/optimizations — with auth, tenancy,
-    licensing, and audit handled by a pluggable gateway.
+    Build the agent however you want. Expose it like a normal business API — with OpenAPI contracts, typed outcomes, RBAC, tenant context, auditability, and SDKs.
   actions:
     - text: Get started in 10 min
       link: /yaagents/tutorials/quick-start/
@@ -18,7 +14,7 @@ hero:
     - text: Read the spec
       link: /yaagents/reference/profile-v03/
       variant: secondary
-    - text: GitHub
+    - text: Star on GitHub
       link: https://github.com/ai-mpathyminds/yaagents
       variant: minimal
       icon: external
@@ -41,6 +37,53 @@ import AgentCard from '../../components/aimpathy/AgentCard.tsx';
   ]}
 />
 
+## The pattern shift
+
+```http
+# Prototype pattern (don't do this)
+POST /agents/invoke
+
+# yaagents pattern
+POST /campaigns/{id}/optimizations
+POST /products/{id}/recommendations
+POST /tickets/{id}:triage
+```
+
+yaagents is the **application-to-agent boundary**. A2A and AGNTCY
+help agents talk to agents; MCP helps agents call tools; yaagents
+helps applications talk to agents through governed REST APIs.
+
+## What yaagents is
+
+- An **Agentic REST Profile** (resource-oriented operations with typed outcomes)
+- A **gateway pattern** for production agent APIs (auth + tenant + audit + license)
+- A **typed response contract** (`AgenticResponse.success/clarification_required/validation_failed/...`)
+- A **framework-neutral boundary** around agentic capabilities
+
+## What yaagents is NOT
+
+- Not an agent framework (use LangGraph / CrewAI / Semantic Kernel for that)
+- Not a chatbot framework
+- Not an A2A replacement (those help agents talk to agents)
+- Not an MCP replacement (that helps agents call tools)
+- Not a model provider abstraction (use Anthropic SDK / OpenAI SDK directly)
+- Not an autonomous multi-agent orchestration runtime
+
+## Where yaagents fits
+
+```mermaid
+flowchart TD
+    A["Enterprise Apps<br/>SaaS Products<br/>Workflows"] -->|"REST / OpenAPI / SDKs"| B["yaagents Gateway"]
+    B -->|"Auth + Tenant + Audit + License"| C["Agentic API Service"]
+    C --> D["Your Agent Implementation"]
+    D -.->|"Optionally"| E["A2A / AGNTCY / MCP / Tools / Frameworks"]
+
+    style B fill:#c89c2c,stroke:#8b6f1e,color:#fff
+    style C fill:#f2d365,stroke:#c89c2c
+```
+
+*yaagents governs the application&harr;agent boundary. Agent frameworks, A2A, AGNTCY, and MCP can still operate behind that boundary.*
+
 ## What brings you here today?
 
 <CardGrid>
@@ -60,7 +103,7 @@ import AgentCard from '../../components/aimpathy/AgentCard.tsx';
     [Open reference →](/yaagents/reference/profile-v03/)
   </Card>
   <Card title="🧠 Understand" icon="rocket">
-    **Why resource-oriented?** How the plugin model works. Comparison to LangChain / Anthropic / OpenAI.
+    **Why resource-oriented?** How the plugin model works. Where yaagents fits vs A2A, AGNTCY, MCP, and frameworks.
 
     [Read the explanations →](/yaagents/explanation/why-yaagents/)
   </Card>

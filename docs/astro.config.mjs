@@ -1,14 +1,15 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import react from '@astrojs/react';
+import mermaid from 'astro-mermaid';
 
 export default defineConfig({
   site: 'https://ai-mpathyminds.github.io',
   base: '/yaagents',
   integrations: [
     starlight({
-      title: 'yaagents',
-      description: 'A source-available REST profile + gateway + SDKs that exposes agent operations as typed resource endpoints.',
+      title: 'yaagents — Governed REST APIs for production AI agents',
+      description: 'Expose AI agents as typed, governed, OpenAPI-friendly REST APIs. Use any agent framework internally; keep RBAC, tenancy, audit, SDKs, and gateway discipline at the application boundary.',
       social: {
         github: 'https://github.com/ai-mpathyminds/yaagents',
       },
@@ -95,6 +96,7 @@ export default defineConfig({
           label: '\u{1F9E0} Explanation',
           items: [
             { label: 'Why yaagents?', link: '/explanation/why-yaagents/' },
+            { label: 'yaagents vs A2A / AGNTCY / MCP / frameworks', link: '/explanation/yaagents-vs-a2a-agntcy-mcp/' },
             { label: 'Resource-oriented vs operation-oriented', link: '/explanation/resource-vs-operation/' },
             { label: 'The plugin model', link: '/explanation/plugin-model/' },
             { label: 'Default-plugin design principle', link: '/explanation/default-plugin-principle/' },
@@ -122,5 +124,6 @@ export default defineConfig({
       ],
     }),
     react(),
+    mermaid(),
   ],
 });
