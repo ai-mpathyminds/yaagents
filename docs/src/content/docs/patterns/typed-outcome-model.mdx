@@ -1,0 +1,213 @@
+---
+title: Typed Outcome Model
+description: All 10 yaagents Profile v0.3 response types — grounded in the sdk-fastapi AgenticResponse source, with exact method signatures and when-to-use guidance.
+sidebar:
+  order: 3
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Typed Outcome Model <Badge text="Stable" variant="success" />
+
+The typed outcome model is the core discipline of the yaagents Agentic REST Profile.
+Instead of returning arbitrary JSON, every agentic endpoint returns one of **10 normative
+response types** — each with a fixed HTTP status code and a vendor `Content-Type` header
+the caller can dispatch on.
+
+This page tables all 10 types, grounded in the `sdk-fastapi` `AgenticResponse` source
+(`sdk-fastapi/src/yaagents_fastapi/response.py`), with exact method signatures.
+
+---
+
+## The 7 agentic outcome types
+
+These are the outcomes specific to agentic behavior — they encode domain-meaningful
+states that don't exist in plain CRUD APIs.
+
+| Type | HTTP | Content-Type | Meaning | `AgenticResponse` method |
+|------|------|-------------|---------|--------------------------|
+| **success** | 200 | `application/json` | Sync result ready; domain-defined body | `AgenticResponse.success(body, *, correlation_id, request_id)` |
+| **created** | 201 | `application/json` | Agent produced a new resource | `AgenticResponse.created(body, *, correlation_id, request_id)` |
+| **accepted** | 202 | `application/vnd.yaagents.operation+json` | Async — operation queued; poll `statusUrl` | `AgenticResponse.accepted(operation_id, status_url, *, message, correlation_id, request_id)` |
+| **clarification_required** | 400 | `application/vnd.yaagents.clarification+json` | Agent needs more input from the caller | `AgenticResponse.clarification_required(required_inputs, *, message, code, correlation_id, request_id)` |
+| **validation_failed** | 422 | `application/vnd.yaagents.validation-error+json` | Request inputs failed validation | `AgenticResponse.validation_failed(errors, *, message, code, correlation_id, request_id)` |
+| **approval_required** | 412 | `application/vnd.yaagents.approval-required+json` | High-consequence action needs human sign-off | `AgenticResponse.approval_required(approval_token, *, message, code, correlation_id, request_id)` |
+| **conflict** | 409 | `application/vnd.yaagents.conflict+json` | Requested action conflicts with existing state | `AgenticResponse.conflict(*, code, message, conflicting_resource_id, correlation_id, request_id)` |
+
+---
+
+## The 3 infrastructure outcome types
+
+These encode gateway-layer and service-layer failures — they reuse `application/vnd.yaagents.error+json`
+because they are infrastructure outcomes, not domain-specific agentic outcomes.
+
+| Type | HTTP | Content-Type | Meaning | `AgenticResponse` method |
+|------|------|-------------|---------|--------------------------|
+| **forbidden** | 403 | `application/vnd.yaagents.error+json` | RBAC / scope rejection | `AgenticResponse.forbidden(*, code, message, correlation_id, request_id)` |
+| **failed_dependency** | 424 | `application/vnd.yaagents.error+json` | Required upstream dependency failed | `AgenticResponse.failed_dependency(*, code, message, correlation_id, request_id)` |
+| **error** | 500 | `application/vnd.yaagents.error+json` | Unhandled internal error | `AgenticResponse.error(*, code, message, correlation_id, request_id)` |
+
+---
+
+## Exact method signatures (from `response.py`)
+
+```python
+# sdk-fastapi/src/yaagents_fastapi/response.py
+# Profile version: spec/VERSION = 0.3
+
+class AgenticResponse:
+    """Factory class for the 10 YAAgents Profile v0.3 response types."""
+
+    @classmethod
+    def success(
+        cls,
+        body: dict[str, Any],
+        *,
+        correlation_id: str = "",
+        request_id: str = "",
+    ) -> Response:
+        """200 application/json — spec §4 row 1 / §7.1."""
+
+    @classmethod
+    def created(
+        cls,
+        body: dict[str, Any],
+        *,
+        correlation_id: str = "",
+        request_id: str = "",
+    ) -> Response:
+        """201 application/json — spec §4 row 2 / §7.2."""
+
+    @classmethod
+    def accepted(
+        cls,
+        operation_id: str,
+        status_url: str,
+        *,
+        message: str = "Operation accepted for asynchronous processing.",
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """202 application/vnd.yaagents.operation+json — spec §4 row 3 / §7.3."""
+
+    @classmethod
+    def clarification_required(
+        cls,
+        required_inputs: list[dict[str, Any]],
+        *,
+        message: str = "Additional information is required.",
+        code: str = "CLARIFICATION_REQUIRED",
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """400 application/vnd.yaagents.clarification+json — spec §4 row 4."""
+
+    @classmethod
+    def validation_failed(
+        cls,
+        errors: list[dict[str, Any]],
+        *,
+        message: str = "The request inputs failed validation.",
+        code: str = "VALIDATION_FAILED",
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """422 application/vnd.yaagents.validation-error+json — spec §4 / §7.5."""
+
+    @classmethod
+    def approval_required(
+        cls,
+        approval_token: str,
+        *,
+        message: str,
+        code: str = "APPROVAL_REQUIRED",
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """412 application/vnd.yaagents.approval-required+json — spec §4 / §7.6."""
+
+    @classmethod
+    def forbidden(
+        cls,
+        *,
+        code: str,
+        message: str,
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """403 application/vnd.yaagents.error+json — spec §4 row 7 / §7.7."""
+
+    @classmethod
+    def conflict(
+        cls,
+        *,
+        code: str,
+        message: str,
+        conflicting_resource_id: str | None = None,
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """409 application/vnd.yaagents.conflict+json — spec §4 row 8 / §7.8."""
+
+    @classmethod
+    def failed_dependency(
+        cls,
+        *,
+        code: str,
+        message: str,
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """424 application/vnd.yaagents.error+json — spec §4 row 9 / §7.9."""
+
+    @classmethod
+    def error(
+        cls,
+        *,
+        code: str,
+        message: str,
+        correlation_id: str,
+        request_id: str,
+    ) -> Response:
+        """500 application/vnd.yaagents.error+json — spec §4 row 10 / §7.10."""
+```
+
+---
+
+## The `trace` block
+
+Every vendor-typed response body (`application/vnd.yaagents.*+json`) carries a mandatory
+`trace` block:
+
+```json
+{
+  "type": "clarification_required",
+  "code": "CLARIFICATION_REQUIRED",
+  "message": "Please specify a target audience segment.",
+  "requiredInputs": [...],
+  "trace": {
+    "correlationId": "corr-abc123",
+    "requestId": "req-xyz789"
+  }
+}
+```
+
+For `success` and `created` (`application/json`), the `trace` block is **recommended**
+and injected only when non-empty IDs are passed to the factory method.
+
+---
+
+## When to use `clarification_required` vs `validation_failed`
+
+| Scenario | Use |
+|----------|-----|
+| Input format is wrong (missing required field, wrong type) | `validation_failed` (422) |
+| Input format is correct but agent cannot proceed without more context | `clarification_required` (400) |
+| "campaign goal is ambiguous — do you mean CTR or revenue?" | `clarification_required` |
+| "budget field must be a positive number" | `validation_failed` |
+
+The campaign-api example demonstrates both patterns in `POST /campaigns/{id}/optimizations`.
+
+---
+
+[Read next → Typed Outcome Decision Flow →](/yaagents/patterns/typed-outcome-decision-flow/)

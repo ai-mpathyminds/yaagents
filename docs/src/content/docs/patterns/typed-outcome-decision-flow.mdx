@@ -1,0 +1,182 @@
+---
+title: Typed Outcome Decision Flow
+description: Decision tree for choosing the right AgenticResponse type in your agentic endpoint implementation.
+sidebar:
+  order: 4
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Typed Outcome Decision Flow <Badge text="Stable" variant="success" />
+
+Use this decision tree when implementing an `@agentic_operation` handler to choose
+the correct `AgenticResponse` factory method.
+
+---
+
+## Decision tree
+
+```mermaid
+flowchart TD
+    START([Handler runs]) --> Q1{Did the request\npass input validation?}
+
+    Q1 -->|No — format/type/constraint error| VFAIL["validation_failed\n422 · vnd.yaagents.validation-error+json\nReturn error list with field + message"]
+
+    Q1 -->|Yes| Q2{Does the agent\nhave enough context\nto proceed?}
+
+    Q2 -->|No — ambiguous or incomplete input| CLAR["clarification_required\n400 · vnd.yaagents.clarification+json\nReturn required_inputs list"]
+
+    Q2 -->|Yes| Q3{Does this action\nrequire human\napproval?}
+
+    Q3 -->|Yes — high-consequence, irreversible, or policy-mandated| APPR["approval_required\n412 · vnd.yaagents.approval-required+json\nReturn approval_token for client to re-submit"]
+
+    Q3 -->|No| Q4{Does the agent\nconflict with\nexisting state?}
+
+    Q4 -->|Yes — duplicate resource, stale precondition| CONF["conflict\n409 · vnd.yaagents.conflict+json\nReturn conflicting_resource_id if known"]
+
+    Q4 -->|No| Q5{Will the result\nbe ready within\nthis HTTP request?}
+
+    Q5 -->|No — computation too long, queued, or deferred| ACCP["accepted\n202 · vnd.yaagents.operation+json\nReturn operation_id + status_url"]
+
+    Q5 -->|Yes| Q6{Did the operation\nPRODUCE a new\nresource?}
+
+    Q6 -->|Yes — new row, new document, new record| CREA["created\n201 · application/json\nReturn the created resource body"]
+
+    Q6 -->|No — computed result, read-augmented response| SUCC["success\n200 · application/json\nReturn the result body"]
+
+    style VFAIL fill:#fdd,stroke:#c00
+    style CLAR fill:#fff3cd,stroke:#c89c2c
+    style APPR fill:#fff3cd,stroke:#c89c2c
+    style CONF fill:#fdd,stroke:#c00
+    style ACCP fill:#d4edda,stroke:#28a745
+    style CREA fill:#d4edda,stroke:#28a745
+    style SUCC fill:#d4edda,stroke:#28a745
+```
+
+---
+
+## Per-branch caption
+
+### `validation_failed` — 422
+
+Request inputs did not satisfy the schema or business constraints.
+Your agent did not run. Return a structured `errors` list:
+
+```python
+return AgenticResponse.validation_failed(
+    errors=[{"field": "budget", "message": "Must be a positive number"}],
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+### `clarification_required` — 400
+
+The request was well-formed but the agent cannot produce a useful result without
+additional context. The caller should collect the missing inputs and re-submit.
+
+```python
+return AgenticResponse.clarification_required(
+    required_inputs=[{
+        "name": "target_segment",
+        "description": "Which audience segment to optimize for: 'ctr' or 'revenue'",
+        "type": "string",
+        "enum": ["ctr", "revenue"],
+    }],
+    message="Please specify the optimization target.",
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+This is the canonical campaign-optimizer pattern — the agent knows the campaign but
+not the optimization objective.
+
+### `approval_required` — 412
+
+The action would have consequences that require a human gate (budget threshold exceeded,
+irreversible deletion, compliance-mandated sign-off). Return an `approval_token` the
+client can present when re-submitting after approval.
+
+```python
+return AgenticResponse.approval_required(
+    approval_token="approv-xyz789",
+    message="This optimization would reallocate >$10,000. Manager approval required.",
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+### `conflict` — 409
+
+The state the agent attempted to produce already exists, or a precondition was not met.
+
+```python
+return AgenticResponse.conflict(
+    code="OPTIMIZATION_ALREADY_EXISTS",
+    message="An active optimization for campaign c-42 is already running.",
+    conflicting_resource_id="opt-9900",
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+### `accepted` — 202
+
+The agent computation is long-running. Return an `operation_id` and a `status_url`
+for the caller to poll.
+
+```python
+return AgenticResponse.accepted(
+    operation_id=str(uuid.uuid4()),
+    status_url=f"/campaigns/{campaign_id}/optimizations/{op_id}/status",
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+*Polling endpoint is v0.4 scope. In v0.3, clients may use webhooks or polling
+on the resource URL.*
+
+### `created` — 201
+
+The agent produced a new persistent resource. Return the resource body.
+
+```python
+return AgenticResponse.created(
+    {"optimizationId": opt_id, "variants": [...], "estimatedImpact": 0.23},
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+### `success` — 200
+
+The agent returned a computed result without creating a new persistent resource.
+Common for read-augmented or recommendation endpoints.
+
+```python
+return AgenticResponse.success(
+    {"recommendations": [...], "confidence": 0.87},
+    correlation_id=ctx.correlation_id,
+    request_id=ctx.request_id,
+)
+```
+
+---
+
+## Infrastructure outcomes (not in the decision tree)
+
+The three infrastructure outcomes (`forbidden`, `failed_dependency`, `error`) are
+not in the decision tree because they originate from the gateway or from unhandled
+exceptions, not from deliberate domain logic. Best practice:
+
+- Let the SDK's error handler emit `error` (500) for uncaught exceptions
+- Return `forbidden` explicitly only if your service performs secondary RBAC beyond
+  the gateway's token validation
+- Use `failed_dependency` when a required downstream service (database, external API)
+  is unavailable and the operation cannot proceed or be queued
+
+---
+
+[Read next → Examples Overview →](/yaagents/examples/overview/)

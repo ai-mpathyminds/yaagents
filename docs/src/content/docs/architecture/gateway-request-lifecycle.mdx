@@ -1,0 +1,138 @@
+---
+title: Gateway Request Lifecycle
+description: Step-by-step walkthrough of how a request flows through the yaagents gateway — from client call to typed response.
+sidebar:
+  order: 2
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Gateway Request Lifecycle <Badge text="Stable" variant="success" />
+
+Every request to a yaagents-governed endpoint flows through the same eight steps.
+Understanding this lifecycle tells you exactly which layer handles which concern —
+and confirms that your agentic service code handles **only domain logic**.
+
+---
+
+## Sequence diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Client as Client / App
+    participant Gateway as yaagents Gateway
+    participant Plugins as Plugin Chain
+    participant Service as Agentic API Service
+    participant Audit as Audit / Metrics
+
+    Client->>Gateway: POST /campaigns/{id}/optimizations<br/>Authorization: Bearer <jwt><br/>X-Request-ID: req-uuid
+
+    Gateway->>Plugins: token-validator
+    Note right of Plugins: Validates RS256 JWT<br/>against JWKS endpoint.<br/>Rejects 401 if invalid.
+
+    Plugins->>Plugins: tenant-injector
+    Note right of Plugins: Extracts tenant_id claim.<br/>Injects X-Tenant-ID header.
+
+    Plugins->>Plugins: license-check
+    Note right of Plugins: Checks tenant quota.<br/>Rejects 429 if exceeded.
+
+    Plugins->>Gateway: All plugins passed — upstream OK
+
+    Gateway->>Service: Proxied request<br/>+ X-Tenant-ID: tenant-001<br/>+ X-Correlation-ID: <generated>
+
+    Service->>Service: @agentic_operation handler runs<br/>(your domain + agent logic)
+
+    Service->>Gateway: AgenticResponse.created(body,<br/>  correlation_id=..., request_id=...)
+
+    Gateway->>Audit: Emit request log<br/>+ Prometheus metrics<br/>(otel-audit plugin — stub v0.3)
+
+    Gateway->>Client: HTTP 201 Created<br/>Content-Type: application/json<br/>X-YAAgents-Profile: v0.3
+```
+
+---
+
+## Per-step commentary
+
+### Step 1 — Client sends request
+
+The client sends a standard HTTP request. The only yaagents-specific requirement:
+
+- `Authorization: Bearer <jwt>` — RS256 signed token (HS256 accepted in dev mode)
+- `X-Request-ID` — optional; client-generated UUID for correlation
+
+The URL is a **resource URL** (`/campaigns/{id}/optimizations`), not a generic
+`/agents/invoke`. This is the profile's core discipline.
+
+### Steps 2–4 — Plugin chain
+
+Three active plugins run in order for every v0.3 request:
+
+1. **`token-validator`** — fetches JWKS from the configured issuer, validates RS256
+   signature and expiry. Returns `401 Unauthorized` with a `application/vnd.yaagents.error+json`
+   body if invalid. Your service code never runs.
+
+2. **`tenant-injector`** — extracts the `tenant_id` claim from the validated JWT.
+   Injects `X-Tenant-ID: <value>` into the upstream request headers. Your service
+   reads `context.tenant_id` via the SDK — never parses the raw JWT.
+
+3. **`license-check`** — queries the tenant license table. Returns `429 Too Many Requests`
+   if the tenant's quota is exhausted. Your service never runs.
+
+Two additional plugins (`prompt-sanitize`, `otel-audit`) are in the pipeline as stubs
+in v0.3 — they pass every request through unchanged; their reference implementations
+ship in v0.4.
+
+### Step 5 — Gateway proxies upstream
+
+After all plugins pass, the gateway forwards the request to the upstream service URL
+configured in `gateway.yaml`. It adds:
+
+- `X-Tenant-ID: <tenant_id>` (from tenant-injector)
+- `X-Correlation-ID: <generated>` — a fresh UUID per request for audit correlation
+
+### Steps 6–7 — Agentic service handles request
+
+Your service code runs. The `@agentic_operation` decorator (Python) or `AgenticHandler`
+interface (Go) receives an `AgenticContext` with:
+
+- `tenant_id` — from the injected header
+- `actor_id` — extracted from the JWT `sub` claim
+- `correlation_id` / `request_id` — for the response trace block
+
+Your handler runs domain logic and returns one of the 10 typed `AgenticResponse` factory
+calls. The framework never returns bare dicts or arbitrary JSON.
+
+### Step 8 — Audit emission
+
+The gateway's `otel-audit` plugin stub records the request metadata (tenant, route,
+outcome type, latency). In v0.3, this is a no-op stub. In v0.4, it emits OTEL spans
+to your configured collector.
+
+The gateway also increments Prometheus counters at `/metrics` for every request,
+regardless of the otel-audit state.
+
+### Step 9 (implicit) — Response flows back
+
+The typed response from your service flows back through the gateway unchanged. The gateway:
+
+- Adds `X-YAAgents-Profile: v0.3` to the response headers
+- Does **not** modify the response body
+
+The client receives a typed HTTP response with a vendor `Content-Type` it can dispatch on.
+
+---
+
+## What happens on plugin rejection
+
+If any plugin rejects the request, the chain short-circuits:
+
+- The gateway returns the plugin's rejection response directly to the client
+- **The agentic service never receives the request**
+- The rejection response is also a typed `application/vnd.yaagents.error+json` body
+
+This means your service code only runs on authenticated, authorized, licensed requests.
+
+---
+
+[Read next → Plugin Pipeline →](/yaagents/architecture/plugin-pipeline/)

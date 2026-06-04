@@ -16,50 +16,70 @@ export default defineConfig({
       customCss: ['./src/styles/aimpathy-tokens.css'],
       sidebar: [
         {
-          label: '\u{1F4E6} Examples',
+          label: 'Start Here',
           items: [
+            { label: 'Overview', link: '/start-here/overview/' },
+            { label: 'Why yaagents?', link: '/explanation/why-yaagents/' },
+            { label: 'Where yaagents fits', link: '/start-here/where-yaagents-fits/' },
+            { label: 'yaagents vs A2A / AGNTCY / MCP / frameworks', link: '/explanation/yaagents-vs-a2a-agntcy-mcp/' },
+            { label: 'Production Agent API Checklist', link: '/explanation/production-agent-api-checklist/' },
+          ],
+        },
+        {
+          label: 'Tutorials',
+          items: [
+            { label: 'Quick Start (10 min)', link: '/tutorials/quick-start/' },
+            { label: 'Build an Agentic REST API in 30 Min', link: '/tutorials/build-an-agentic-rest-api-in-30-min/' },
+          ],
+        },
+        {
+          label: 'Patterns',
+          items: [
+            { label: 'Agentic REST endpoint design', link: '/explanation/agentic-rest-patterns/' },
+            { label: 'Resource vs operation', link: '/explanation/resource-vs-operation/' },
+            { label: 'Typed outcome model', link: '/patterns/typed-outcome-model/' },
+            { label: 'Typed outcome decision flow', link: '/patterns/typed-outcome-decision-flow/' },
+          ],
+        },
+        {
+          label: 'Architecture',
+          items: [
+            { label: 'Reference architecture', link: '/architecture/reference-architecture/' },
+            { label: 'Gateway request lifecycle', link: '/architecture/gateway-request-lifecycle/' },
+            { label: 'Plugin pipeline', link: '/architecture/plugin-pipeline/' },
+          ],
+        },
+        {
+          label: 'Examples',
+          items: [
+            { label: 'Examples overview', link: '/examples/overview/' },
             {
-              label: 'Recommended',
+              label: 'store',
               items: [
                 { label: 'store (Python)', link: '/examples/store/' },
                 { label: 'store-go (Go)', link: '/examples/store-go/' },
               ],
             },
             {
-              label: 'Alternative',
+              label: 'campaign-optimizer',
               items: [
                 { label: 'campaign-api (Python)', link: '/examples/campaign-api/' },
                 { label: 'campaign-api-go (Go)', link: '/examples/campaign-api-go/' },
-                { label: 'llm-gateway', link: '/examples/llm-gateway/' },
               ],
             },
+            { label: 'LLM gateway', link: '/examples/llm-gateway/' },
           ],
         },
         {
-          label: '\u{1F393} Tutorials',
+          label: 'How-to Guides',
           items: [
-            { label: 'Quick Start (10 min)', link: '/tutorials/quick-start/' },
-            { label: 'Build an Agentic REST API in 30 Min', link: '/tutorials/build-an-agentic-rest-api-in-30-min/' },
-            { label: 'Your first Python agent', link: '/tutorials/python-first-agent/' },
-            { label: 'Your first Go agent', link: '/tutorials/go-first-agent/' },
-            { label: 'Calling agents from TypeScript', link: '/tutorials/ts-client/' },
+            { label: 'Planned guides', link: '/how-to/planned-guides/' },
           ],
         },
         {
-          label: '\u{1F3AF} How-to Guides',
+          label: 'Reference',
           items: [
-            { label: 'Configure tenant injection', link: '/how-to/tenant-injection/' },
-            { label: 'Write a custom JWT validator plugin', link: '/how-to/custom-jwt-validator/' },
-            { label: 'Wire OTEL audit emission', link: '/how-to/otel-audit/' },
-            { label: 'Add a community plugin', link: '/how-to/add-community-plugin/' },
-            { label: 'Deploy on Kubernetes', link: '/how-to/deploy-k8s/' },
-            { label: 'Replace a first-party plugin', link: '/how-to/replace-plugin/' },
-            { label: 'Run the LLM Gateway example', link: '/how-to/llm-gateway-example/' },
-          ],
-        },
-        {
-          label: '\u{1F4DA} Reference',
-          items: [
+            { label: 'Reference overview', link: '/reference/overview/' },
             { label: 'Profile v0.3 (full spec)', link: '/reference/profile-v03/' },
             { label: 'Gateway config', link: '/reference/gateway-config/' },
             { label: 'Plugin interface', link: '/reference/plugin-interface/' },
@@ -94,34 +114,13 @@ export default defineConfig({
           ],
         },
         {
-          label: '\u{1F9E0} Explanation',
-          items: [
-            { label: 'Why yaagents?', link: '/explanation/why-yaagents/' },
-            { label: 'yaagents vs A2A / AGNTCY / MCP / frameworks', link: '/explanation/yaagents-vs-a2a-agntcy-mcp/' },
-            { label: 'Agentic REST Patterns', link: '/explanation/agentic-rest-patterns/' },
-            { label: 'Production Agent API Checklist', link: '/explanation/production-agent-api-checklist/' },
-            { label: 'Resource-oriented vs operation-oriented', link: '/explanation/resource-vs-operation/' },
-            { label: 'The plugin model', link: '/explanation/plugin-model/' },
-            { label: 'Default-plugin design principle', link: '/explanation/default-plugin-principle/' },
-            { label: 'Versioning & profile evolution', link: '/explanation/versioning/' },
-            { label: 'Comparison: vs LangChain / Anthropic / OpenAI', link: '/explanation/comparison/' },
-          ],
-        },
-        {
           label: 'Community',
           items: [
             { label: 'GitHub Discussions', link: 'https://github.com/ai-mpathyminds/yaagents/discussions' },
             { label: 'Contributing', link: '/community/contributing/' },
             { label: 'Code of Conduct', link: '/community/code-of-conduct/' },
             { label: 'Security', link: '/community/security/' },
-          ],
-        },
-        {
-          label: 'About',
-          items: [
             { label: 'Roadmap', link: '/about/roadmap/' },
-            { label: 'Releases', link: '/about/releases/' },
-            { label: 'Changelog', link: '/about/changelog/' },
           ],
         },
       ],

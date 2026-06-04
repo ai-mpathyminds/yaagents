@@ -1,0 +1,84 @@
+---
+title: Overview
+description: What yaagents is, what ships today, and where to start.
+sidebar:
+  order: 1
+---
+
+import { Badge } from '@astrojs/starlight/components';
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Overview <Badge text="Stable" variant="success" />
+
+yaagents is an **Agentic REST Profile** — a specification, a gateway, and a set of SDKs that
+expose AI agents as typed, governed REST APIs.
+
+The core idea in one sentence: instead of `POST /agents/invoke`, ship
+`POST /campaigns/{id}/optimizations` — with typed outcomes, RBAC, tenant context,
+and audit handled once at the gateway, not in every service.
+
+---
+
+## What is actually shipped in v0.3
+
+| Component | Status | What it does |
+|-----------|--------|--------------|
+| **Agentic REST Profile v0.3** | <Badge text="Stable" variant="success" /> | Normative spec: 10 typed outcomes, vendor media types, `X-YAAgents-Profile` header, `trace` block |
+| **yaagents-gateway** | <Badge text="Stable" variant="success" /> | Go binary; reverse-proxy with plugin pipeline; 5 first-party plugins |
+| **sdk-fastapi** | <Badge text="Stable" variant="success" /> | Python: `@agentic_operation` decorator, `AgenticResponse` factory, `AgenticContext` |
+| **sdk-go** | <Badge text="Stable" variant="success" /> | Go: `AgenticHandler`, `AgenticResponse`, middleware helpers |
+| **client-python** | <Badge text="Stable" variant="success" /> | Python caller SDK; typed response parsing |
+| **@aimpathyminds/yaagents-client** | <Badge text="Stable" variant="success" /> | TypeScript caller SDK |
+| **client-go** | <Badge text="Stable" variant="success" /> | Go caller SDK |
+| **yaagents-cli** | <Badge text="Stable" variant="success" /> | `yaagents validate`, `yaagents gateway run`, `yaagents scaffold` |
+| **store example** | <Badge text="Stable" variant="success" /> | Python + Go: `POST /products/{id}/recommendations` — lowest-friction clone-and-run |
+| **campaign-api example** | <Badge text="Stable" variant="success" /> | Python + Go: `POST /campaigns/{id}/optimizations` — full Profile demo |
+| **prompt-sanitize plugin** | <Badge text="Preview" variant="caution" /> | Stub; interface stable; reference impl v0.4 |
+| **otel-audit plugin** | <Badge text="Preview" variant="caution" /> | Stub; interface stable; reference impl v0.4 |
+| **Async polling runtime** | <Badge text="Planned" variant="note" /> | `202 Accepted` status polling endpoint — v0.4 |
+
+---
+
+## What yaagents is NOT
+
+- Not an agent framework — bring LangGraph, CrewAI, Semantic Kernel, or plain Anthropic SDK
+- Not a chatbot infrastructure — yaagents governs REST API boundaries, not chat UIs
+- Not an A2A replacement — A2A / AGNTCY govern agent-to-agent calls; yaagents governs application-to-agent calls
+- Not an MCP replacement — MCP connects agents to tools and context; yaagents connects apps to agent capabilities
+- Not a model provider abstraction — use the Anthropic SDK / OpenAI SDK for that
+
+---
+
+## Choose your path
+
+<CardGrid>
+  <Card title="⚡ I want to run something now" icon="rocket">
+    Clone the store example and call a live agentic endpoint in under 10 minutes.
+
+    [Quick Start →](/yaagents/tutorials/quick-start/)
+  </Card>
+  <Card title="🏗️ I want to build my own service" icon="setting">
+    Follow the 30-minute tutorial: scaffold a ticket-triage agentic service from scratch.
+
+    [Build in 30 min →](/yaagents/tutorials/build-an-agentic-rest-api-in-30-min/)
+  </Card>
+  <Card title="🧠 I want to understand the design" icon="open-book">
+    Why resource-oriented? Why typed outcomes? Where does yaagents fit vs A2A / MCP?
+
+    [Why yaagents? →](/yaagents/start-here/why-yaagents/) &nbsp;|&nbsp; [Where it fits →](/yaagents/start-here/where-yaagents-fits/)
+  </Card>
+  <Card title="📐 I want the full spec" icon="document">
+    Normative Profile v0.3 — all 10 typed outcomes, media types, headers, trace block.
+
+    [Profile v0.3 →](/yaagents/reference/profile-v03/)
+  </Card>
+  <Card title="🔒 I'm adopting this in production" icon="puzzle">
+    Run the Production Agent API Checklist before you ship.
+
+    [Production Checklist →](/yaagents/start-here/production-agent-api-checklist/)
+  </Card>
+</CardGrid>
+
+---
+
+[Read next → Where yaagents fits →](/yaagents/start-here/where-yaagents-fits/)

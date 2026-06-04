@@ -118,48 +118,30 @@ flowchart TD
 </CardGrid>
 
 
-## What brings you here today?
+## Where to start
 
 <CardGrid>
-  <Card title="🎓 Learn" icon="open-book">
-    **Tutorials.** Get from zero to a working agent service in 10 minutes.
+  <Card title="🧠 Understand the pattern" icon="open-book">
+    Why resource-oriented? Where yaagents fits vs A2A, AGNTCY, MCP, and frameworks.
 
-    [Start the tutorial →](/yaagents/tutorials/quick-start/)
+    [Why yaagents? →](/yaagents/explanation/why-yaagents/)
   </Card>
-  <Card title="🎯 Solve" icon="puzzle">
-    **How-to Guides.** Add OAuth. Deploy to K8s. Wire OTEL. Seven worked recipes.
+  <Card title="⚡ Run the first example" icon="rocket">
+    Clone the store example. One curl to a live agentic endpoint in under 10 minutes.
 
-    [Browse how-tos →](/yaagents/how-to/tenant-injection/)
+    [Quick Start →](/yaagents/tutorials/quick-start/)
   </Card>
-  <Card title="📚 Reference" icon="document">
-    **Profile spec, gateway config, plugin API, all five SDKs, OpenAPI, JSON Schemas.**
+  <Card title="🏗️ Build your own endpoint" icon="setting">
+    Build a `POST /tickets/{id}:triage` service from scratch in 30 minutes.
 
-    [Open reference →](/yaagents/reference/profile-v03/)
+    [30-minute tutorial →](/yaagents/tutorials/build-an-agentic-rest-api-in-30-min/)
   </Card>
-  <Card title="🧠 Understand" icon="rocket">
-    **Why resource-oriented?** How the plugin model works. Where yaagents fits vs A2A, AGNTCY, MCP, and frameworks.
+  <Card title="🚀 Adopt in production" icon="document">
+    Run the Production Agent API Checklist before you ship.
 
-    [Read the explanations →](/yaagents/explanation/why-yaagents/)
+    [Production Checklist →](/yaagents/explanation/production-agent-api-checklist/)
   </Card>
 </CardGrid>
-
-## Try it in 30 seconds
-
-```bash
-# Run the gateway
-docker run -p 8120:8080 ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
-
-# Build an agent service (Python)
-pip install yaagents-fastapi
-
-# OR (Go)
-go get github.com/ai-mpathyminds/yaagents-sdk-go
-
-# Call from your app
-pip install yaagents-client
-```
-
-[Continue with Quick Start →](/yaagents/tutorials/quick-start/)
 
 ---
 

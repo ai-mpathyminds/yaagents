@@ -1,0 +1,69 @@
+---
+title: Examples Overview
+description: Pick the right yaagents example for your goal — recommended starting order and what each example demonstrates.
+sidebar:
+  order: 1
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Examples Overview <Badge text="Stable" variant="success" />
+
+Four working examples ship with yaagents v0.3. Each is a complete, runnable service
+that demonstrates the Agentic REST Profile against a different domain.
+
+---
+
+## Pick by goal
+
+| Goal | Start with | Why |
+|------|-----------|-----|
+| **Run something in under 10 minutes** | [store (Python)](/yaagents/examples/store/) | Simplest endpoint: `POST /products/{id}/recommendations`. Clone + docker compose + one curl. No framework config needed. |
+| **See the full Profile in action** | [campaign-api (Python)](/yaagents/examples/campaign-api/) | Demonstrates `clarification_required`, `accepted`, `validation_failed`, and `created` in a single endpoint. Featured in tutorials and the production checklist. |
+| **Build in Go** | [store-go](/yaagents/examples/store-go/) | Same store domain as the Python example; uses `sdk-go` + `AgenticHandler` interface. Good Go starting point. |
+| **See Go + full Profile** | [campaign-api-go](/yaagents/examples/campaign-api-go/) | Go port of campaign-api; full outcome coverage with `sdk-go`. |
+| **Understand LLM gateway metering** | [llm-gateway](/yaagents/examples/llm-gateway/) | Token metering + `license-check` plugin; does not use `@agentic_operation`. Different shape. |
+
+---
+
+## Recommended starting order
+
+1. **[store (Python)](/yaagents/examples/store/)** — lowest friction. Clone, run, call.
+   Confirms your environment works and shows the basic pattern.
+
+2. **[campaign-api (Python)](/yaagents/examples/campaign-api/)** — the canonical example.
+   `POST /campaigns/{id}/optimizations` demonstrates the full Profile:
+   clarification loop, async acceptance, typed outcomes. This is the example
+   referenced in the [Why yaagents?](/yaagents/start-here/why-yaagents/) page and
+   the [Production Checklist](/yaagents/start-here/production-agent-api-checklist/).
+
+3. **[store-go](/yaagents/examples/store-go/)** or **[campaign-api-go](/yaagents/examples/campaign-api-go/)** —
+   if you're building in Go, read the corresponding Go example after step 1 or 2.
+
+4. **[llm-gateway](/yaagents/examples/llm-gateway/)** — only if you're specifically
+   building an LLM-metering proxy. Different use case from the main Profile pattern.
+
+---
+
+## What each example contains
+
+| File | Purpose |
+|------|---------|
+| `app.py` / `main.go` | Service entrypoint; `@agentic_operation` / `AgenticHandler` |
+| `docker-compose.yml` | Gateway + service; runnable with `docker compose up` |
+| `gateway.yaml` | Plugin pipeline config |
+| `README.md` | Run instructions + expected curl output |
+| `tests/` | Conformance tests against the live gateway |
+
+---
+
+## About the ticket-triage example
+
+The [30-minute tutorial](/yaagents/tutorials/build-an-agentic-rest-api-in-30-min/)
+builds a `POST /tickets/{id}:triage` service from scratch. That service is also
+available as a named example for reference, but it is the **subject of the tutorial**
+rather than a clone-and-run demo — follow the tutorial to build it step by step.
+
+---
+
+[Start with the store example →](/yaagents/examples/store/)

@@ -1,0 +1,55 @@
+---
+title: Planned Guides
+description: How-to guides coming in yaagents v0.4 — the full list with status badges and Discussion CTAs.
+sidebar:
+  order: 1
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Planned How-to Guides
+
+The how-to guides below are on the v0.4 roadmap. Each covers a concrete task with
+a worked example. Individual stub pages are available via the links below — subscribe
+to [GitHub Discussions](https://github.com/ai-mpathyminds/yaagents/discussions) to
+get notified when they ship.
+
+---
+
+## Guides in progress
+
+| Guide | Status | Covers |
+|-------|--------|--------|
+| [Configure tenant injection](/yaagents/how-to/tenant-injection/) | <Badge text="Planned" variant="note" /> | `X-Tenant-ID` claim extraction, multi-tenant config, per-tenant routing |
+| [Write a custom JWT validator plugin](/yaagents/how-to/custom-jwt-validator/) | <Badge text="Planned" variant="note" /> | Implementing the `Plugin` interface; JWKS rotation; dev-mode bypass |
+| [Wire OTEL audit emission](/yaagents/how-to/otel-audit/) | <Badge text="Planned" variant="note" /> | Connecting `otel-audit` plugin to an OTLP collector; span attributes |
+| [Add a community plugin](/yaagents/how-to/add-community-plugin/) | <Badge text="Planned" variant="note" /> | Plugin registry, `gateway.yaml` config, plugin ordering |
+| [Deploy on Kubernetes](/yaagents/how-to/deploy-k8s/) | <Badge text="Planned" variant="note" /> | Helm chart, liveness/readiness probes, horizontal scaling |
+| [Replace a first-party plugin](/yaagents/how-to/replace-plugin/) | <Badge text="Planned" variant="note" /> | Swapping `token-validator` or `license-check` with a custom implementation |
+| [Run the LLM Gateway example](/yaagents/how-to/llm-gateway-example/) | <Badge text="Planned" variant="note" /> | End-to-end: LLM gateway behind yaagents with token metering |
+
+---
+
+## Want a guide sooner?
+
+Vote on which guide to prioritize, or contribute a draft:
+
+- [GitHub Discussions — how-to guide requests](https://github.com/ai-mpathyminds/yaagents/discussions)
+- [Good First Issues — documentation](https://github.com/ai-mpathyminds/yaagents/blob/main/GOOD_FIRST_ISSUES.md)
+
+The fastest path to getting a guide shipped is a community contribution.
+The [Contributing guide](/yaagents/community/contributing/) covers the authoring process.
+
+---
+
+## Already working?
+
+While the full how-to guides are in progress, the reference docs cover the same
+topics at the API level:
+
+- [Plugin interface →](/yaagents/reference/plugin-interface/) — the Go interface + context conventions
+- [Gateway config →](/yaagents/reference/gateway-config/) — full `gateway.yaml` schema
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — normative reference for typed outcomes
+
+The [campaign-api example](/yaagents/examples/campaign-api/) also demonstrates
+tenant injection, `clarification_required`, and `accepted` in a complete working service.

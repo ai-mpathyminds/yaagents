@@ -1,0 +1,90 @@
+---
+title: Reference Overview
+description: Map of all yaagents reference pages — which to use when, and what each covers.
+sidebar:
+  order: 1
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Reference Overview <Badge text="Stable" variant="success" />
+
+The reference section contains normative documentation for every yaagents component.
+Use this map to find the right page for your task.
+
+---
+
+## Which reference page do I need?
+
+| Task | Page |
+|------|------|
+| Understand the 10 typed outcomes and their media types | [Profile v0.3 spec →](/yaagents/reference/profile-v03/) |
+| Configure the gateway (`gateway.yaml` schema) | [Gateway config →](/yaagents/reference/gateway-config/) |
+| Write a custom plugin (Go interface) | [Plugin interface →](/yaagents/reference/plugin-interface/) |
+| Build a Python agentic service | [sdk-fastapi →](/yaagents/reference/sdk-fastapi/) |
+| Build a Go agentic service | [sdk-go →](/yaagents/reference/sdk-go/) |
+| Call an agentic service from Python | [client-python →](/yaagents/reference/client-python/) |
+| Call an agentic service from TypeScript | [@aimpathyminds/yaagents-client →](/yaagents/reference/client-ts/) |
+| Call an agentic service from Go | [client-go →](/yaagents/reference/client-go/) |
+| Use the `yaagents` CLI (`validate`, `gateway run`, `scaffold`) | [CLI commands →](/yaagents/reference/cli/) |
+| Validate service responses against the Profile | [OpenAPI components →](/yaagents/reference/openapi/) |
+| Generate code from Profile JSON Schemas | [JSON Schemas →](/yaagents/reference/schemas/) |
+| Understand first-party plugin config | [Plugin pages →](/yaagents/reference/plugins/token-validator/) |
+
+---
+
+## Component map
+
+### Specification
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [Profile v0.3 spec](/yaagents/reference/profile-v03/) | <Badge text="Stable" variant="success" /> | Full normative spec: 10 typed outcomes, vendor media types, `X-YAAgents-Profile` header, `trace` block, `required_inputs` schema |
+
+### Gateway
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [Gateway config](/yaagents/reference/gateway-config/) | <Badge text="Stable" variant="success" /> | `gateway.yaml` schema; plugin pipeline config; upstream routing |
+| [Plugin interface](/yaagents/reference/plugin-interface/) | <Badge text="Stable" variant="success" /> | `Plugin` Go interface; `Init`/`Handler`/`Shutdown` lifecycle; context key convention |
+
+### First-party plugins
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [token-validator](/yaagents/reference/plugins/token-validator/) | <Badge text="Stable" variant="success" /> | JWKS URL, RS256/HS256 mode, audience validation |
+| [tenant-injector](/yaagents/reference/plugins/tenant-injector/) | <Badge text="Stable" variant="success" /> | `tenant_id` claim, injected headers, `require_tenant` flag |
+| [license-check](/yaagents/reference/plugins/license-check/) | <Badge text="Stable" variant="success" /> | Quota config, cache TTL, `429` response shape |
+| [prompt-sanitize](/yaagents/reference/plugins/prompt-sanitize/) | <Badge text="Preview" variant="caution" /> | Stub in v0.3; interface stable; reference impl v0.4 |
+| [otel-audit](/yaagents/reference/plugins/otel-audit/) | <Badge text="Preview" variant="caution" /> | Stub in v0.3; OTLP endpoint config; span attributes (v0.4) |
+
+### Server SDKs
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [sdk-fastapi](/yaagents/reference/sdk-fastapi/) | <Badge text="Stable" variant="success" /> | `@agentic_operation`, `AgenticResponse`, `AgenticContext`, `RequiredInput` |
+| [sdk-go](/yaagents/reference/sdk-go/) | <Badge text="Stable" variant="success" /> | `AgenticHandler`, `AgenticResponse`, `AgenticContext`, middleware helpers |
+
+### Client SDKs
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [client-python](/yaagents/reference/client-python/) | <Badge text="Stable" variant="success" /> | `AgentClient`, typed response parsing, retry config |
+| [@aimpathyminds/yaagents-client](/yaagents/reference/client-ts/) | <Badge text="Stable" variant="success" /> | TypeScript client, typed response discrimination, Promise API |
+| [client-go](/yaagents/reference/client-go/) | <Badge text="Stable" variant="success" /> | Go client, typed response structs, context propagation |
+
+### Tooling
+
+| Page | Status | Covers |
+|------|--------|--------|
+| [CLI commands](/yaagents/reference/cli/) | <Badge text="Stable" variant="success" /> | `yaagents validate`, `yaagents gateway run`, `yaagents scaffold` |
+| [OpenAPI components](/yaagents/reference/openapi/) | <Badge text="Stable" variant="success" /> | Reusable OpenAPI schema components for all 10 response types |
+| [JSON Schemas](/yaagents/reference/schemas/) | <Badge text="Stable" variant="success" /> | Machine-readable schemas for code generation |
+
+---
+
+## Not finding what you need?
+
+- [Typed Outcome Decision Flow →](/yaagents/patterns/typed-outcome-decision-flow/) — pick the right response type
+- [GitHub Discussions →](https://github.com/ai-mpathyminds/yaagents/discussions) — ask the community
+- [Profile v0.3 spec →](/yaagents/reference/profile-v03/) — the normative source of truth

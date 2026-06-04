@@ -3,6 +3,26 @@ title: Why yaagents?
 description: The design philosophy behind yaagents — why resource-oriented agentic APIs beat the opaque /agents/invoke pattern.
 ---
 
+import { Badge } from '@astrojs/starlight/components';
+
+# Why yaagents? <Badge text="Stable" variant="success" />
+
+## Where yaagents fits in the AI tooling landscape
+
+The current AI tooling ecosystem has several complementary layers — each governing a
+different boundary:
+
+- **A2A / AGNTCY** = agent ↔ agent (inter-agent coordination protocols)
+- **MCP** = agent ↔ tool/context (how agents call tools and retrieve context)
+- **LangGraph / LangChain / CrewAI / Semantic Kernel** = build agent logic (internal agent construction)
+- **yaagents** = **application ↔ agentic capability** (how enterprise apps and products call agents through governed REST APIs)
+
+These layers are **complementary, not competing**. A production yaagents service often
+uses LangGraph internally, calls MCP tools for context retrieval, and coordinates with
+peer agents via A2A — all behind the yaagents REST boundary that enterprise apps see.
+
+---
+
 ## TL;DR
 
 When you add AI agents to a REST API, the temptation is to add a single `POST /agents/invoke` endpoint. It's fast to build and flexible. But as soon as multiple teams, tenants, or compliance requirements enter the picture, the opaque invoke endpoint becomes a liability. yaagents is the answer to that liability: a REST profile that expresses agentic operations as ordinary typed resource actions, with governance handled by a pluggable gateway.
@@ -81,6 +101,34 @@ SDKs are helpers, not requirements. The five yaagents SDKs (`sdk-fastapi`, `sdk-
 | Source-available | LangChain OSS | No | No | **Yes (Apache 2.0)** |
 
 LangChain, the Anthropic SDK, and OpenAI Assistants are excellent tools for building agents. yaagents is the REST profile that governs how those agents are _exposed_ to API consumers — they're complementary, not competing.
+
+## When NOT to use yaagents
+
+yaagents is the right tool for governed REST APIs over agentic capabilities. It is **not**
+the right tool when:
+
+1. **You are building a chat demo or prototype** — the overhead of typed outcomes, gateway
+   config, and plugin pipeline is not worth it for a throwaway demo. Use the Anthropic SDK
+   or OpenAI SDK directly.
+
+2. **Your agent does not need to be behind an API** — if the agent runs as a batch job, a
+   background worker, or a CLI tool with no external callers, yaagents adds no value.
+
+3. **You have no governance requirements** — no multi-tenancy, no RBAC, no audit trail,
+   no license quotas. A plain FastAPI or Go HTTP handler is simpler and sufficient.
+
+4. **You only need agent-to-agent coordination (A2A / AGNTCY)** — if your goal is to
+   let one agent call another agent, not to expose an agent as a business API, use A2A or
+   AGNTCY directly.
+
+5. **You only need tool/context retrieval (MCP)** — if your agent just needs to call tools
+   or retrieve context from a knowledge base, MCP is the right protocol.
+
+6. **You are prototyping internal agent logic** — LangGraph, CrewAI, or plain Anthropic SDK
+   is the right choice for building the agent internals. yaagents governs the boundary once
+   the agent is ready to be exposed as a REST API.
+
+---
 
 ## Where to go next
 

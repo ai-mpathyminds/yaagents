@@ -1,0 +1,145 @@
+---
+title: Reference Architecture
+description: Full yaagents reference architecture — gateway, plugin pipeline, agentic API service, and deployment topology.
+sidebar:
+  order: 1
+---
+
+import { Badge } from '@astrojs/starlight/components';
+
+# Reference Architecture <Badge text="Stable" variant="success" />
+
+This page expands the homepage architecture diagram with per-component callouts
+and a deployment topology for a production yaagents deployment.
+
+---
+
+## Full architecture diagram
+
+```mermaid
+flowchart TD
+    subgraph Callers ["Callers (northbound)"]
+        WEB["Web / Mobile App"]
+        WF["Backend Workflow"]
+        AGENT2["Another Agent\n(A2A caller)"]
+    end
+
+    subgraph GWBlock ["yaagents Gateway"]
+        direction LR
+        TV["token-validator\n(always-on)"]
+        TI["tenant-injector\n(default-on)"]
+        LC["license-check\n(default-on)"]
+        PS["prompt-sanitize\n(stub v0.3)"]
+        OA["otel-audit\n(stub v0.3)"]
+        TV --> TI --> LC --> PS --> OA
+    end
+
+    subgraph Services ["Agentic API Services"]
+        SVC1["campaigns service\nPOST /campaigns/{id}/optimizations"]
+        SVC2["fulfillment service\nPOST /orders/{id}/fulfillment-plans"]
+        SVC3["triage service\nPOST /tickets/{id}:triage"]
+    end
+
+    subgraph AgentImpl ["Agent Implementations (any framework)"]
+        LG["LangGraph\nCrewAI\nSemantic Kernel"]
+        ANTH["Anthropic SDK\nOpenAI SDK\ncustom"]
+    end
+
+    subgraph External ["Southbound / East-west"]
+        MCP_TOOLS["MCP Tools\nContext Sources"]
+        A2A["A2A / AGNTCY\nAgent-to-Agent"]
+        LLMS["LLMs\n(Claude, GPT-4, …)"]
+    end
+
+    WEB & WF & AGENT2 --> GWBlock
+    GWBlock --> SVC1 & SVC2 & SVC3
+    SVC1 & SVC2 & SVC3 --> AgentImpl
+    AgentImpl -.-> MCP_TOOLS & A2A & LLMS
+
+    style GWBlock fill:#f9f3e0,stroke:#c89c2c
+    style TV fill:#c89c2c,stroke:#8b6f1e,color:#fff
+    style TI fill:#c89c2c,stroke:#8b6f1e,color:#fff
+    style LC fill:#c89c2c,stroke:#8b6f1e,color:#fff
+    style PS fill:#e0e0e0,stroke:#aaa,stroke-dasharray:5
+    style OA fill:#e0e0e0,stroke:#aaa,stroke-dasharray:5
+```
+
+*Dashed plugin nodes are stubs in v0.3 — interface stable, reference implementation ships in v0.4.*
+
+---
+
+## Component callouts
+
+### yaagents Gateway
+
+The gateway is a **single stateless binary** (Docker image:
+`ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0`) that:
+
+- Runs a configurable plugin pipeline on every inbound request
+- Proxies the request to the upstream agentic service with injected headers
+- Returns the service response verbatim (typed `AgenticResponse` flows through unchanged)
+- Adds `X-YAAgents-Profile: v0.3` to every response
+
+The gateway does **not** inspect or modify response bodies. It is not an API gateway in
+the full sense — it does not do request routing by URL pattern (use your load balancer for
+that), rate limiting (use a dedicated layer), or caching.
+
+### Plugin pipeline
+
+Five first-party plugins ship with v0.3. Plugins implement a single Go interface
+(`Handler(ctx, req, next) Response`) and are composed at startup from `gateway.yaml`.
+
+| Plugin | Status | Effect |
+|--------|--------|--------|
+| `token-validator` | <Badge text="Stable" variant="success" /> | Validates RS256 JWT; rejects 401 if invalid |
+| `tenant-injector` | <Badge text="Stable" variant="success" /> | Extracts `tenant_id` claim; injects `X-Tenant-ID` header |
+| `license-check` | <Badge text="Stable" variant="success" /> | Checks tenant license quota; rejects 429 if exceeded |
+| `prompt-sanitize` | <Badge text="Preview" variant="caution" /> | Pattern-filter stub; always passes in v0.3 |
+| `otel-audit` | <Badge text="Preview" variant="caution" /> | Audit-emit stub; always passes in v0.3 |
+
+### Agentic API Service
+
+Your service. Two shapes supported:
+
+- **FastAPI** (Python): use `@agentic_operation` decorator + `AgenticResponse` factory
+- **Go HTTP**: use `AgenticHandler` interface + `AgenticResponse` builder
+
+The service returns one of 10 typed outcomes. The gateway does not care about the
+framework — any HTTP service returning the correct `Content-Type` and body shape is
+conformant with the Profile.
+
+### Agent Implementation
+
+No constraints. The `@agentic_operation` handler body runs your agent logic:
+
+- Call LLMs (Anthropic, OpenAI, Bedrock — any)
+- Use MCP tools for context retrieval
+- Spawn sub-agents via A2A
+- Call internal microservices
+
+The agent implementation is invisible to callers — they only see the typed HTTP response.
+
+---
+
+## Deployment topology
+
+```mermaid
+flowchart LR
+    ALB["Application Load Balancer\n(HTTPS termination)"]
+    GW["yaagents-gateway\n(ECS Fargate, port 8080)"]
+    SVC["Agentic API Service\n(ECS Fargate, port 808x)"]
+    SSMP["Parameter Store\n(JWT public key,\ntenant config)"]
+    OBS["Prometheus + Grafana\n(gateway /metrics)"]
+
+    ALB --> GW
+    GW --> SVC
+    GW --> SSMP
+    GW --> OBS
+```
+
+*Reference topology for AWS ECS Fargate. Terraform modules at
+`portfolio/infrastructure/modules/ecs-fargate-service/`.*
+
+---
+
+[Read next → Gateway Request Lifecycle →](/yaagents/architecture/gateway-request-lifecycle/)
