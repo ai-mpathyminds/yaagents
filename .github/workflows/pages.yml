@@ -25,6 +25,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'bin/**'
       - 'spec/**'
       - 'schemas/**'
       - 'openapi/**'
@@ -67,6 +68,10 @@ jobs:
       - name: Build site
         run: pnpm build
         working-directory: docs
+
+      - name: Audit internal links
+        run: bash bin/yaagents-pages-link-audit.sh
+        continue-on-error: false
 
       - uses: actions/upload-pages-artifact@v3
         with:
