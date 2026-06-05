@@ -75,9 +75,9 @@ do_curl() {
   local out
   out=$(curl -s -D - "$@" 2>/dev/null) || true
   local status ct profile
-  status=$(echo "$out" | grep -i '^HTTP/' | tail -1 | awk '{print $2}')
-  ct=$(echo "$out"     | grep -i '^Content-Type:'       | tail -1 | sed 's/.*: *//' | tr -d '\r')
-  profile=$(echo "$out" | grep -i '^X-YAAgents-Profile:' | tail -1 | sed 's/.*: *//' | tr -d '\r')
+  status=$(echo "$out" | grep -i '^HTTP/' | tail -1 | awk '{print $2}' || true)
+  ct=$(echo "$out"     | grep -i '^Content-Type:'       | tail -1 | sed 's/.*: *//' | tr -d '\r' || true)
+  profile=$(echo "$out" | grep -i '^X-YAAgents-Profile:' | tail -1 | sed 's/.*: *//' | tr -d '\r' || true)
   echo "${status}|${ct}|${profile}"
 }
 
