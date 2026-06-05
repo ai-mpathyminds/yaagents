@@ -1,5 +1,7 @@
 # yaagents v0.4 — PRD Seed
 Status: [READY]
+
+> Seeded by chief-architect. Expanded by product-manager 2026-06-05.
 Target product: yaagents
 Target services: yaagents/{sdk-go, gateway/internal/plugins/{token-validator,tenant-injector,license-check,prompt-sanitize,otel-audit}}, yaagents/docs (Astro Starlight Pages), yaagents (meta-repo root README)
 Owner: product-manager (yaagents) → yaagents-architect at A-3
