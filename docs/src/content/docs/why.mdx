@@ -42,16 +42,16 @@ The Profile defines **10 normative response types** — each with a fixed HTTP s
 
 | Type | Status | When |
 |---|---|---|
+| `success` | 200 | Operation completed; result in body |
+| `created` | 201 | Resource created; result in body |
+| `accepted` | 202 | Async operation queued |
 | `clarification_required` | 400 | Agent needs more input before proceeding |
 | `validation_failed` | 422 | Inputs are structurally invalid |
-| `approval_required` | 202 | Human-in-the-loop approval gate |
+| `approval_required` | 412 | Human-in-the-loop approval required |
+| `forbidden` | 403 | Authorization or policy failure |
 | `conflict` | 409 | Conflicting state prevents the operation |
-| `execution_timeout` | 504 | Agent exceeded its time budget |
-| `partial_result` | 206 | Streaming / incremental output available |
-| `resource_exhausted` | 429 | Rate limit or quota exceeded |
-| `policy_violation` | 403 | Governance rule rejected the request |
-| `delegated` | 303 | Redirected to a sub-agent or sub-resource |
-| *(success)* | 201 / 200 | Operation completed; result in body |
+| `failed_dependency` | 424 | Dependent tool or service failure |
+| `error` | 500 | Unhandled failure |
 
 Every response carries a discriminator field (`type`) so clients can `switch` cleanly —
 no guessing at status-code ranges or parsing error strings.

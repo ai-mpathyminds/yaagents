@@ -72,16 +72,20 @@ YAAgents standardizes:
 └─────────────────────────────────────────────┘
 ```
 
-### Response status × media-type table (normative)
+### Response Profile
 
-| HTTP status | Meaning | Media type |
-|---|---|---|
-| `200 OK` | Synchronous result | `application/vnd.yaagents.result+json` |
-| `202 Accepted` | Async task accepted | `application/vnd.yaagents.accepted+json` |
-| `206 Partial Content` | Streaming progress | `application/vnd.yaagents.progress+json` |
-| `400 Bad Request` | Malformed input | `application/vnd.yaagents.error+json` |
-| `412 Precondition Failed` | Clarification required | `application/vnd.yaagents.clarification+json` |
-| `422 Unprocessable Entity` | Validation failure | `application/vnd.yaagents.error+json` |
+YAAgents follows the [Agentic REST Response Profile v0.3](spec/).
+
+Common outcomes:
+
+- 200 / 201: domain success responses
+- 202: async operation accepted
+- 400: clarification required
+- 412: approval required
+- 422: validation failed
+- 403 / 409 / 424 / 500: governed error outcomes
+
+See the [full normative table](spec/agentic-rest-profile.md) in the Profile specification.
 
 ---
 
@@ -110,7 +114,7 @@ Services start on:
 ### Try a request
 
 ```bash
-# Trigger an optimization — returns 200 (result) or 412 (clarification required)
+# Trigger an optimization — returns 200 (result) or 400 (clarification_required)
 curl -X POST http://localhost:8120/campaigns/c-001/optimizations \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer dev-token" \
