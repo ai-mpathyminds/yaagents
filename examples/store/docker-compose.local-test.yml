@@ -1,0 +1,8 @@
+# Local test override — builds gateway from source instead of pulling from GHCR.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local-test.yml up --build
+# DO NOT COMMIT as the default compose file — the published image is preferred for OSS users.
+services:
+  yaagents-gateway:
+    build:
+      context: ../../gateway
+      dockerfile: ../docker/gateway/Dockerfile
