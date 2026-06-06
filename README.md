@@ -11,6 +11,8 @@
 
 **YAAgents** is an **Agentic REST Profile** — a response contract, gateway, and client layer for exposing agentic capabilities as ordinary domain resource operations.
 
+*You're building an AI agent that needs to live behind a normal REST API — with auth, tenancy, audit, typed responses, and OpenAPI.*
+
 ```http
 POST /campaigns/{id}/optimizations       ← YAAgents pattern
 POST /tickets/{id}:triage
@@ -23,20 +25,23 @@ Typed responses. Gateway RBAC. OpenAPI contracts. Native clients. Framework-neut
 
 ---
 
-## Why YAAgents?
+## What problem does yaagents solve?
 
-Production systems are resource-oriented. Chat is a poor integration surface for business workflows. Agentic capabilities should live behind domain resource operations, not generic `/agents/invoke` endpoints.
+Most production systems already have REST APIs, OpenAPI contracts, gateways, RBAC, audit logs,
+tenant context, rate limits, and SDKs.
 
-YAAgents standardizes:
+AI agents often bypass that discipline through chat interfaces, generic invoke endpoints, or
+framework-specific runtimes.
 
-| Problem today | YAAgents solution |
-|---|---|
-| Free-form text responses | Typed `application/vnd.yaagents.*` media types |
-| Ad hoc clarification | `clarification_required` — a machine-readable status |
-| Weak access control | Gateway RBAC with tenant context |
-| Framework-specific client code | Native Python, TypeScript, and Go client SDKs |
-| Hard-to-document agent APIs | OpenAPI-first response contracts |
-| Vendor-locked runtimes | Framework-neutral: LangGraph, Pydantic AI, Semantic Kernel, or custom logic |
+yaagents keeps the agent implementation flexible, but exposes it through normal business APIs:
+
+- resource-oriented endpoints
+- typed outcomes
+- clarification and approval responses
+- gateway-level auth, tenant context, audit, and policy
+- framework-neutral agent implementation
+
+> See also: [Why Agentic REST?](https://ai-mpathyminds.github.io/yaagents/concepts/why-agentic-rest/) and [Comparisons](https://ai-mpathyminds.github.io/yaagents/concepts/comparisons/) on the docs site.
 
 ---
 
