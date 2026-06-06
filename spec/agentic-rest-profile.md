@@ -4,7 +4,7 @@
 **Profile header literal:** `X-YAAgents-Profile: v0.3`
 **Authoritative source:** `spec/` (ADR PI1-yaa-0002 §1 — sole table source; no other
 component may redefine or paraphrase the normative table below)
-**Version file:** `spec/VERSION` = `0.2`
+**Version file:** `spec/VERSION` = `0.3`
 **Date adopted:** 2026-06-02 (v0.3 profile bump; sdk-go server SDK component added — see §Changelog)
 **Prior version:** v0.2 adopted 2026-06-01; frozen schemas at `schemas/v0.2/`; v0.1 adopted 2026-05-17; frozen schemas at `schemas/v0.1/`
 
