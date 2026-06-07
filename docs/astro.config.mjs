@@ -12,11 +12,15 @@ export default defineConfig({
         github: 'https://github.com/ai-mpathyminds/yaagents',
       },
       sidebar: [
+        {
+          label: 'Start Here',
+          items: [
+            { label: 'Overview', link: '/start-here/overview/' },
+            { label: 'Why YAAgents?', link: '/why/' },
+          ],
+        },
         { label: 'Quick Start', link: '/quickstart/' },
-        { label: 'Why YAAgents', link: '/why/' },
         { label: 'Profile Spec', link: '/profile/' },
-        { label: 'SDK Quickstarts', autogenerate: { directory: 'sdks' } },
-        { label: 'Examples', autogenerate: { directory: 'examples' } },
         {
           label: 'Plugins',
           items: [
@@ -33,8 +37,17 @@ export default defineConfig({
           items: [
             { label: 'Why Agentic REST?', link: '/concepts/why-agentic-rest/' },
             { label: 'Comparisons', link: '/concepts/comparisons/' },
+            { label: 'Agent implementation patterns', link: '/concepts/agent-implementation-patterns/' },
           ],
         },
+        {
+          label: 'How-to',
+          items: [
+            { label: 'Host in production', link: '/how-to/host-in-production/' },
+          ],
+        },
+        { label: 'SDK Quickstarts', autogenerate: { directory: 'sdks' } },
+        { label: 'Examples', autogenerate: { directory: 'examples' } },
         {
           label: 'Architecture',
           items: [

@@ -1,7 +1,5 @@
 # YAAgents
 
-> **Build the agent however you want. Expose it like a governed API.**
-
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Go 1.22+](https://img.shields.io/badge/go-1.22%2B-00ADD8.svg?logo=go)](https://golang.org/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg?logo=python)](https://python.org/)
@@ -9,161 +7,119 @@
 [![Gateway image](https://img.shields.io/badge/ghcr.io-yaagents--gateway-0d1117.svg?logo=github)](https://ghcr.io/ai-mpathyminds/yaagents-gateway)
 [![Profile version](https://img.shields.io/badge/YAAgents%20Profile-v0.3-blueviolet)](spec/)
 
-**YAAgents** is an **Agentic REST Profile** — a response contract, gateway, and client layer for exposing agentic capabilities as ordinary domain resource operations.
+*You're building an AI agent that needs to live behind a normal REST API — with auth, tenancy, audit, typed responses, and OpenAPI. YAAgents is the gateway + SDKs that let you keep your agent framework and still ship a governed product API.*
 
-*You're building an AI agent that needs to live behind a normal REST API — with auth, tenancy, audit, typed responses, and OpenAPI.*
+> **v0.4 work in progress.** Plugins (`token-validator`, `tenant-injector`, `license-check`, `prompt-sanitize`, `otel-audit`) are now Stable. Published artifacts are v0.3.0; v0.4.0 ships in PI5-yaa alongside the Helm chart and full publish wave.
+
+---
+
+## What you can build
+
+Here's a product-recommendation API that asks for clarification when it has nothing to recommend.
+
+| Endpoint | Agentic response type |
+|---|---|
+| `POST /recommendations/{customerId}` | `clarification_required` — no purchase history to anchor on |
+| `POST /campaigns/{id}/optimizations` | `success` — typed optimization result |
+| `POST /claims/{id}/reviews` | `approval_required` — high-risk claim needs human sign-off |
 
 ```http
-POST /campaigns/{id}/optimizations       ← YAAgents pattern
-POST /tickets/{id}:triage
-POST /claims/{id}/reviews
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.yaagents.clarification+json
 
-POST /agents/invoke                      ← what YAAgents replaces
+{
+  "type": "clarification_required",
+  "requiredInputs": [
+    {
+      "name": "purchase_history",
+      "question": "No purchase history for this customer. What items should anchor recommendations?"
+    }
+  ],
+  "trace": { "correlationId": "corr-1", "requestId": "req-1" }
+}
 ```
 
-Typed responses. Gateway RBAC. OpenAPI contracts. Native clients. Framework-neutral — bring any agent runtime.
+Run it: [`examples/store/`](examples/store/) (Python) · [`examples/store-go/`](examples/store-go/) (Go)
 
 ---
 
-## What problem does yaagents solve?
+## How it works
 
-Most production systems already have REST APIs, OpenAPI contracts, gateways, RBAC, audit logs,
-tenant context, rate limits, and SDKs.
+```mermaid
+flowchart LR
+  A["Application\n(any client)"] --> B["YAAgents Gateway\n(auth · tenant · audit)"]
+  B --> C["Agentic API Service\n(your code)"]
+  C --> D["Agent Implementation\n(your choice)"]
+  D --> E["Optional: A2A / MCP / Tools"]
+```
 
-AI agents often bypass that discipline through chat interfaces, generic invoke endpoints, or
-framework-specific runtimes.
+**E-commerce recommendations — 7 steps:**
 
-yaagents keeps the agent implementation flexible, but exposes it through normal business APIs:
+1. A product catalog service receives `POST /recommendations/{customerId}` requests.
+2. The yaagents gateway authenticates the request (token-validator plugin).
+3. The gateway injects tenant context (tenant-injector plugin).
+4. The backend Python service (using sdk-fastapi) runs recommendation logic.
+5. If the recommendation engine needs clarification (e.g., no purchase history), it returns `clarification_required`.
+6. The Go client (using sdk-go) handles `clarification_required` natively — no raw HTTP parsing.
+7. The audit log (otel-audit plugin) records the operation for every request.
 
-- resource-oriented endpoints
-- typed outcomes
-- clarification and approval responses
-- gateway-level auth, tenant context, audit, and policy
-- framework-neutral agent implementation
+**Response Profile — YAAgents follows the [Agentic REST Response Profile v0.3](spec/).**
 
-> See also: [Why Agentic REST?](https://ai-mpathyminds.github.io/yaagents/concepts/why-agentic-rest/) and [Comparisons](https://ai-mpathyminds.github.io/yaagents/concepts/comparisons/) on the docs site.
+| Response type | HTTP status | Content-Type |
+|---|---:|---|
+| `success` | `200` | `application/json` |
+| `created` | `201` | `application/json` |
+| `accepted` | `202` | `application/vnd.yaagents.operation+json` |
+| `clarification_required` | `400` | `application/vnd.yaagents.clarification+json` |
+| `validation_failed` | `422` | `application/vnd.yaagents.validation-error+json` |
+| `approval_required` | `412` | `application/vnd.yaagents.approval-required+json` |
+| `forbidden` | `403` | `application/vnd.yaagents.error+json` |
+| `conflict` | `409` | `application/vnd.yaagents.conflict+json` |
+| `failed_dependency` | `424` | `application/vnd.yaagents.error+json` |
+| `error` | `500` | `application/vnd.yaagents.error+json` |
+
+See the [full normative spec](spec/agentic-rest-profile.md) for the mandatory `trace` block contract and per-type body shapes.
 
 ---
 
-## Architecture
+## Who uses it
 
-```
-┌─────────────────────────────────────────────┐
-│  Application / Consumer                     │
-│  Python client  ·  TypeScript client  ·  cURL│
-└────────────────────┬────────────────────────┘
-                     │  HTTP (typed media types)
-                     ▼
-┌─────────────────────────────────────────────┐
-│  YAAgents Gateway  (Go)                     │
-│  Authentication · RBAC · Tenant routing     │
-│  Audit logging · Correlation-id propagation │
-│  /healthz  /readyz  /metrics                │
-└────────────────────┬────────────────────────┘
-                     │  upstream HTTP
-                     ▼
-┌─────────────────────────────────────────────┐
-│  Agentic API Service  (any language/runtime)│
-│  FastAPI + yaagents-fastapi SDK  ← Python   │
-│  Go net/http + yaagents-sdk-go   ← Go       │
-│  or Spring Boot · ASP.NET Core · Express …  │
-└────────────────────┬────────────────────────┘
-                     │  internal call
-                     ▼
-┌─────────────────────────────────────────────┐
-│  Agent Implementation  (your choice)        │
-│  LangGraph · Pydantic AI · Semantic Kernel  │
-│  LangChain · direct LLM SDK · custom logic  │
-└─────────────────────────────────────────────┘
-```
+| You are | Why YAAgents | Start here |
+|---|---|---|
+| A SaaS product team adding AI features | Keep your existing API surface; add agentic operations as new resource endpoints. | [`examples/store/`](examples/store/) |
+| A platform team governing many agent services | One gateway for auth, tenancy, audit, and license — your agent services stay simple. | [Plugin docs](https://ai-mpathyminds.github.io/yaagents/plugins/) |
+| An API architect designing an agent product | Typed outcomes, OpenAPI-first contracts, generated clients. No free-form text parsing. | [`spec/agentic-rest-profile.md`](spec/agentic-rest-profile.md) |
 
-### Response Profile
-
-YAAgents follows the [Agentic REST Response Profile v0.3](spec/).
-
-Common outcomes:
-
-- 200 / 201: domain success responses
-- 202: async operation accepted
-- 400: clarification required
-- 412: approval required
-- 422: validation failed
-- 403 / 409 / 424 / 500: governed error outcomes
-
-See the [full normative table](spec/agentic-rest-profile.md) in the Profile specification.
+> See also: [YAAgents vs A2A, AGNTCY, MCP, and frameworks](https://ai-mpathyminds.github.io/yaagents/concepts/comparisons/) — what each layer is for and where yaagents fits.
 
 ---
 
-## How to start
-
-### Run the e-commerce recommendation demo in one command
+## Get started
 
 ```bash
-git clone --depth 1 https://github.com/ai-mpathyminds/yaagents.git
-cd yaagents/examples/store
-docker compose up -d
-
-curl -sX POST http://localhost:8120/products/p-1/recommendations \
-  -H 'Content-Type: application/json' \
-  -H 'X-Actor-Subject: c-1' \
-  -d '{"limit": 3, "exclude_purchased": true}' | jq
-```
-
-Expected status: `200 OK`
-
-### What just happened
-
-The client sent a resource-oriented POST to the YAAgents Gateway. The gateway authenticated the request, injected tenant context, and routed upstream to the agentic API. The API ran recommendation logic and returned a typed `success` response with product data.
-
-### Where to go next
-
-- [E-commerce Product Recommendations](https://ai-mpathyminds.github.io/yaagents/case-studies/ecommerce-product-recommendations/) — full architecture walk-through, design decisions, and runnable Python + Go examples.
-- [`examples/`](examples/) — all reference demos: store (Python), store-go (Go), campaign-api (Python), campaign-api-go (Go).
-- **Install SDKs** — see below.
-
-#### Install SDKs
-
-```bash
-# Python SDK + client + CLI (server SDK, consumer client, validator)
+# Python SDK + client + CLI
 pip install yaagents-fastapi yaagents-client yaagents-cli
 
 # TypeScript / Node client
 npm install @aimpathyminds/yaagents-client
 
-# Go client SDK
-go get github.com/ai-mpathyminds/yaagents-client-go
-
 # Go server SDK
 go get github.com/ai-mpathyminds/yaagents-sdk-go
+
+# Go client SDK
+go get github.com/ai-mpathyminds/yaagents-client-go
 
 # Gateway container image
 docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
 ```
 
-#### campaign-api demo
-
-```bash
-git clone https://github.com/ai-mpathyminds/yaagents.git
-cd yaagents/examples/campaign-api
-docker compose up
-```
-
-| Service | URL |
-|---|---|
-| YAAgents Gateway | `http://localhost:8120` |
-| Campaign API (reference) | `http://localhost:8121` |
-
-```bash
-# Trigger an optimization — returns 200 (result) or 400 (clarification_required)
-curl -X POST http://localhost:8120/campaigns/c-001/optimizations \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer dev-token" \
-  -d '{"budget_delta": 500}'
-```
+- [Read the docs](https://ai-mpathyminds.github.io/yaagents/) — full documentation site
+- [Profile v0.3](spec/agentic-rest-profile.md) — normative response contract
+- [Open issues / contribute](https://github.com/ai-mpathyminds/yaagents/issues)
 
 ---
 
-## Repository Layout
+## Repository layout
 
 ```
 yaagents/
@@ -183,48 +139,15 @@ yaagents/
 
 ---
 
-## Published Artifacts
-
-| Artifact | Registry | Install |
-|---|---|---|
-| Gateway image | GHCR | `docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0` |
-| Python FastAPI SDK | PyPI | `pip install yaagents-fastapi==0.3.0` |
-| Python client | PyPI | `pip install yaagents-client==0.3.0` |
-| CLI validator | PyPI | `pip install yaagents-cli==0.3.0` |
-| TypeScript client | npm | `npm install @aimpathyminds/yaagents-client@0.3.0` |
-| Go client SDK | Go modules | `go get github.com/ai-mpathyminds/yaagents-client-go@v0.3.0` |
-| Go server SDK | Go modules | `go get github.com/ai-mpathyminds/yaagents-sdk-go@v0.3.0` |
-
----
-
-## Documentation
-
-- [Full documentation site](https://ai-mpathyminds.github.io/yaagents/)
-- [Response Profile spec](spec/)
-- [JSON schemas](schemas/)
-- [OpenAPI components](openapi/)
-- [Gateway configuration](gateway/README.md)
-- [FastAPI SDK guide](sdk-fastapi/README.md)
-- [Go server SDK guide](sdk-go/README.md)
-- [Campaign API example (Python)](examples/campaign-api/README.md)
-- [Campaign API example (Go)](examples/campaign-api-go/README.md)
-
----
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-Contributions are welcome under the Apache 2.0 license via the
-Developer Certificate of Origin (DCO) sign-off process. All pull requests
-must carry a `Signed-off-by:` trailer. See CONTRIBUTING.md for the full
-checklist, plugin contribution path, and legal disclaimer.
 
 ---
 
 ## License
 
-> **License:** Apache 2.0 — see `LICENSE`. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). v0.2.x+ ships under Apache 2.0. For questions about historical v0.1.x usage, contact bhaskar@aimpathyminds.com.
+Apache 2.0 — see [`LICENSE`](LICENSE). Published artifacts are v0.3.0; Profile v0.3. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). Contact bhaskar@aimpathyminds.com for historical v0.1.x license questions.
 
 ---
 
