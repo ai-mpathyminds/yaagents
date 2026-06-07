@@ -9,6 +9,8 @@
 #                               exit-0 pre-merge gate per PLG-06 acceptance criteria
 #   e2e-licensecheck      Go  — 6-scenario allow/deny-matrix e2e gate (WI-4yaa.PLG-09)
 #                               exit-0 pre-merge gate per PLG-09 acceptance criteria
+#   e2e-promptsanitize    Go  — 5-scenario PII corpus e2e gate (WI-4yaa.PLG-12)
+#                               exit-0 pre-merge gate per PLG-12 acceptance criteria
 #   ci-python   Py  — ruff + mypy + pip-audit + pytest  (matrix: 3 packages)
 #   ci-ts       TS  — eslint + tsc --noEmit + pnpm audit + vitest
 #
@@ -292,6 +294,57 @@ jobs:
       - name: e2e-licensecheck (exit-0 pre-merge gate)
         run: go test -count=1 -timeout 90s -run E2E -v ./internal/plugins/licensecheck/...
 
+  # ── prompt-sanitize PII corpus e2e gate ─────────────────────────────────
+  # WI-4yaa.PLG-12 acceptance criterion: "CI workflow job e2e-promptsanitize
+  # runs go test ./internal/plugins/promptsanitize/ -run E2E -v on every PR
+  # and on merge to main; must exit 0 before merge."
+  #
+  # 5 canonical scenarios (PII payload corpus):
+  #   1. Regex redact — email PII replaced with [REDACTED]; INFO log; 200 forward
+  #   2. Keyword reject — injection phrase → 412 + clarification body
+  #   3. No match — clean prompt passes through unmodified (200)
+  #   4. Multiple regex matches — email + SSN both redacted in one body
+  #   5. First-reject-wins — two reject patterns; first match name in requiredInputs
+  # Bonus: SSN corpus, credit-card reject, ContentLength update, upstream ReadAll.
+  # No Docker / testcontainers — all assertions use httptest + in-process plugin.
+  # Runs independently of ci-go so failures are reported distinctly.
+  e2e-promptsanitize:
+    name: E2E — prompt-sanitize PII corpus (5 scenarios, exit-0 gate)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+
+      # Verify no t.Skip* calls slipped into the e2e file (integration-test-discipline).
+      # Comment-only lines (// ...) are excluded from the match.
+      - name: Assert no t.Skip in e2e test file
+        run: |
+          HITS=$(grep -n "t\.Skip\|t\.SkipNow\|t\.Skipf" \
+                   internal/plugins/promptsanitize/promptsanitize_e2e_test.go \
+                 | grep -v "^[0-9]*:[[:space:]]*//" || true)
+          if [ -n "$HITS" ]; then
+            echo "${HITS}"
+            echo "::error::t.Skip* call found in promptsanitize_e2e_test.go — integration-test-discipline forbids silent skip; use t.Fatal"
+            exit 1
+          fi
+          echo "no-skip-assert: PASS"
+
+      # Exit-0 pre-merge gate: all PII corpus e2e scenarios must pass.
+      # Timeout guard: 60s wall-clock cap per PLG-12 acceptance criteria.
+      - name: e2e-promptsanitize (exit-0 pre-merge gate)
+        run: go test -count=1 -timeout 60s -run E2E -v ./internal/plugins/promptsanitize/...
+
   # ── Python: ruff + mypy + pip-audit + pytest ─────────────────────────────
   # Matrix over the three Python packages; fail-fast=false so all three report.
   # Each package's pyproject.toml already carries --cov-fail-under=80.
@@ -475,7 +528,7 @@ jobs:
   # no separate spec registry in PI1-yaa.
   spec-archive:
     name: Attach spec archive to Release
-    needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, e2e-licensecheck, ci-python, ci-ts]
+    needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, e2e-licensecheck, e2e-promptsanitize, ci-python, ci-ts]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
