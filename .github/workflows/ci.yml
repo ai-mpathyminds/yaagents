@@ -7,6 +7,8 @@
 #                               exit-0 pre-merge gate per PLG-03 acceptance criteria
 #   e2e-tenantinjector    Go  — 5-scenario webhook-resolution e2e gate (WI-4yaa.PLG-06)
 #                               exit-0 pre-merge gate per PLG-06 acceptance criteria
+#   e2e-licensecheck      Go  — 6-scenario allow/deny-matrix e2e gate (WI-4yaa.PLG-09)
+#                               exit-0 pre-merge gate per PLG-09 acceptance criteria
 #   ci-python   Py  — ruff + mypy + pip-audit + pytest  (matrix: 3 packages)
 #   ci-ts       TS  — eslint + tsc --noEmit + pnpm audit + vitest
 #
@@ -239,6 +241,57 @@ jobs:
       - name: e2e-tenantinjector (exit-0 pre-merge gate)
         run: go test -count=1 -timeout 90s -run E2E -v ./internal/plugins/tenantinjector/...
 
+  # ── license-check allow/deny-matrix e2e gate ────────────────────────────
+  # WI-4yaa.PLG-09 acceptance criterion: "CI workflow job e2e-licensecheck
+  # runs go test ./internal/plugins/licensecheck/ -run E2E -v on every PR
+  # and on merge to main; must exit 0 before merge."
+  #
+  # 6 scenarios (as-shipped single-backend contract, B-02 discovery):
+  #   1. Token present + server validates → 200 pass-through
+  #   2. Token present + server returns non-2xx → 403 vendor error
+  #   3. Token header absent → 403
+  #   4. License-server unreachable (connection refused) → 503 + dependency trace
+  #   5. License-server timeout → 503 + dependency trace
+  #   6. Cache hit within TTL (no extra outbound call) + LRU eviction at max_cache_size
+  # No Docker / testcontainers needed — mock license-server is httptest.Server.
+  # Runs independently of ci-go so failures are reported distinctly.
+  e2e-licensecheck:
+    name: E2E — license-check allow/deny matrix (6 scenarios, exit-0 gate)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+
+      # Verify no t.Skip* calls slipped into the e2e file (integration-test-discipline).
+      # Comment-only lines (// ...) are excluded from the match.
+      - name: Assert no t.Skip in e2e test file
+        run: |
+          HITS=$(grep -n "t\.Skip\|t\.SkipNow\|t\.Skipf" \
+                   internal/plugins/licensecheck/licensecheck_e2e_test.go \
+                 | grep -v "^[0-9]*:[[:space:]]*//" || true)
+          if [ -n "$HITS" ]; then
+            echo "${HITS}"
+            echo "::error::t.Skip* call found in licensecheck_e2e_test.go — integration-test-discipline forbids silent skip; use t.Fatal"
+            exit 1
+          fi
+          echo "no-skip-assert: PASS"
+
+      # Exit-0 pre-merge gate: all 6 allow/deny-matrix e2e scenarios must pass.
+      # Timeout guard: 90s wall-clock cap per PLG-09 acceptance criteria.
+      - name: e2e-licensecheck (exit-0 pre-merge gate)
+        run: go test -count=1 -timeout 90s -run E2E -v ./internal/plugins/licensecheck/...
+
   # ── Python: ruff + mypy + pip-audit + pytest ─────────────────────────────
   # Matrix over the three Python packages; fail-fast=false so all three report.
   # Each package's pyproject.toml already carries --cov-fail-under=80.
@@ -422,7 +475,7 @@ jobs:
   # no separate spec registry in PI1-yaa.
   spec-archive:
     name: Attach spec archive to Release
-    needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, ci-python, ci-ts]
+    needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, e2e-licensecheck, ci-python, ci-ts]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
