@@ -1,0 +1,174 @@
+---
+title: Agent implementation patterns
+description: YAAgents is framework-neutral — your agent runs behind the boundary using any reasoning approach you choose.
+---
+
+import { Aside, Code, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+## Framework neutrality
+
+YAAgents governs the **application-to-agent boundary** — the REST surface between
+your clients and your agentic API services. What happens behind that boundary is
+entirely your choice.
+
+Your agent handler can use:
+
+- **LangGraph** — stateful multi-step agent graphs
+- **LangChain** — chain-based pipeline execution
+- **Semantic Kernel** — .NET or Python planner + skill compositions
+- **Pydantic AI** — type-safe LLM agents in Python
+- **Direct LLM SDK** — OpenAI, Anthropic, Google, or any other provider called directly
+- **Custom logic** — deterministic rules, search algorithms, or any code that produces a typed outcome
+- **Any combination of the above** — the handler is your code; yaagents sees only the typed response it returns
+
+The only contract yaagents enforces is the response type: the handler returns an
+`AgenticResponse` (or raises the appropriate outcome class), and the SDK serializes it
+to the correct Profile v0.3 response. Everything before that `return` statement is yours.
+
+## Common patterns
+
+### Direct LLM call
+
+The simplest pattern: the handler calls an LLM SDK directly, processes the output,
+and returns a typed outcome.
+
+```python
+from yaagents_fastapi import agentic_endpoint, AgenticResponse
+import anthropic
+
+client = anthropic.Anthropic()
+
+@agentic_endpoint("/campaigns/{id}/optimizations", method="POST")
+async def optimize_campaign(id: str, body: OptimizationRequest) -> AgenticResponse:
+    message = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": f"Optimize campaign {id}: {body}"}]
+    )
+    # Parse the LLM response into a typed outcome
+    result = parse_optimization(message.content[0].text)
+    return AgenticResponse.done(result)
+```
+
+### Framework wrapper
+
+The handler invokes a LangGraph or LangChain pipeline and maps the pipeline's output
+to a Profile v0.3 outcome.
+
+```python
+from yaagents_fastapi import agentic_endpoint, AgenticResponse
+from my_agent import build_recommendation_graph
+
+graph = build_recommendation_graph()
+
+@agentic_endpoint("/products/{id}/recommendations", method="POST")
+async def recommend(id: str, body: RecommendationRequest) -> AgenticResponse:
+    result = await graph.ainvoke({"product_id": id, "context": body})
+    if result["needs_clarification"]:
+        return AgenticResponse.clarification_required(result["required_inputs"])
+    return AgenticResponse.done(result["recommendations"])
+```
+
+### Process-shell pattern
+
+The handler shells out to an external process for reasoning, parses its output,
+and maps it to a typed outcome. Any CLI that accepts structured input and emits
+structured output can be the reasoning process.
+
+```python
+import subprocess, json
+from yaagents_fastapi import agentic_endpoint, AgenticResponse
+
+@agentic_endpoint("/tickets/{id}:triage", method="POST")
+async def triage_ticket(id: str, body: TriageRequest) -> AgenticResponse:
+    prompt = json.dumps({"ticket_id": id, "content": body.content})
+    proc = subprocess.run(
+        ["my-reasoning-cli", "--json"],
+        input=prompt, capture_output=True, text=True, check=True
+    )
+    outcome = json.loads(proc.stdout)
+    if outcome["type"] == "clarification_required":
+        return AgenticResponse.clarification_required(outcome["requiredInputs"])
+    return AgenticResponse.done(outcome["result"])
+```
+
+The Claude Code CLI is one concrete instance of this pattern that the AmpathyMinds
+team uses internally — see §3 below.
+
+### Background worker
+
+For long-running operations, the handler returns `202 accepted` immediately with an
+operation ID, and a background worker completes the computation asynchronously. The
+client polls the operation endpoint for the final result.
+
+```python
+from yaagents_fastapi import agentic_endpoint, AgenticResponse
+import asyncio, uuid
+
+@agentic_endpoint("/claims/{id}/risk-screens", method="POST")
+async def screen_claim(id: str, body: ClaimRequest) -> AgenticResponse:
+    operation_id = str(uuid.uuid4())
+    asyncio.create_task(run_risk_screen(id, body, operation_id))
+    return AgenticResponse.accepted(operation_id=operation_id, status_url=f"/operations/{operation_id}")
+
+async def run_risk_screen(id, body, op_id):
+    # Long-running computation — stores result for client polling
+    ...
+```
+
+## The Claude Code CLI internal pattern (illustrative)
+
+Internally, AmpathyMinds builds some agent services by wrapping the
+[Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) — the CLI receives
+a structured prompt, returns structured output, and the wrapping service maps that into
+Profile v0.3 outcomes. This is **one concrete example** of the §2.3 process-shell
+pattern; it is **not a yaagents binding** — you can use any reasoning approach behind
+the boundary.
+
+```python
+import subprocess, json
+from yaagents_fastapi import agentic_endpoint, AgenticResponse
+
+PROMPT_TEMPLATE = """
+You are a campaign optimizer. Given the campaign data below, return a JSON object
+with keys: "action" (string), "reasoning" (string), "confidence" (float 0-1).
+If you need more information, return: {{"type": "clarification_required", "requiredInputs": [...]}}
+
+Campaign data: {campaign_json}
+"""
+
+@agentic_endpoint("/campaigns/{id}/optimizations", method="POST")
+async def optimize_with_claude_code_cli(id: str, body: OptimizationRequest) -> AgenticResponse:
+    prompt = PROMPT_TEMPLATE.format(campaign_json=body.model_dump_json())
+    proc = subprocess.run(
+        ["claude", "-p", prompt, "--output-format", "json"],
+        capture_output=True, text=True, check=True
+    )
+    result = json.loads(proc.stdout)
+    if result.get("type") == "clarification_required":
+        return AgenticResponse.clarification_required(result["requiredInputs"])
+    return AgenticResponse.done({"action": result["action"], "reasoning": result["reasoning"]})
+```
+
+<Aside type="note">
+  YAAgents has zero dependency on Claude Code or any specific LLM CLI. This section
+  documents an AmpathyMinds-internal choice; your agent service can use whatever
+  reasoning pipeline fits your domain. The pattern is §2.3 (process-shell); the CLI
+  is just one instance of that pattern.
+</Aside>
+
+## What YAAgents does NOT do
+
+- **Not an agent framework** — yaagents does not provide a reasoning pipeline, a memory layer, or a prompt-management system.
+- **Not a chatbot framework** — yaagents is for resource-oriented domain APIs, not conversational chat interfaces.
+- **Not an MCP replacement** — MCP is a tool-server protocol for LLM tool use; yaagents is the application-facing API boundary. Both coexist in the same stack.
+- **Not a model abstraction layer** — yaagents does not wrap or choose your LLM provider; that is your handler's responsibility.
+- **Not a prompt-strategy library** — yaagents does not manage few-shot examples, chain-of-thought scaffolding, or system-prompt versioning.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard title="Inter-agent calls" href="/yaagents/architecture/inter-agent-calls/" description="How yaagents handles A2A and inter-service requests at the gateway layer." />
+  <LinkCard title="Example: e-commerce store" href="/yaagents/examples/" description="A full end-to-end example in Python and Go using the direct LLM call pattern." />
+  <LinkCard title="Profile spec" href="https://github.com/ai-mpathyminds/yaagents/blob/main/spec/agentic-rest-profile.md" description="The Agentic REST Response Profile v0.3 — the typed outcome contract." />
+</CardGrid>

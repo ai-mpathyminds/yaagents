@@ -9,138 +9,38 @@
 
 ---
 
-## Developer Certificate of Origin (DCO)
+## How to file issues
 
-YAAgents uses the **Developer Certificate of Origin (DCO)** instead of a
-Contributor License Agreement (CLA). Every commit you submit must carry a
-`Signed-off-by:` trailer certifying that you have the right to submit the
-contribution under the Apache 2.0 license.
+Use [GitHub Issues](https://github.com/ai-mpathyminds/yaagents/issues) for all
+bug reports, feature requests, plugin proposals, and adapter requests.
 
-Add it with:
+**Issue labels:**
 
-```bash
-git commit --signoff -m "feat(gateway): your change"
-```
+| Label | When to use |
+|---|---|
+| `good first issue` | Small, well-scoped issue suitable for first-time contributors |
+| `help wanted` | Open ask for community contribution — maintainers want help here |
+| `adapter` | Spring Boot, ASP.NET Core, NestJS, Express, LangGraph, Semantic Kernel, Pydantic AI adapters |
+| `documentation` | Docs improvements (README, Pages site, per-component READMEs) |
+| `enhancement` | Non-MVP features — Helm chart, LLM-based prompt sanitization, etc. |
+| `plugin-proposal` | A new first-party or community gateway plugin |
+| `bug` | Confirmed defect with a reproduction case |
 
-or manually append to every commit message:
+**Good bug report: include these.**
+- Component affected (gateway / sdk-fastapi / sdk-go / client-python / client-ts / client-go / cli / spec)
+- Profile version (check `spec/VERSION`)
+- Minimal reproduction steps — curl command, Python/TypeScript/Go snippet, or compose config
+- Observed response (full HTTP status + body) vs expected
+- Environment (OS, Docker version, language runtime)
 
-```
-Signed-off-by: Your Name <your@email.com>
-```
-
-By signing off you confirm that your contribution complies with the
-[Developer Certificate of Origin v1.1](https://developercertificate.org/).
-The DCO does **not** transfer copyright — you retain ownership of your work.
-
-Pull requests without a `Signed-off-by:` on every commit will fail the DCO
-check and cannot be merged.
-
----
-
-## Pull request checklist
-
-Before opening a PR, verify:
-
-- [ ] Every commit carries `Signed-off-by: Your Name <your@email.com>` (DCO).
-- [ ] The PR is linked to an issue (bug, feature, or plugin proposal).
-- [ ] `CHANGELOG.md` has an entry under `[Unreleased]` with the change type
-      (`Added` / `Changed` / `Fixed` / `Removed`) and a one-line description.
-- [ ] Tests pass locally (`go test ./...` for Go; `hatch run test` for Python;
-      `pnpm test` for TypeScript).
-- [ ] Lint gates pass (`golangci-lint`, `ruff`, `eslint`).
-- [ ] New public API surfaces are documented (godoc / docstring / JSDoc).
-- [ ] OpenAPI components in `openapi/` are updated if the HTTP contract changed.
-- [ ] For plugin WIs: the `Plugin` interface contract is implemented and the
-      plugin is registered via `init()` (see **Plugin contribution path** below).
-
----
-
-## Plugin contribution path
-
-Community plugins extend the YAAgents Gateway at the `Plugin` interface level.
-A plugin is a Go package that satisfies:
-
-```go
-// plugin/plugin.go (simplified)
-type Plugin interface {
-    Name() string
-    ProcessRequest(ctx context.Context, req *PluginRequest) (*PluginRequest, error)
-    ProcessResponse(ctx context.Context, resp *PluginResponse) (*PluginResponse, error)
-}
-```
-
-### How to contribute a community plugin
-
-1. **Open a Plugin Proposal issue** using the `plugin-proposal` template.
-   Include the plugin name, the hook it targets (`request` / `response` /
-   `both`), and a minimal API sketch. Wait for a maintainer `go-ahead` comment
-   before investing in implementation.
-
-2. **Implement the plugin** in your fork at
-   `gateway/plugins/<your-plugin-name>/plugin.go`. Register it via `init()`:
-
-   ```go
-   func init() {
-       gateway.RegisterPlugin(&MyPlugin{})
-   }
-   ```
-
-3. **Module path convention** for community plugins published as standalone
-   modules: `github.com/<you>/yaagents-plugin-<name>`. The gateway's `plugins/`
-   directory hosts first-party plugins; community plugins are imported by users
-   who choose to enable them.
-
-4. **Tests required.** Every plugin must ship unit tests. Integration tests
-   (using the `examples/` Compose stack) are strongly encouraged.
-
-5. **YAML config.** Plugins that accept configuration must read from
-   `gateway.yaml` under a `plugins.<name>:` key. Document the config schema
-   in the plugin's README.
-
-6. **Sign off and open the PR** per the DCO checklist above.
-
----
-
-## How to open a good issue
-
-### Bug reports
-
-Use the **Bug Report** issue template. Include:
-
-- YAAgents component affected (gateway / sdk-fastapi / sdk-go / client-python /
-  client-ts / client-go / cli / spec)
-- Profile version (see `spec/`)
-- Minimal reproduction steps (curl, Python/TS/Go snippet, or compose config)
-- Observed vs expected response (include the full HTTP status + body)
-- Environment (OS, Docker version, language runtime version)
-
-### Feature requests
-
-Use the **Feature Request** issue template. Frame the request as a use-case
-problem, not a solution. Include:
-
+**Good feature request: frame it as a use-case problem.**
 - The agentic API pattern you are trying to build
 - What the current profile/gateway/SDK forces you to do today
 - What you wish you could do instead
-- Any OpenAPI or HTTP semantics references that support the change
-
-### Adapter requests
-
-Use the **Adapter Request** issue template if you want native YAAgents
-support for a framework (Spring Boot, ASP.NET Core, Express, etc.). Include:
-
-- The framework and language
-- Whether you would be willing to maintain the adapter
-- Approximate user base / adoption signal
-
-### Plugin proposals
-
-Use the **Plugin Proposal** issue template. See the **Plugin contribution
-path** section above for what to include.
 
 ---
 
-## Development setup
+## Dev setup
 
 ```bash
 # Clone with submodules
@@ -153,13 +53,19 @@ cd gateway && go build ./... && go test ./...
 # Go server SDK (Go 1.22+)
 cd sdk-go && go build ./... && go test ./...
 
-# Python SDK / client / CLI (Python 3.11+, Hatch)
-cd sdk-fastapi && hatch run test
-cd client-python && hatch run test
-cd cli && hatch run test
+# Python server SDK (Python 3.11+, Hatch)
+cd sdk-fastapi && pip install -e ".[dev]" && hatch run test
+
+# Python client + CLI
+cd client-python && pip install -e ".[dev]" && hatch run test
+cd cli && pip install -e ".[dev]" && hatch run test
 
 # TypeScript client (Node 20+, pnpm)
 cd client-ts && pnpm install && pnpm test
+
+# Docs site (Node 20+, pnpm)
+cd docs && pnpm install && pnpm run dev
+# Opens http://localhost:4321/yaagents/
 
 # Full demo (Python reference)
 cd examples/campaign-api && docker compose up
@@ -168,14 +74,14 @@ cd examples/campaign-api && docker compose up
 cd examples/campaign-api-go && docker compose up
 ```
 
-Lint + security gates run in CI (see `.github/workflows/`). All PRs must pass
-the full matrix before merge.
-
 ---
 
-## Commit conventions
+## PR process
 
-Contributors follow Conventional Commits with component scope:
+**Branch naming:** `feature/<description>`, `fix/<description>`, `docs/<description>`.
+
+**Commit message style:** [Conventional Commits](https://www.conventionalcommits.org/)
+with component scope. Every commit must carry a DCO `Signed-off-by:` trailer.
 
 ```
 feat(gateway): add RBAC policy reload endpoint
@@ -184,7 +90,104 @@ docs(spec): clarify 206 partial-content semantics
 feat(sdk-go): add AgenticResponse.WithCorrelationID helper
 ```
 
-Every commit must carry a DCO `Signed-off-by:` trailer (see above).
+Add the DCO sign-off:
+```bash
+git commit --signoff -m "feat(gateway): your change"
+```
+
+**PR description template** — link these in every PR:
+- Issue number: `Closes #<N>` or `Refs #<N>`
+- What changed and why (one paragraph)
+- Tests run: paste the relevant test command and exit code
+- Checklist:
+  - [ ] DCO `Signed-off-by:` on every commit
+  - [ ] Tests pass (`go test ./...` / `hatch run test` / `pnpm test`)
+  - [ ] Lint gates pass (see §Code style)
+  - [ ] `CHANGELOG.md` entry under `[Unreleased]`
+  - [ ] OpenAPI components updated if HTTP contract changed
+
+Pull requests without `Signed-off-by:` on every commit will fail the DCO check and cannot be merged. The DCO does **not** transfer copyright — you retain ownership of your work.
+
+---
+
+## Code style
+
+| Language | Formatter | Linter / type-checker |
+|---|---|---|
+| Go | `gofmt` (run automatically by `go build`) | `golangci-lint run ./...` |
+| Python | `ruff format` | `ruff check` + `mypy --strict` |
+| TypeScript | `prettier` | `eslint` |
+| MDX (docs) | — | `pnpm run build` clean (Astro Starlight build) |
+
+CI runs all gates on every pull request. Run them locally before pushing:
+
+```bash
+# Go
+cd gateway && golangci-lint run ./...
+
+# Python
+cd sdk-fastapi && ruff check . && ruff format --check . && mypy src/
+
+# TypeScript
+cd client-ts && pnpm lint
+
+# Docs
+cd docs && pnpm run build
+```
+
+---
+
+## Release process
+
+Releases are **tag-driven**. Pushing a semver tag triggers the publish workflow:
+
+```bash
+git tag v0.X.Y && git push origin v0.X.Y
+```
+
+The GitHub Actions release workflow (`.github/workflows/release.yml`) publishes:
+- Python packages to PyPI via [OIDC Trusted Publisher](https://docs.pypi.org/trusted-publishers/) (no long-lived API keys)
+- TypeScript client to npm with provenance attestation
+- Gateway container image to GHCR with Cosign signing + Syft SBOM
+- Go modules via the Go module proxy (tag push triggers indexing)
+
+**Cross-component release wave** — a major version bump (e.g. v0.4.0) must tag all
+eight components at the same version in the same release cycle. The PI4-yaa launch
+readiness runbook (LA-* WI series) established the cross-component release-wave pattern:
+tag order is `gateway` → `sdk-*` → `client-*` → `cli` → meta-repo; each publish must
+succeed before tagging the next component.
+
+Only maintainers with write access to the `ai-mpathyminds` organization can publish releases.
+
+---
+
+## Security disclosure
+
+For security issues, email **security@aimpathyminds.com**. Do not file public
+issues for security vulnerabilities. See [SECURITY.md](SECURITY.md) for our
+responsible-disclosure policy.
+
+---
+
+## Plugin contribution path
+
+Community plugins extend the YAAgents Gateway at the `Plugin` interface level.
+A plugin is a Go package that satisfies:
+
+```go
+// gateway/plugins/plugin.go (simplified)
+type Plugin interface {
+    Name() string
+    ProcessRequest(ctx context.Context, req *PluginRequest) (*PluginRequest, error)
+    ProcessResponse(ctx context.Context, resp *PluginResponse) (*PluginResponse, error)
+}
+```
+
+1. Open a `plugin-proposal` issue with the plugin name, hook target, and API sketch. Wait for maintainer `go-ahead` before implementing.
+2. Implement at `gateway/plugins/<your-plugin-name>/plugin.go`; register via `init()`.
+3. Publish as a standalone module at `github.com/<you>/yaagents-plugin-<name>`.
+4. Ship unit tests; integration tests using the examples stack are strongly encouraged.
+5. Document the YAML config schema under `plugins.<name>:` in a plugin README.
 
 ---
 
