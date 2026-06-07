@@ -1,0 +1,126 @@
+---
+title: Why Agentic REST?
+description: Design rationale for the Profile v0.3 choices — why REST-style over generic invoke, and honest trade-offs.
+---
+
+import { Aside, LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+## The choice
+
+Every agent integration faces a fork in the road. You can expose the agent through a
+**generic invoke endpoint** — one URL, arbitrary JSON in, arbitrary JSON out — or through
+**REST-style resource operations** with typed contracts, predictable status codes, and a
+defined media type. YAAgents takes the second path. This page explains why, where the
+trade-offs land, and when you should choose something else.
+
+---
+
+## Why REST-style
+
+### Domain endpoints over `/agents/invoke`
+
+A recommendation agent that lives behind `POST /agents/recommendation/invoke` is invisible
+to your API gateway, your load balancer, your access control policy, and your OpenAPI
+toolchain. Every consumer must interpret freeform JSON to understand what happened.
+
+`POST /products/{id}/recommendations` is a normal REST resource operation. Gateways can
+route, authorize, rate-limit, and audit it the same way they handle any other endpoint.
+OpenAPI tooling generates typed clients from it. Operators know where to look when something
+breaks.
+
+The resource-oriented discipline is not cosmetic — it is the load-bearing surface that lets
+the rest of the stack behave normally.
+
+### Typed outcomes over freeform responses
+
+When an agent cannot proceed, it needs to communicate *why* in a way the client can act on.
+Freeform JSON (`{"error": "I need more input"}`) requires every client to parse natural
+language or ad-hoc schemas.
+
+Profile v0.3 defines ten outcome types with stable status codes and media types:
+`clarification_required` (400) means the agent needs more input; `approval_required` (412)
+means a human must act before the agent can continue; `failed_dependency` (424) means a
+downstream tool failed. Clients handle these with a `switch` on `result.type`, not a string
+comparison on an error message.
+
+Typed outcomes also survive retry logic, circuit breakers, and distributed tracing without
+requiring every hop to re-parse the agent's prose.
+
+### Gateway as policy boundary, not framework
+
+LangGraph, LangChain Server, and Pydantic AI each have their own notion of authentication,
+tenancy, and observability. When the agent runtime owns those concerns, changing the runtime
+means migrating auth middleware, tenant context plumbing, and log formatters.
+
+YAAgents puts policy at the **gateway layer**, not inside the agent runtime. The agent
+implementation is responsible for domain logic; the gateway is responsible for auth
+(token-validator), tenant context (tenant-injector), and audit (otel-audit). The agent runtime
+can be swapped — or mixed (Python agent calls a Go agent) — without touching the policy surface.
+
+### The service-account auth pattern at inter-agent hops
+
+When agent-A calls agent-B inside an agent graph, using the end-user's bearer token for that
+hop leaks the user's identity across a trust boundary and makes the audit log unreadable
+("user ordered the recommendation" obscures "recommendation-agent checked inventory").
+
+Service-account auth — agent-A presents its own service token, registered in
+token-validator's `issuers:` list — keeps each hop's actor explicit. Operators can trace the
+call graph from correlation IDs alone. This pattern requires more upfront configuration but
+eliminates an entire class of audit ambiguity.
+
+---
+
+## Trade-offs (honest)
+
+Choosing the REST-style path has real costs.
+
+**More upfront API design.** You need to define resource endpoints, decide which HTTP methods
+apply, and specify which Profile v0.3 outcome types your agent can return. For a quick
+prototype or an experiment, that overhead is not worth it. Generic invoke is faster to
+scaffold.
+
+**Harder to expose fully conversational agents.** An agent that operates on open-ended
+multi-turn dialogue does not map naturally to resource operations. Profile v0.3 is designed
+for agents that take bounded inputs, do a bounded thing, and return a typed result. If your
+agent is a chatbot, it fits a conversation protocol better than a REST profile.
+
+**Profile compliance takes discipline across the call graph.** If one agent in a graph
+swallows a `424 failed_dependency` and returns `200 OK`, the composability guarantee breaks.
+Every agent in the graph must translate typed outcomes correctly — that is an operational
+discipline that requires code review and testing, not just configuration.
+
+---
+
+## When yaagents is NOT the right call
+
+If you are building a **chatbot**, a **conversational product**, or a **pure-LLM
+experiment** where the primary surface is open-ended text exchange, yaagents adds ceremony
+without value. Use a conversation protocol, a function-calling framework, or a direct LLM
+SDK instead.
+
+If you are building a **throw-away prototype** to validate an agent idea in a weekend,
+scaffolding resource endpoints and gateway configuration is overhead you don't need yet.
+Start with a generic invoke endpoint; adopt yaagents when the prototype graduates to a
+production API that needs auth, tenancy, and audit.
+
+If your agent runtime's ecosystem is the product — you want framework-native deployment,
+framework-native observability, and framework-native tooling — yaagents is an additional
+layer you may not want. YAAgents is a governance overlay, not a replacement for LangGraph
+or Pydantic AI's own deployment surface.
+
+---
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard
+    title="Profile Specification"
+    href="/yaagents/profile/"
+    description="The normative v0.3 spec: all ten outcome types, media types, and header requirements."
+  />
+  <LinkCard
+    title="Comparisons"
+    href="/yaagents/concepts/comparisons/"
+    description="Side-by-side: generic invoke, framework runtimes, MCP, and direct LLM SDK — where each fits."
+  />
+</CardGrid>
