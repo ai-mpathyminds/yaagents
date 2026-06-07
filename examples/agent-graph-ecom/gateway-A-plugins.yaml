@@ -1,0 +1,53 @@
+# agent-graph-ecom — gateway-A plugin configuration (WI-4yaa.AF-1)
+# End-user boundary: validates end-user JWTs; propagates tenant context.
+# ADR: PI2-yaa-0001 (plugin chain), PI1-yaa-0001 (HS256 demo JWT).
+#
+# SECURITY NOTE: jwt_secret below is a DEMO-ONLY value.
+# Never use this value in production. For production use GATEWAY_JWT_JWKS_URL
+# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+#
+# Inter-agent auth: gateway-A uses secret "demo-user-secret" (end-user tokens).
+#                   gateway-B uses secret "demo-svc-secret" (service-account tokens).
+# The two gateways use DIFFERENT secrets — this is the service-account auth demo.
+#
+# Tenant propagation: gateway ContextMiddleware reads X-Tenant-ID from the
+# inbound request and injects it into the upstream call automatically via
+# InjectUpstreamHeaders (tenant/tenant.go). No separate tenant-injector
+# webhook service is required for this demo.
+#
+# Plugin chain:
+#   1. token-validator — HS256 test mode; validates end-user demo JWT
+#
+# tenant-injector is commented out: the demo has no webhook lookup service.
+# In production: configure lookup.url with your tenant-directory endpoint.
+
+plugins:
+  # ── 1. token-validator (end-user IdP) ────────────────────────────────────
+  # Validates end-user Authorization: Bearer <token> header.
+  # test_mode: true + jwt_secret activates HS256 validation (demo only).
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: "demo-user-secret"   # DEMO ONLY — see SECURITY NOTE
+
+  # ── tenant-injector (disabled in this demo) ───────────────────────────────
+  # Uncomment and set lookup.url when a tenant-directory service is available.
+  # The gateway's ContextMiddleware forwards the client-provided X-Tenant-ID
+  # to the upstream without tenant-injector (sufficient for this demo).
+  #
+  # - name: tenant-injector
+  #   enabled: true
+  #   principal:
+  #     claim: sub
+  #   lookup:
+  #     url: "http://tenant-directory:8999/tenants/{principal}"
+  #     method: GET
+  #     timeout_ms: 500
+  #     response:
+  #       mode: single
+  #       tenant_id_field: tenant_id
+  #     cache:
+  #       ttl_seconds: 60
+  #       max_entries: 100
+  #   inject:
+  #     tenant_header: X-Tenant-ID

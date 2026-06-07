@@ -1,0 +1,26 @@
+# agent-graph-ecom — gateway-B plugin configuration (WI-4yaa.AF-1)
+# Service-to-service boundary: validates service-account JWTs from recommendation-agent.
+# ADR: PI2-yaa-0001 (plugin chain), PI4-yaa-0002 (token-validator multi-IDP).
+#
+# SECURITY NOTE: jwt_secret below is a DEMO-ONLY value.
+# Never use this value in production. For production use GATEWAY_JWT_JWKS_URL
+# and remove test_mode: true (ADR PI1-yaa-0001 §3).
+#
+# Inter-agent auth: gateway-B uses secret "demo-svc-secret" (service-account tokens).
+#                   gateway-A uses secret "demo-user-secret" (end-user tokens).
+# recommendation-agent mints tokens with "demo-svc-secret" at startup.
+# inventory-agent sees X-Actor-Subject = "recommendation-agent-svc" — not the end-user.
+#
+# Plugin chain:
+#   1. token-validator — HS256 test mode; validates service-account token
+
+plugins:
+  # ── 1. token-validator (service-account IdP) ─────────────────────────────
+  # Validates service-account Authorization: Bearer <token> header.
+  # test_mode: true + jwt_secret activates HS256 validation (demo only).
+  # In production: configure issuers: list with your service-account JWKS URL
+  # (ADR PI4-yaa-0002 multi-IDP plug-point).
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: "demo-svc-secret"   # DEMO ONLY — see SECURITY NOTE

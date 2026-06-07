@@ -1,0 +1,21 @@
+# agent-graph-ecom — gateway-A route configuration (WI-4yaa.AF-1)
+# Forwards end-user requests to recommendation-agent.
+# ADR: PI1-yaa-0001 (HS256 demo JWT), PI4-yaa-0002 (token-validator multi-IDP).
+#
+# Demo flows enabled:
+#   POST /products/{productId}/recommendations → recommendation-agent
+#     - in-stock filter: 200 with filtered list
+#     - inventory down:  424 failed_dependency
+#     - idempotency:     same Idempotency-Key → cached inventory results
+
+routes:
+  # ── POST /products/{productId}/recommendations ────────────────────────────
+  # Resource-oriented endpoint per Profile v0.3 §3 naming conventions.
+  # tenantRequired: true — gateway rejects requests without X-Tenant-ID.
+  # audit: true          — emits a structured audit log entry per call.
+  - id: get-recommendations
+    method: POST
+    path: /products/{productId}/recommendations
+    target: http://recommendation-agent:8125
+    tenantRequired: true
+    audit: true
