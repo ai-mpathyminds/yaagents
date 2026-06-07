@@ -1,0 +1,98 @@
+# .github/workflows/bench.yml — gateway benchmark harness (WI-4yaa.BENCH-0)
+#
+# Runs the bench harness when gateway plugin internals or bench infra changes.
+# Outcome: regression-check.sh exits 0 (no regression vs baselines.json) or
+#          exits 1 (regression — annotated with delta and threshold).
+#
+# This is NOT a blocking pre-merge gate — it runs as a workflow_run post-CI,
+# or can be triggered manually. BENCH-{1..5} will promote per-plugin runs to
+# explicit gates once baselines are established.
+#
+# Tool: vegeta (pure Go binary; installed via go install in harness.sh).
+# No Docker-in-Docker — uses Docker Compose on the ubuntu-latest runner.
+#
+# Important: Docker Compose --wait requires healthcheck on all services
+# (compose.bench.yml §healthcheck blocks).  ubuntu-latest provides Docker
+# Engine + Compose plugin as of 2024-10-01.
+
+name: Bench — gateway plugin harness
+
+on:
+  push:
+    paths:
+      - 'gateway/internal/plugins/**'
+      - 'gateway/bench/**'
+      - 'gateway/go.mod'
+      - 'gateway/go.sum'
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: 'Plugin name to bench (e.g. tokenvalidator)'
+        required: false
+        default: 'tokenvalidator'
+      duration:
+        description: 'Attack duration (e.g. 60s)'
+        required: false
+        default: '60s'
+      rps:
+        description: 'Requests per second'
+        required: false
+        default: '100'
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: Bench — ${{ inputs.plugin || 'tokenvalidator' }}
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+
+      # Install vegeta for the attack step (harness.sh also installs if absent,
+      # but pre-installing here keeps harness.sh output clean on CI).
+      - name: Install vegeta
+        run: go install github.com/tsenart/vegeta@latest
+
+      # Verify harness.sh and regression-check.sh are executable.
+      - name: Make harness scripts executable
+        run: |
+          chmod +x bench/harness.sh bench/regression-check.sh
+
+      # Run the bench harness.
+      # Env vars match harness.sh documented overrides.
+      - name: Run bench harness
+        env:
+          BENCH_DURATION:    ${{ inputs.duration || '60s' }}
+          BENCH_RPS:         ${{ inputs.rps || '100' }}
+          BENCH_SECRET:      bench-secret
+          BENCH_AUDIENCE:    bench-gateway
+          BENCH_RESULTS_DIR: bench/results
+        run: bash bench/harness.sh ${{ inputs.plugin || 'tokenvalidator' }}
+
+      # Upload bench result JSON as an artifact for post-run analysis.
+      # Pattern matches bench-<plugin>-<sha>.json produced by harness.sh.
+      - name: Upload bench results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results-${{ github.sha }}
+          path: gateway/bench/results/bench-*.json
+          if-no-files-found: warn
+          retention-days: 30
