@@ -1,0 +1,19 @@
+# Financial Risk Screening — gateway route configuration (WI-4yaa.EX-02)
+# Maps Profile v0.3 paths to http://financial-risk-screening:8123 (Compose service name).
+# ADR: PI1-yaa-0001 (HS256 demo JWT), PI4-yaa-0001 (AuditEmitter contract).
+#
+# Demo flows enabled by this file:
+#   created           — POST /claims/{id}/risk-screens with low-risk body → 201
+#   approval_required — POST with high amount + bad history → 412
+#   license-check     — handled at service level (plugin disabled in this demo)
+
+routes:
+  # ── POST /claims/{claimId}/risk-screens ──────────────────────────────────────
+  # tenantRequired: true — gateway rejects requests without X-Tenant-ID.
+  # audit: true          — every call emits a structured audit log entry.
+  - id: screen-claim
+    method: POST
+    path: /claims/{claimId}/risk-screens
+    target: http://financial-risk-screening:8123
+    tenantRequired: true
+    audit: true
