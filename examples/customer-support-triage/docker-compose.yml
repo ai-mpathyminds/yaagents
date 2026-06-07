@@ -1,0 +1,73 @@
+# yaagents Compose Demo -- customer-support-triage example
+# ports: 8120 (gateway), 8122 (customer-support-triage) -- portfolio band 8120-8129
+# See: portfolio/yaagents-internal/docs/PI4-yaa/examples.md (WI-4yaa.EX-01)
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
+# Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
+# instead (ADR PI1-yaa-0001 §3).
+#
+# Runs mutually-exclusively with other yaagents demos on port 8120.
+
+name: yaagents-triage-demo
+
+services:
+  yaagents-gateway:
+    build:
+      context: ../../gateway
+      dockerfile: ../docker/gateway/Dockerfile
+    ports:
+      - "8120:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_PLUGINS_FILE: /etc/yaagents/plugins.yaml
+      GATEWAY_JWT_SECRET: "demo-secret-not-for-production"   # demo only; see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./gateway-routes.yaml:/etc/yaagents/routes.yaml:ro
+      - ./gateway-plugins.yaml:/etc/yaagents/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    depends_on:
+      customer-support-triage:
+        condition: service_healthy
+    restart: on-failure
+
+  customer-support-triage:
+    build:
+      context: ../..
+      dockerfile: examples/customer-support-triage/Dockerfile
+    ports:
+      - "8122:8122"
+    environment:
+      PORT: "8122"
+      YAAGENTS_PROFILE_VERSION: "v0.3"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8122/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+    networks:
+      - yaagents-net
+    restart: on-failure
+
+networks:
+  yaagents-net:         # named network -- intra-product isolation

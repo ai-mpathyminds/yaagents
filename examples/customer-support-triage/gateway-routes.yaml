@@ -1,0 +1,21 @@
+# Customer Support Triage — gateway route configuration (WI-4yaa.EX-01)
+# Maps Profile v0.3 paths to http://customer-support-triage:8122 (Compose service name).
+# ADR: PI1-yaa-0001 (HS256 demo JWT), PI4-yaa-0001 (AuditEmitter contract).
+#
+# Demo flows enabled by this file:
+#   clarification_required — POST /tickets/{id}:triage with empty body
+#                            → 400 application/vnd.yaagents.clarification+json
+#   created (high severity) — POST with severity=high → 201 (escalated)
+#   created (low severity)  — POST with severity=low  → 201 (autoresolve hint)
+
+routes:
+  # ── POST /tickets/{ticketId}:triage ──────────────────────────────────────────
+  # Colon-action suffix is part of the literal path segment per spec §6.1.
+  # tenantRequired: true — gateway rejects requests without X-Tenant-ID.
+  # audit: true          — every call emits a structured audit log entry.
+  - id: triage-ticket
+    method: POST
+    path: /tickets/{ticketId}:triage
+    target: http://customer-support-triage:8122
+    tenantRequired: true
+    audit: true
