@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yaagents-inventory-agent"
+version = "0.1.0"
+description = "Inventory Agent — YAAgents AF-1 inter-agent example (inventory side)"
+readme = "README.md"
+requires-python = ">=3.11,<4"
+keywords = ["yaagents", "agentic", "REST", "fastapi", "profile-v0.3", "example"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.29",
+    "yaagents-fastapi>=0.4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/ai-mpathyminds/yaagents"
+"Supports-YAAgents-Profile" = "v0.3"
+
+[tool.hatch.build.targets.wheel]
+include = ["main.py"]
+
+# ── ruff ──────────────────────────────────────────────────────────────────────
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = []
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--tb=short"
+markers = [
+    "e2e: end-to-end tests requiring the live Compose demo at http://localhost:8127",
+]

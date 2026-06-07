@@ -1,0 +1,18 @@
+# agent-graph-ecom — gateway-B route configuration (WI-4yaa.AF-1)
+# Service-to-service boundary: forwards inter-agent calls to inventory-agent.
+# ADR: PI4-yaa-0002 (token-validator multi-IDP — service-account issuer).
+#
+# Callers: recommendation-agent (with service-account token)
+# Target:  inventory-agent:8127
+
+routes:
+  # ── GET /inventory/{productId}/stock ─────────────────────────────────────
+  # Called by recommendation-agent with a service-account JWT.
+  # tenantRequired: true — gateway-B requires X-Tenant-ID forwarded by caller.
+  # audit: true          — emits structured audit log per call.
+  - id: get-inventory-stock
+    method: GET
+    path: /inventory/{productId}/stock
+    target: http://inventory-agent:8127
+    tenantRequired: true
+    audit: true

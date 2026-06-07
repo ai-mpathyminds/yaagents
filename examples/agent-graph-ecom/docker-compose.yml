@@ -1,0 +1,158 @@
+# yaagents agent-graph-ecom — multi-service inter-agent example (WI-4yaa.AF-1)
+# Demonstrates: inter-agent auth (service-account token) + tenant propagation +
+# Profile v0.3 outcome propagation + Idempotency-Key forwarding.
+#
+# Ports (yaagents band 8120-8129):
+#   8124  gateway-A          (end-user facing; token-validator with "demo-user-secret")
+#   8125  recommendation-agent (direct; NOT for end users in production)
+#   8126  gateway-B          (service-to-service; token-validator with "demo-svc-secret")
+#   8127  inventory-agent    (direct; NOT for end users in production)
+#
+# SECURITY NOTE: GATEWAY_JWT_SECRET values below are DEMO-ONLY.
+# Never use these values in production. For production use GATEWAY_JWT_JWKS_URL
+# instead (ADR PI1-yaa-0001 §3).
+#
+# Quick start: see README.md §Quick start
+
+name: yaagents-ecom-demo
+
+services:
+
+  # ── gateway-A: end-user boundary ─────────────────────────────────────────────
+  # Validates end-user JWTs (demo-user-secret) and proxies to recommendation-agent.
+  gateway-a:
+    build:
+      context: ../../gateway
+      dockerfile: ../docker/gateway/Dockerfile
+    ports:
+      - "8124:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_PLUGINS_FILE: /etc/yaagents/plugins.yaml
+      GATEWAY_JWT_SECRET: "demo-user-secret"   # demo only; see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./gateway-A-routes.yaml:/etc/yaagents/routes.yaml:ro
+      - ./gateway-A-plugins.yaml:/etc/yaagents/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-ecom-net
+    depends_on:
+      recommendation-agent:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── recommendation-agent ──────────────────────────────────────────────────────
+  # Receives end-user requests; calls inventory-agent via gateway-B.
+  # Mints a service-account JWT (signed with RECOMMENDATION_SVC_SECRET) at startup.
+  recommendation-agent:
+    build:
+      context: ../..
+      dockerfile: examples/agent-graph-ecom/recommendation-agent/Dockerfile
+    ports:
+      - "8125:8125"
+    environment:
+      PORT: "8125"
+      YAAGENTS_PROFILE_VERSION: "v0.3"
+      # Must match gateway-B's jwt_secret so minted token validates.
+      RECOMMENDATION_SVC_SECRET: "demo-svc-secret"   # demo only
+      # Internal URL of gateway-B (service name resolves inside Docker network).
+      INVENTORY_GATEWAY_URL: "http://gateway-b:8080"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8125/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+    networks:
+      - yaagents-ecom-net
+    depends_on:
+      gateway-b:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── gateway-B: service-to-service boundary ────────────────────────────────────
+  # Validates service-account JWTs (demo-svc-secret) from recommendation-agent.
+  # Actor subject set to JWT sub claim → inventory-agent sees "recommendation-agent-svc".
+  gateway-b:
+    build:
+      context: ../../gateway
+      dockerfile: ../docker/gateway/Dockerfile
+    ports:
+      - "8126:8080"
+    environment:
+      GATEWAY_PORT: "8080"
+      GATEWAY_ROUTES_FILE: /etc/yaagents/routes.yaml
+      GATEWAY_PLUGINS_FILE: /etc/yaagents/plugins.yaml
+      GATEWAY_JWT_SECRET: "demo-svc-secret"   # demo only; see SECURITY NOTE
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./gateway-B-routes.yaml:/etc/yaagents/routes.yaml:ro
+      - ./gateway-B-plugins.yaml:/etc/yaagents/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-ecom-net
+    depends_on:
+      inventory-agent:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── inventory-agent ───────────────────────────────────────────────────────────
+  # Receives calls from recommendation-agent (via gateway-B).
+  # Logs actor_id = "recommendation-agent-svc" (from service-account token sub).
+  inventory-agent:
+    build:
+      context: ../..
+      dockerfile: examples/agent-graph-ecom/inventory-agent/Dockerfile
+    ports:
+      - "8127:8127"
+    environment:
+      PORT: "8127"
+      YAAGENTS_PROFILE_VERSION: "v0.3"
+      # Set to "true" to demo failed_dependency propagation.
+      INVENTORY_UNAVAILABLE: "false"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8127/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+          cpus: "0.50"
+    networks:
+      - yaagents-ecom-net
+    restart: on-failure
+
+networks:
+  yaagents-ecom-net:    # named network — intra-example isolation
