@@ -22,6 +22,7 @@ export default defineConfig({
           label: 'Concepts',
           items: [
             { label: 'Why Agentic REST?', link: '/concepts/why-agentic-rest/' },
+            { label: 'Comparisons', link: '/concepts/comparisons/' },
           ],
         },
         {
