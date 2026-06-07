@@ -13,8 +13,8 @@ The **otel-audit** plugin emits one audit record per gateway-proxied request, us
 either a structured stdout log line (default, zero-config) or an OpenTelemetry span
 exported via gRPC OTLP. Audit fields mirror the sdk-go `AuditEvent` schema so that
 gateway-level observability and service-SDK observability share one consistent contract
-documented in `architecture/audit-and-observability.mdx` — operators read a single
-reference instead of two diverging schemas.
+documented in [Audit and Observability](/yaagents/architecture/audit-and-observability/) —
+operators read a single reference instead of two diverging schemas.
 
 Pipeline position:
 
@@ -157,8 +157,9 @@ In production, OTLP exporter typically has lower latency impact than stdout beca
 spans are exported asynchronously in batches. The stdout figure is pessimistic for
 production use where stdout is a log aggregator pipe rather than a terminal.
 
-See `architecture/audit-and-observability.mdx` (DOC-05 — ships PI4-yaa S5) for the
-full bench baseline archive and detailed latency breakdowns.
+See [Audit and Observability](/yaagents/architecture/audit-and-observability/) for the
+full bench baseline archive, detailed latency breakdowns, and the end-to-end
+correlation-id join walkthrough across gateway and SDK audit records.
 
 ### Log lines
 
