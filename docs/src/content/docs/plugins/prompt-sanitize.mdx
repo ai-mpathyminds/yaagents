@@ -166,7 +166,7 @@ patterns silently redact legitimate content; too-narrow patterns miss real threa
 - Large bodies (over 10 KB): p99 overhead **+1.3 ms** (scan overhead grows sub-linearly with body size due to RE2 efficiency).
 - Redact strategy vs reject: p99 overhead **+0.7 ms** additional for redact (body rewrite).
 
-See `architecture/audit-and-observability.mdx` (DOC-05 — ships PI4-yaa S5) for the
+See [Audit and Observability](/yaagents/architecture/audit-and-observability/) for the
 full bench baseline archive.
 
 ### Log lines
