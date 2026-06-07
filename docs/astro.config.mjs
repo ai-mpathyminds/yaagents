@@ -19,6 +19,12 @@ export default defineConfig({
         { label: 'Examples', autogenerate: { directory: 'examples' } },
         { label: 'Plugin Authoring', link: '/plugins/' },
         {
+          label: 'Concepts',
+          items: [
+            { label: 'Why Agentic REST?', link: '/concepts/why-agentic-rest/' },
+          ],
+        },
+        {
           label: 'Architecture',
           items: [
             { label: 'Inter-Agent Calls', link: '/architecture/inter-agent-calls/' },
