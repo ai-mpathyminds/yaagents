@@ -24,7 +24,7 @@ export default defineConfig({
         {
           label: 'Plugins',
           items: [
-            { label: 'Plugin Overview', link: '/plugins/' },
+            { label: 'Plugin pipeline overview', link: '/plugins/' },
             { label: 'token-validator', link: '/plugins/token-validator/' },
             { label: 'tenant-injector', link: '/plugins/tenant-injector/' },
             { label: 'license-check', link: '/plugins/license-check/' },
