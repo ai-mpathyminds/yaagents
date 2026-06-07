@@ -18,6 +18,12 @@ export default defineConfig({
         { label: 'SDK Quickstarts', autogenerate: { directory: 'sdks' } },
         { label: 'Examples', autogenerate: { directory: 'examples' } },
         { label: 'Plugin Authoring', link: '/plugins/' },
+        {
+          label: 'Architecture',
+          items: [
+            { label: 'Inter-Agent Calls', link: '/architecture/inter-agent-calls/' },
+          ],
+        },
         { label: 'Public Roadmap', link: '/roadmap/' },
         { label: 'Contributing', link: '/contributing/' },
         { label: 'Community', link: '/community/' },

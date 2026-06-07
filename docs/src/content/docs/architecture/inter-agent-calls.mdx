@@ -1,0 +1,232 @@
+---
+title: Inter-Agent Calls
+description: Auth, tenant propagation, outcome semantics, and idempotency for agent-A → agent-B call patterns.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## When you need it
+
+Some agent operations require a second agent before they can return to the client. A
+recommendation agent calls an inventory agent to filter out-of-stock products. A triage
+agent calls a knowledge-base agent to retrieve relevant articles. A workflow agent calls a
+pricing agent mid-chain.
+
+These **agent-graph topologies** are normal. YAAgents has clear rules for auth, tenant context,
+outcome semantics, and idempotency across hops so each agent remains independently deployable
+and observable.
+
+---
+
+## Auth patterns
+
+### Pass-through auth
+
+Forward the end-user's bearer token from agent-A to agent-B unchanged.
+
+```http
+# agent-A → agent-B (pass-through)
+GET /inventory/p-1/stock
+Authorization: Bearer <end-user-token>
+X-Tenant-ID: tenant-001
+```
+
+<Aside type="caution">
+Use pass-through auth **only when agent-B should act on behalf of the end-user**. Forwarding
+the end-user token means agent-B's logs, audit trail, and RBAC decisions identify the
+end-user as the actor — agent-A is invisible. This leaks principal identity across a
+trust boundary and breaks the audit chain for inter-agent calls.
+</Aside>
+
+### Service-account auth
+
+Agent-A obtains its own **service-account token** and presents it when calling agent-B.
+Agent-B's gateway is configured with the service-account IdP as one of its registered
+issuers (token-validator `issuers:` list — see
+[Token Validator plugin](/plugins/#token-validator)).
+
+```http
+# agent-A → agent-B (service-account)
+GET /inventory/p-1/stock
+Authorization: Bearer <service-account-token-for-recommendation-agent>
+X-Tenant-ID: tenant-001
+X-Correlation-ID: <propagated from inbound>
+```
+
+Agent-B's logs show `recommendation-agent` (or its service-account `sub` claim) as the
+actor — not the end-user. The audit chain records which agent made which inter-agent call.
+
+**Preferred** for cross-trust-boundary calls. The service-account IdP is registered as an
+additional issuer in token-validator's `issuers:` list per
+[ADR PI4-yaa-0002](/reference/adrs/#pi4-yaa-0002).
+
+### Token exchange (RFC 8693)
+
+Token exchange (OAuth 2.0 RFC 8693) allows agent-A to obtain a delegated token that carries
+both the original end-user identity and agent-A's service identity. This is the most
+semantically precise pattern but requires an authorization server that supports
+[RFC 8693](https://www.rfc-editor.org/rfc/rfc8693).
+
+YAAgents v0.4 defers this to the community. The service-account approach (§2.2) is the
+stable v0.4 path. RFC 8693 token exchange is on the roadmap for a future PI.
+
+---
+
+## Tenant context propagation
+
+### Forward `X-Tenant-ID`
+
+The end-user's `X-Tenant-ID` is resolved and validated by **gateway-A's tenant-injector**
+at the boundary. Once validated, agent-A MUST forward it to agent-B unchanged.
+
+```http
+# agent-A → agent-B: forward validated tenant context
+GET /inventory/p-1/stock
+Authorization: Bearer <service-account-token>
+X-Tenant-ID: tenant-001          ← forwarded; NOT re-resolved
+X-Correlation-ID: <propagated>
+```
+
+Gateway-B's tenant-injector does **not** re-resolve the tenant via webhook on an inter-agent
+hop — the tenant context is already established. Re-resolution would add latency and fail
+when the service-account token carries no tenant claim (it shouldn't).
+
+### When tenant-injector reruns
+
+If agent-B is also exposed publicly (not exclusively via agent-A), gateway-B SHOULD run
+tenant-injector against the incoming `Authorization` header to validate tenant context for
+direct callers. For inter-agent calls arriving with a service-account token, the
+`X-Tenant-ID` forwarded by agent-A is the authoritative source.
+
+Defense-in-depth: gateway-B can validate that the `X-Tenant-ID` value in the header is
+consistent with the tenant claim in the service-account token (if the token carries one).
+
+---
+
+## Profile v0.3 outcome propagation
+
+Each agent in a graph exposes a full Profile v0.3 contract. When agent-B returns a typed
+outcome, agent-A MUST translate it correctly — never swallow it.
+
+### `failed_dependency` (424)
+
+If agent-B returns `424 failed_dependency` (its dependency is unreachable), agent-A MUST
+return `424 failed_dependency` to its caller.
+
+```http
+# agent-B → agent-A
+HTTP/1.1 424 Failed Dependency
+Content-Type: application/vnd.yaagents.error+json
+
+{ "type": "failed_dependency", "detail": "catalog service unreachable" }
+
+# agent-A → client (correct)
+HTTP/1.1 424 Failed Dependency
+Content-Type: application/vnd.yaagents.error+json
+
+{ "type": "failed_dependency", "detail": "inventory agent dependency failed" }
+```
+
+Agent-B IS agent-A's dependency. "My dependency failed" is the literal contract — do not
+translate to 500.
+
+### `clarification_required` (400)
+
+If agent-B returns `400 clarification_required` (it cannot proceed with the inputs),
+agent-A cannot proceed either. Agent-A SHOULD return its own `clarification_required` to
+the client, mapping agent-B's field names into agent-A's input surface.
+
+```http
+# agent-B → agent-A
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.yaagents.clarification+json
+
+{ "type": "clarification_required", "fields": [{"name": "productId", "reason": "not found"}] }
+
+# agent-A → client
+HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.yaagents.clarification+json
+
+{ "type": "clarification_required", "fields": [{"name": "productId", "reason": "product not found in catalog"}] }
+```
+
+### `approval_required` (412)
+
+If agent-B requires human approval before proceeding, agent-A SHOULD return `412
+approval_required` to its caller with the same approver context. Do not swallow the
+approval gate into a success response.
+
+```http
+# agent-B → agent-A
+HTTP/1.1 412 Precondition Failed
+Content-Type: application/vnd.yaagents.approval+json
+
+{ "type": "approval_required", "approver": "inventory-ops", "token": "appr-xyz" }
+
+# agent-A → client
+HTTP/1.1 412 Precondition Failed
+Content-Type: application/vnd.yaagents.approval+json
+
+{ "type": "approval_required", "approver": "inventory-ops", "token": "appr-xyz" }
+```
+
+### Anti-pattern: swallowing typed outcomes
+
+<Aside type="danger">
+Do **not** catch a typed Profile v0.3 outcome from agent-B and return `500 Internal Server
+Error` to the client. `500` means *agent-A itself* failed unexpectedly. A typed `424`,
+`400`, or `412` from agent-B is a business-level outcome — not an unexpected error. Swallowing
+it into 500 destroys the audit trail, breaks client retry logic, and makes the call graph
+opaque to operators.
+</Aside>
+
+---
+
+## Retry and idempotency
+
+Agent graphs introduce retry risk: if agent-A times out waiting for agent-B and retries,
+agent-B must not apply side effects twice.
+
+Forward the `Idempotency-Key` header on every agent-A → agent-B call:
+
+```http
+# client → agent-A
+POST /products/p-1/recommendations
+Idempotency-Key: idem-abc-123
+
+# agent-A → agent-B (same key propagated)
+GET /inventory/p-1/stock
+Idempotency-Key: idem-abc-123
+X-Correlation-ID: corr-xyz-456
+```
+
+On retry with the same `Idempotency-Key`, agent-B returns its cached outcome without
+re-running side effects. Agent-A can retry safely without duplicating inventory checks,
+reservations, or external calls.
+
+Also propagate `X-Correlation-ID` across hops. Every hop preserves the same correlation ID
+so the full call graph is traceable in a single log query. See the
+[Audit and Observability](/architecture/audit-and-observability/) page for
+correlation-ID propagation details.
+
+---
+
+## Worked example
+
+The `examples/agent-graph-ecom/` directory demonstrates all four patterns above in a
+runnable two-service compose:
+
+- `recommendation-agent` (agent-A): receives `POST /products/{id}/recommendations`; calls
+  `inventory-agent` with a service-account token; propagates `X-Tenant-ID` and
+  `Idempotency-Key`; translates `424` / `400` outcomes correctly.
+- `inventory-agent` (agent-B): validates the service-account token via token-validator
+  multi-IDP; returns stock availability.
+
+See **[`examples/agent-graph-ecom/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/agent-graph-ecom)**
+for the quickstart, docker-compose, and annotated source.
+
+**Related pages**
+
+- [Token Validator plugin](/plugins/#token-validator) — multi-IDP `issuers:` registration for service-account IdP
+- [Tenant Injector plugin](/plugins/#tenant-injector) — webhook resolution at the boundary
+- [Audit and Observability](/architecture/audit-and-observability/) — correlation-ID propagation across hops
