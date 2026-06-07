@@ -1,10 +1,12 @@
 # .github/workflows/ci.yml
 # WI-1yaa.REL-6 — CI test/lint matrix + spec release archive
 #
-# Four language/quality jobs (all must pass; ci-go has ≥80% coverage gate):
+# Language/quality jobs (all must pass; ci-go has ≥80% coverage gate):
 #   ci-go                 Go  — golangci-lint + govulncheck + go test
 #   e2e-tokenvalidator    Go  — 6-scenario multi-IDP e2e gate (WI-4yaa.PLG-03)
 #                               exit-0 pre-merge gate per PLG-03 acceptance criteria
+#   e2e-tenantinjector    Go  — 5-scenario webhook-resolution e2e gate (WI-4yaa.PLG-06)
+#                               exit-0 pre-merge gate per PLG-06 acceptance criteria
 #   ci-python   Py  — ruff + mypy + pip-audit + pytest  (matrix: 3 packages)
 #   ci-ts       TS  — eslint + tsc --noEmit + pnpm audit + vitest
 #
@@ -186,6 +188,56 @@ jobs:
       # Timeout guard: 120s wall-clock cap per PLG-03 acceptance criteria.
       - name: e2e-tokenvalidator (exit-0 pre-merge gate)
         run: go test -count=1 -timeout 120s -run E2E -v ./internal/plugins/tokenvalidator/...
+
+  # ── tenant-injector webhook-resolution e2e gate ─────────────────────────
+  # WI-4yaa.PLG-06 acceptance criterion: "CI workflow job e2e-tenantinjector
+  # runs go test ./internal/plugins/tenantinjector/ -run E2E -v on every PR
+  # and on merge to main; must exit 0 before merge."
+  #
+  # 5 scenarios (as-shipped contract per ADR PI4-yaa-0003, revised B-02):
+  #   1. Webhook success → 200 + X-Tenant-ID + X-Actor-Principal injected
+  #   2. Webhook 404 → on_failure.principal_not_found (403)
+  #   3. Webhook unreachable → on_failure.lookup_network_error (503)
+  #   4. Cache hit — second identical-principal request → 0 extra webhook calls
+  #   5. Cache miss after TTL — next request after expiry → 1 extra webhook call
+  # No Docker / testcontainers needed — mock webhook server is httptest.Server.
+  # Runs independently of ci-go so failures are reported distinctly.
+  e2e-tenantinjector:
+    name: E2E — tenant-injector webhook resolution (5 scenarios, exit-0 gate)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: gateway
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gateway/go.mod
+          cache-dependency-path: gateway/go.sum
+
+      # Verify no t.Skip* calls slipped into the e2e file (integration-test-discipline).
+      # Comment-only lines (// ...) are excluded from the match.
+      - name: Assert no t.Skip in e2e test file
+        run: |
+          HITS=$(grep -n "t\.Skip\|t\.SkipNow\|t\.Skipf" \
+                   internal/plugins/tenantinjector/tenantinjector_e2e_test.go \
+                 | grep -v "^[0-9]*:[[:space:]]*//" || true)
+          if [ -n "$HITS" ]; then
+            echo "${HITS}"
+            echo "::error::t.Skip* call found in tenantinjector_e2e_test.go — integration-test-discipline forbids silent skip; use t.Fatal"
+            exit 1
+          fi
+          echo "no-skip-assert: PASS"
+
+      # Exit-0 pre-merge gate: all 5 webhook-resolution e2e scenarios must pass.
+      # Timeout guard: 90s wall-clock cap per PLG-06 acceptance criteria.
+      - name: e2e-tenantinjector (exit-0 pre-merge gate)
+        run: go test -count=1 -timeout 90s -run E2E -v ./internal/plugins/tenantinjector/...
 
   # ── Python: ruff + mypy + pip-audit + pytest ─────────────────────────────
   # Matrix over the three Python packages; fail-fast=false so all three report.
@@ -370,7 +422,7 @@ jobs:
   # no separate spec registry in PI1-yaa.
   spec-archive:
     name: Attach spec archive to Release
-    needs: [ci-go, e2e-tokenvalidator, ci-python, ci-ts]
+    needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, ci-python, ci-ts]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
