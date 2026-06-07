@@ -130,7 +130,7 @@ cache miss (network call to mock license server included); **−1 ms** on cache 
 within noise floor). The 280 ms figure reflects the full round-trip to the license server
 — tune `cache_ttl_seconds` to maximise cache-hit rate in production. At 300 s TTL and
 steady-state traffic, cache hits dominate and per-request overhead is sub-millisecond.
-See `architecture/audit-and-observability.mdx` (DOC-05 — ships PI4-yaa S5) for the
+See [Audit and Observability](/yaagents/architecture/audit-and-observability/) for the
 full bench baseline archive.
 
 ### Log lines

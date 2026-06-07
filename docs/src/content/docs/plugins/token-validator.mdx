@@ -186,7 +186,7 @@ the `jwt_secret` config key; never commit YAML with a real secret inline.
 **Bench baseline (BENCH-1; commit 5c657b8; 2026-06-07):** p99 overhead **+4.9 ms** vs
 no-plugin baseline at 100 RPS, 2-issuer config with per-issuer JWKS cache TTL 300 s.
 Primarily dominated by JWKS cache lookup; warm-cache requests add sub-millisecond overhead.
-See `architecture/audit-and-observability.mdx` (DOC-05 — ships in PI4-yaa S5)
+See [Audit and Observability](/yaagents/architecture/audit-and-observability/)
 for the full gateway observability baseline and bench result archive.
 
 ### Log lines
