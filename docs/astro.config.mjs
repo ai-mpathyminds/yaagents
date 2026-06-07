@@ -49,9 +49,16 @@ export default defineConfig({
         { label: 'SDK Quickstarts', autogenerate: { directory: 'sdks' } },
         { label: 'Examples', autogenerate: { directory: 'examples' } },
         {
+          label: 'Case Studies',
+          items: [
+            { label: 'E-commerce Recommendations', link: '/case-studies/ecommerce-product-recommendations/' },
+          ],
+        },
+        {
           label: 'Architecture',
           items: [
             { label: 'Inter-Agent Calls', link: '/architecture/inter-agent-calls/' },
+            { label: 'Audit and Observability', link: '/architecture/audit-and-observability/' },
           ],
         },
         { label: 'Public Roadmap', link: '/roadmap/' },

@@ -1,0 +1,215 @@
+---
+title: Audit and Observability
+description: Cross-component audit and observability contract — otel-audit gateway plugin, sdk-go AuditEmitter, and sdk-fastapi AuditEmitter working together under one correlation ID.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+
+## The audit contract
+
+Every request that passes through a YAAgents gateway produces a structured audit record. The
+record captures who made the request, for which tenant, on which operation, and what the
+outcome was. This contract is defined in
+[ADR PI4-yaa-0001](https://github.com/ai-mpathyminds/yaagents/blob/main/docs/adr/PI4-yaa-0001.md)
+and is implemented consistently across three components:
+
+- **otel-audit gateway plugin** — emits at ingress/egress (before and after the upstream call)
+- **sdk-go `AuditEmitter`** — emits at response-write time inside the Go service
+- **sdk-fastapi `AuditEmitter`** — emits at response-write time inside the Python service
+
+The canonical audit event shape (`AuditEvent`) has these fields:
+
+| Field | Source | Example |
+|---|---|---|
+| `event_type` | Plugin/SDK sets | `"agentic.request.received"` |
+| `tenant_id` | `X-Tenant-ID` header | `"tenant-abc"` |
+| `actor_id` | JWT `sub` claim or `X-Actor-Principal` | `"usr-xyz"` |
+| `request_id` | `X-Request-ID` header | `"req-001"` |
+| `correlation_id` | `X-Correlation-ID` header | `"corr-001"` |
+| `operation` | Route ID | `"POST /recommendations/{customerId}"` |
+| `resource_id` | Path-param value | `"cust-42"` |
+| `outcome` | Set at response time | `"success"` \| `"clarification_required"` \| … |
+| `timestamp` | RFC3339 UTC | `"2026-06-07T19:00:00Z"` |
+| `attributes` | Freeform `map[string]string` | `{"store": "acme"}` |
+
+`correlation_id` is the correlation key. The gateway plugin and the SDK emitter both write this
+field — operators join records on `correlation_id` to see the full picture across the gateway
+layer and the service layer in a single trace.
+
+<Aside type="note">
+  **Profile relationship.** `AuditEmitter` is a Profile-aligned SDK extension, not a
+  Profile-mandated surface. Profile version remains v0.3. The field names align with the
+  Profile's `X-Correlation-ID` and `X-Request-ID` trace semantics (Profile §trace block),
+  but the emission mechanism is SDK-internal, not part of the normative REST contract.
+</Aside>
+
+## SDK side (sdk-go + sdk-fastapi)
+
+Both SDKs ship `AuditEmitter` as an interface/Protocol with a `NoopEmitter` default. The
+default is injected at startup — if your service does not configure an emitter, nothing is
+emitted and no dep is added.
+
+**sdk-go** (`sdk-go/sdkgo/audit.go`):
+
+```go
+type AuditEmitter interface {
+    Emit(ctx context.Context, event AuditEvent) error
+}
+
+// NoopEmitter is the zero-cost default — zero dependencies, zero side effects.
+type NoopEmitter struct{}
+func (NoopEmitter) Emit(_ context.Context, _ AuditEvent) error { return nil }
+```
+
+To emit an audit event inside a Go handler:
+
+```go
+// ctx already carries the emitter via WithAuditEmitter(ctx, emitter) at startup.
+err := sdkgo.AuditEmit(ctx, sdkgo.AuditEvent{
+    EventType:     "agentic.response.written",
+    Outcome:       "success",
+    ResourceID:    customerId,
+    Attributes:    map[string]string{"model": "collab-filter-v2"},
+})
+```
+
+**sdk-fastapi** (`sdk-fastapi/src/yaagents_fastapi/audit.py`):
+
+```python
+class AuditEmitter(Protocol):
+    async def emit(self, event: AuditEvent) -> None: ...
+
+class NoopEmitter:
+    async def emit(self, event: AuditEvent) -> None:
+        pass
+```
+
+To emit inside a FastAPI route decorated with `@agentic_route`:
+
+```python
+from yaagents_fastapi import audit_emit, AuditEvent
+
+await audit_emit(AuditEvent(
+    event_type="agentic.response.written",
+    outcome="clarification_required",
+    resource_id=customer_id,
+))
+```
+
+The emitter is propagated via a `ContextVar` in Python and via `context.Context` in Go — both
+approaches are dependency-injection safe and do not require global state.
+
+OTLP exporting is opt-in:
+- **Go**: add the `github.com/ai-mpathyminds/yaagents-sdk-go/audit/otlp` sub-module (its own
+  `go.mod`; core sdk-go stays dep-free)
+- **Python**: `pip install yaagents-fastapi[otel]` adds `opentelemetry-sdk`; plain
+  `pip install yaagents-fastapi` does not pull it
+
+## Gateway side (otel-audit plugin)
+
+The [otel-audit plugin](/yaagents/plugins/otel-audit/) emits a span named `agentic.request`
+for every request that passes through the gateway. The span covers the full round trip:
+ingress → upstream call → egress.
+
+Span attributes use the same field names as `AuditEvent`:
+
+```
+event_type      = "agentic.request"
+tenant_id       = X-Tenant-ID
+actor_id        = JWT sub  (or X-Actor-Principal)
+request_id      = X-Request-ID
+correlation_id  = X-Correlation-ID
+operation       = route ID
+outcome         = "success" | "error"  (set at egress)
+```
+
+Configuration in `gateway.yaml`:
+
+```yaml
+plugins:
+  otel-audit:
+    enabled: true
+    exporter: stdout          # "stdout" (default) | "otlp"
+    include_request_body: false   # set true only when bodies are non-PII
+    otlp_endpoint: ""         # required when exporter: otlp
+```
+
+stdout output (v0.3 baseline — structured JSON, one line per request):
+
+```json
+{"level":"INFO","msg":"agentic.request","event_type":"agentic.request.received",
+ "tenant_id":"tenant-abc","actor_id":"usr-xyz","request_id":"req-001",
+ "correlation_id":"corr-001","operation":"POST /recommendations/{customerId}",
+ "outcome":"success","timestamp":"2026-06-07T19:00:00Z"}
+```
+
+## Putting it together
+
+A single recommendation request produces two correlated audit records:
+
+1. **Gateway record** (otel-audit plugin, at ingress/egress):
+   - `event_type: "agentic.request"`, `correlation_id: "corr-001"`, `outcome: "success"`
+   - Written BEFORE the request body reaches the recommendation service — survives even if the
+     service crashes mid-request.
+
+2. **Service record** (sdk-go or sdk-fastapi AuditEmitter, at response-write time):
+   - `event_type: "agentic.response.written"`, `correlation_id: "corr-001"`,
+     `outcome: "success"`, `resource_id: "cust-42"`, `attributes: {"model": "collab-filter-v2"}`
+   - Written inside the service handler — carries service-level detail the gateway cannot know.
+
+Join on `correlation_id` to see the full picture:
+
+```
+corr-001 | gateway → otel-audit | ingress 19:00:00.000 → egress 19:00:00.048 | outcome=success
+corr-001 | service → sdk-go     | response written 19:00:00.044               | model=collab-filter-v2
+```
+
+The gateway record gives timing and tenant context; the service record gives business context.
+Together they satisfy a non-repudiation requirement without coupling the gateway to service internals.
+
+## v0.3 baseline (stdout) vs v0.4 OTLP
+
+**v0.3 baseline**: the otel-audit plugin emitted to stdout as structured JSON lines. There was
+no SDK-level audit emission — neither sdk-go nor sdk-fastapi had `AuditEmitter`.
+
+**v0.4 additions**:
+- SDK `AuditEmitter` interface + `NoopEmitter` default shipped in both sdk-go and sdk-fastapi
+  (Goal 1, ADR PI4-yaa-0001)
+- OTLP exporter added as opt-in to the otel-audit plugin (`exporter: otlp`)
+- SDK OTLP exporter available as an opt-in sub-module/extra
+
+The stdout exporter remains the default in v0.4 — operators that do not need a collector have
+zero new infrastructure requirements.
+
+Performance impact at BENCH-5 baselines (p99):
+- `exporter: stdout`: +36.8 ms vs no-plugin baseline
+- `exporter: otlp`: +5.9 ms additional vs stdout (collector absorbs the I/O)
+
+**PI5-yaa forward link**: structured observability dashboard examples (Grafana / Tempo) for
+OTLP traces are planned for the next increment. Community contributions for Grafana dashboard
+JSON are welcome via the
+[#observability discussion](https://github.com/ai-mpathyminds/yaagents/discussions).
+
+## Privacy and PII boundary
+
+The `include_request_body: false` default is intentional. Request bodies frequently contain
+PII — customer IDs, product preferences, health data, financial information — and writing
+those to a log or trace store without scrubbing can create GDPR/PDPA compliance problems.
+
+| Attribute | PII risk | Guidance |
+|---|---|---|
+| `tenant_id` | Semi-sensitive (opaque ID, not a personal name) | Safe to include |
+| `actor_id` | Semi-sensitive (opaque ID, not an email) | Safe to include |
+| `request_id` / `correlation_id` | No PII | Safe to include |
+| `operation` | No PII | Safe to include |
+| `outcome` | No PII | Safe to include |
+| `request_body` (opt-in) | **HIGH risk** — often contains PII | Enable only after legal review |
+| `attributes` (freeform) | **Caller responsibility** | Do not write secrets or personal data |
+
+<Aside type="caution">
+  **`include_request_body: true`** copies request body bytes into the audit record. If the body
+  contains email addresses, health information, financial data, or authentication tokens, those
+  values will appear in your audit log or trace backend. Enable this only after confirming with
+  your data-privacy team that audit-log retention and access controls meet your compliance
+  requirements.
+</Aside>
