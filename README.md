@@ -94,39 +94,34 @@ See the [full normative table](spec/agentic-rest-profile.md) in the Profile spec
 
 ---
 
-## Quick Start
+## How to start
 
-### Prerequisites
-
-- Docker and Docker Compose
-- Make (optional, recommended)
-
-### Run the campaign-api demo in one command
+### Run the e-commerce recommendation demo in one command
 
 ```bash
-git clone https://github.com/ai-mpathyminds/yaagents.git
-cd yaagents/examples/campaign-api
-docker compose up
+git clone --depth 1 https://github.com/ai-mpathyminds/yaagents.git
+cd yaagents/examples/store
+docker compose up -d
+
+curl -sX POST http://localhost:8120/products/p-1/recommendations \
+  -H 'Content-Type: application/json' \
+  -H 'X-Actor-Subject: c-1' \
+  -d '{"limit": 3, "exclude_purchased": true}' | jq
 ```
 
-Services start on:
+Expected status: `200 OK`
 
-| Service | URL |
-|---|---|
-| YAAgents Gateway | `http://localhost:8120` |
-| Campaign API (reference) | `http://localhost:8121` |
+### What just happened
 
-### Try a request
+The client sent a resource-oriented POST to the YAAgents Gateway. The gateway authenticated the request, injected tenant context, and routed upstream to the agentic API. The API ran recommendation logic and returned a typed `success` response with product data.
 
-```bash
-# Trigger an optimization — returns 200 (result) or 400 (clarification_required)
-curl -X POST http://localhost:8120/campaigns/c-001/optimizations \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer dev-token" \
-  -d '{"budget_delta": 500}'
-```
+### Where to go next
 
-### Install
+- [E-commerce Product Recommendations](https://ai-mpathyminds.github.io/yaagents/case-studies/ecommerce-product-recommendations/) — full architecture walk-through, design decisions, and runnable Python + Go examples.
+- [`examples/`](examples/) — all reference demos: store (Python), store-go (Go), campaign-api (Python), campaign-api-go (Go).
+- **Install SDKs** — see below.
+
+#### Install SDKs
 
 ```bash
 # Python SDK + client + CLI (server SDK, consumer client, validator)
@@ -145,33 +140,25 @@ go get github.com/ai-mpathyminds/yaagents-sdk-go
 docker pull ghcr.io/ai-mpathyminds/yaagents-gateway:0.3.0
 ```
 
-### Python client example
+#### campaign-api demo
 
-```python
-from yaagents_client import YAAgentsClient
-
-client = YAAgentsClient(base_url="http://localhost:8120", token="dev-token")
-result = client.post("/campaigns/c-001/optimizations", json={"budget_delta": 500})
-
-if result.is_clarification():
-    print("Needs clarification:", result.clarification_fields())
-elif result.is_result():
-    print("Optimization result:", result.data())
+```bash
+git clone https://github.com/ai-mpathyminds/yaagents.git
+cd yaagents/examples/campaign-api
+docker compose up
 ```
 
-### TypeScript client example
+| Service | URL |
+|---|---|
+| YAAgents Gateway | `http://localhost:8120` |
+| Campaign API (reference) | `http://localhost:8121` |
 
-```typescript
-import { YAAgentsClient } from "@aimpathyminds/yaagents-client";
-
-const client = new YAAgentsClient({ baseUrl: "http://localhost:8120", token: "dev-token" });
-const result = await client.post("/campaigns/c-001/optimizations", { budget_delta: 500 });
-
-if (result.isClarification()) {
-  console.log("Needs clarification:", result.clarificationFields());
-} else if (result.isResult()) {
-  console.log("Optimization result:", result.data());
-}
+```bash
+# Trigger an optimization — returns 200 (result) or 400 (clarification_required)
+curl -X POST http://localhost:8120/campaigns/c-001/optimizations \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dev-token" \
+  -d '{"budget_delta": 500}'
 ```
 
 ---
