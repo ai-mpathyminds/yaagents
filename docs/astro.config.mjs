@@ -17,7 +17,17 @@ export default defineConfig({
         { label: 'Profile Spec', link: '/profile/' },
         { label: 'SDK Quickstarts', autogenerate: { directory: 'sdks' } },
         { label: 'Examples', autogenerate: { directory: 'examples' } },
-        { label: 'Plugin Authoring', link: '/plugins/' },
+        {
+          label: 'Plugins',
+          items: [
+            { label: 'Plugin Overview', link: '/plugins/' },
+            { label: 'token-validator', link: '/plugins/token-validator/' },
+            { label: 'tenant-injector', link: '/plugins/tenant-injector/' },
+            { label: 'license-check', link: '/plugins/license-check/' },
+            { label: 'prompt-sanitize', link: '/plugins/prompt-sanitize/' },
+            { label: 'otel-audit', link: '/plugins/otel-audit/' },
+          ],
+        },
         {
           label: 'Concepts',
           items: [
