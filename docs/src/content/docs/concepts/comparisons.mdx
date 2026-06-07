@@ -1,0 +1,56 @@
+---
+title: Comparisons
+description: How yaagents fits alongside generic invoke patterns, framework runtimes, MCP, and direct LLM SDK usage.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This page is for teams **explicitly evaluating yaagents** against other approaches. The rows
+below characterize each approach neutrally — what it is, where it fits, and what yaagents
+adds at that layer. No approach is dismissed; every row describes a real use case.
+
+<Aside type="note">
+For the *reasoning behind* these choices — trade-offs, honest costs, and when yaagents is
+NOT the right call — see [Why Agentic REST?](/yaagents/concepts/why-agentic-rest/).
+</Aside>
+
+---
+
+## Comparison matrix
+
+| Approach | What it is | Where it fits | What yaagents adds at this layer |
+|---|---|---|---|
+| **Generic invoke** (`POST /agents/<name>/invoke`) | Single-endpoint dispatch; agent name in URL path; arbitrary JSON in/out | Quick prototyping; framework demos; internal tool calls where governance is not required | Resource-oriented endpoints; typed outcome media types; gateway-level auth, tenancy, and audit; OpenAPI-describable contract |
+| **Framework runtimes** (LangGraph Server, LangChain Serve, Pydantic AI HTTP, CrewAI) | Framework-native HTTP server bound to that framework's execution and deployment model | Building inside a specific framework ecosystem; teams that want framework-native observability and tooling | Framework-neutral REST boundary — the agent behind yaagents can use LangGraph, Pydantic AI, or anything else; the *API surface* is decoupled from the *runtime choice* |
+| **MCP** (Model Context Protocol) | Tool-server protocol for exposing tools to LLM tool-use loops; stdio or SSE transport | Exposing discrete tools (search, file read, API call) to an LLM that uses tool-calling | Different layers: MCP is the **tool boundary** between an LLM and its tools; yaagents is the **governed REST boundary** between a client system and an agentic service — they compose rather than compete |
+| **Direct LLM SDK** (OpenAI SDK / Anthropic SDK called inside request handlers) | Application code calls the LLM provider SDK directly; the HTTP handler is also the agent logic | Simple, single-purpose agentic features; internal automation; early-stage products | Gateway-level auth, tenant context, and audit without touching the handler code; typed-outcome discipline (`clarification_required`, `approval_required`) without custom error schema design |
+
+---
+
+## How they compose
+
+These approaches are not mutually exclusive. A common production stack:
+
+```
+Client
+  → yaagents Gateway         (auth, tenancy, audit, routing)
+    → FastAPI + sdk-fastapi  (typed outcome discipline)
+      → LangGraph agent      (framework runtime for reasoning)
+        → MCP server         (tool boundary: search, file read)
+          → LLM SDK          (model call)
+```
+
+yaagents governs the **external API surface**. The agent runtime, tooling protocol, and LLM
+provider are implementation details behind that surface.
+
+---
+
+## Version and scope
+
+This comparison reflects yaagents **Profile v0.3** and the ecosystem as of 2026. Framework
+runtimes and MCP are evolving quickly; check each project's current documentation for the
+latest deployment and governance capabilities.
+
+Future PI scope (not in v0.4): A2A (Agent-to-Agent protocol from Google) and AGNTCY
+comparisons — those protocols target inter-agent discovery and federation, a different layer
+from yaagents' governed REST boundary.
