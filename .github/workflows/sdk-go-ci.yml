@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # go-version-file path is relative to the REPO root, not working-directory.
       # cache-dependency-path uses the workspace sum (covers adapters' transitive deps).
