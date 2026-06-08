@@ -143,6 +143,24 @@ stdout output (v0.3 baseline — structured JSON, one line per request):
  "outcome":"success","timestamp":"2026-06-07T19:00:00Z"}
 ```
 
+**Prometheus counters (`/metrics`):** The gateway exposes Prometheus-format metrics at `/metrics`
+independently of the otel-audit plugin. These are request-level counters and latency histograms
+scraped by any standard Prometheus instance:
+
+```
+# Requests counted by route × outcome × tenant
+yaagents_requests_total{route="POST /recommendations/{customerId}",outcome="success",tenant_id="tenant-abc"} 42
+
+# End-to-end gateway latency (includes upstream round trip)
+yaagents_request_duration_seconds_bucket{route="POST /recommendations/{customerId}",le="0.1"} 38
+
+# Upstream-only latency (gateway processing time excluded)
+yaagents_upstream_duration_seconds_bucket{route="POST /recommendations/{customerId}",le="0.05"} 35
+```
+
+Prometheus metrics are available regardless of whether otel-audit is enabled. They are the
+lightweight always-on signal; otel-audit (stdout or OTLP) is the richer per-request record.
+
 ## Putting it together
 
 A single recommendation request produces two correlated audit records:
@@ -169,8 +187,14 @@ Together they satisfy a non-repudiation requirement without coupling the gateway
 
 ## v0.3 baseline (stdout) vs v0.4 OTLP
 
-**v0.3 baseline**: the otel-audit plugin emitted to stdout as structured JSON lines. There was
-no SDK-level audit emission — neither sdk-go nor sdk-fastapi had `AuditEmitter`.
+**v0.3 baseline** — three observability channels, all zero-config:
+- **Stdout log lines** (otel-audit plugin): structured JSON, one line per gateway-proxied request.
+- **`X-Correlation-ID` propagation**: gateway assigns a correlation ID to every request and
+  forwards it to the upstream; log lines include `correlation_id` for manual trace joining.
+- **Prometheus counters** (`/metrics`): request totals and latency histograms, available for
+  scraping by any standard Prometheus agent.
+
+Neither sdk-go nor sdk-fastapi had `AuditEmitter` in v0.3; service-level audit was manual.
 
 **v0.4 additions**:
 - SDK `AuditEmitter` interface + `NoopEmitter` default shipped in both sdk-go and sdk-fastapi
