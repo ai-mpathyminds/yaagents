@@ -103,16 +103,13 @@ for REPO_PATH in "$@"; do
 
   # ── 2. Content grep (exclude CHANGELOG* + .git/ + binary extensions) ──────
   GREP_EXCLUDE_DIR="--exclude-dir=.git"
-  GREP_EXCLUDE_FILES="--exclude=CHANGELOG* --exclude=*.png --exclude=*.jpg \
+  # Exclude this script itself from grep — it necessarily contains all 5 patterns
+  # as literal pattern strings + commentary, which would self-match (round 3 found this).
+  GREP_EXCLUDE_FILES="--exclude=yaagents-public-mirror-verify.sh --exclude=CHANGELOG* --exclude=*.png --exclude=*.jpg \
 --exclude=*.gif --exclude=*.woff --exclude=*.woff2 --exclude=*.ttf \
 --exclude=*.otf --exclude=*.ico --exclude=*.svg"
 
-  # Allowlist filter for the `PI[0-9]+-yaa` pattern only:
-  #   - `ADR PI{N}-yaa-{NNNN}` — legitimate citation of an architectural decision record
-  #   - `PI{N}-yaa regression` — legitimate historical regression-test comment
-  #   - `spec/VERSION = N (ADR PI{N}-yaa-{NNNN} ...)` — Profile version literal explanation
-  # The other 4 patterns (\.claude/, portfolio/, system-refs/, CLAUDE\.md) have no
-  # legitimate citation form in public artifacts and stay unfiltered.
+  # Allowlist filter for the PI pattern only — accepts legitimate ADR/regression citations.
   PI_ALLOWLIST_FILTER='ADR PI[0-9]+-yaa-[0-9]{4}|PI[0-9]+-yaa regression|spec/VERSION = [0-9.]+ \(ADR PI[0-9]+-yaa-[0-9]{4}'
 
   for PATTERN in '\.claude/' 'portfolio/' 'PI[0-9][0-9]*-yaa' 'system-refs/' 'CLAUDE\.md'; do
