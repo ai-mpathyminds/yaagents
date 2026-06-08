@@ -52,6 +52,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # ── Step 1: Compose up — build + health-gate (≤60 s poll) ───────────────
       # WI-3yaa.NFR-SRE-1 Step 1
