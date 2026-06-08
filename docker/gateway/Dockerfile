@@ -1,14 +1,15 @@
 # yaagents gateway — multi-stage Alpine build
-# Published as: ghcr.io/ai-mpathyminds/yaagents-gateway:0.2.0  (WI-2yaa.REL-3)
+# Published as: ghcr.io/ai-mpathyminds/yaagents-gateway:0.4.0  (WI-4yaa.LA-GHCR)
 # Multi-arch: linux/amd64 + linux/arm64 (see WI-1yaa.REL-5)
 # Non-root; CGO_ENABLED=0 for fully static binary.
 # SBOM generated at publish via syft (SPDX 2.3) — platform-engineer A-4 pick.
+# Cosign: keyless OIDC signing + SBOM attachment (WI-4yaa.LA-GHCR; ADR PI1-yaa-0005 §4).
 #
 # SECRET HYGIENE (NFR-GW-1): No ENV instruction may set GATEWAY_JWT_SECRET,
 # GATEWAY_JWT_JWKS_URL, or any other credential. All secrets are runtime-only
 # environment variables injected by the container orchestrator.
 
-FROM golang:1.23-alpine3.20 AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /build
 
 # Cache deps separately from source
