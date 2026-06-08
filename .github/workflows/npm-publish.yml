@@ -1,8 +1,9 @@
 # .github/workflows/npm-publish.yml
-# WI-2yaa.REL-2 — npm re-publish @aimpathyminds/yaagents-client @ 0.2.0 (OIDC provenance)
-# WI-1yaa.REL-4 — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
+# WI-4yaa.LA-NPM  — npm publish @aimpathyminds/yaagents-client @ 0.4.0 (release-wave sync)
+# WI-2yaa.REL-2   — npm re-publish @ 0.2.0 (OIDC provenance)
+# WI-1yaa.REL-4   — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
 # ADR PI1-yaa-0003 — dual ESM+CJS via tsup
-# ADR PI1-yaa-0005 — no long-lived token; npm publish --provenance via OIDC
+# ADR PI1-yaa-0005 — no long-lived token; npm publish --provenance via OIDC (2 SLSA attestations)
 # ADR PI2-yaa-0003 — Apache 2.0 license metadata (supersedes Community License)
 #
 # Package: @aimpathyminds/yaagents-client
@@ -18,13 +19,11 @@
 #   3. Create GitHub Actions environment "npm" with tag-ref protection (v*.*.*)
 #      to prevent accidental publishes from branch pushes
 
-# PUBLISH PARKED 2026-05-24 — yaagents is private for now; do NOT auto-publish to
-# public npm. Re-enable the tag trigger below at public launch (PI-yaa public seed).
 on:
-  workflow_dispatch: {}   # manual-only; tag-push auto-publish disabled while private
-  # push:
-  #   tags:
-  #     - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.4.0, v1.2.3, …
 
 permissions:
   id-token: write   # OIDC token for npm provenance attestation (--provenance)
@@ -105,20 +104,20 @@ jobs:
       - name: Verify PROFILE_VERSION export — CJS
         run: |
           # Smoke-test the CJS bundle (Node require path).
-          # WI-2yaa.REL-2 AC: PROFILE_VERSION exports v0.2 from both ESM + CJS.
+          # WI-4yaa.LA-NPM AC: PROFILE_VERSION exports v0.3 from both ESM + CJS (Profile unchanged at v0.4.0).
           node -e "
             const { PROFILE_VERSION } = require('./dist/index.cjs');
-            if (PROFILE_VERSION !== 'v0.2') throw new Error('CJS PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.2');
+            if (PROFILE_VERSION !== 'v0.3') throw new Error('CJS PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.3');
             console.log('OK  CJS PROFILE_VERSION=' + PROFILE_VERSION);
           "
 
       - name: Verify PROFILE_VERSION export — ESM
         run: |
           # Smoke-test the ESM bundle (Node --input-type=module).
-          # WI-2yaa.REL-2 AC: PROFILE_VERSION exports v0.2 from both ESM + CJS.
+          # WI-4yaa.LA-NPM AC: PROFILE_VERSION exports v0.3 from both ESM + CJS (Profile unchanged at v0.4.0).
           node --input-type=module - <<'ESEOF'
           import { PROFILE_VERSION } from './dist/index.mjs';
-          if (PROFILE_VERSION !== 'v0.2') throw new Error('ESM PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.2');
+          if (PROFILE_VERSION !== 'v0.3') throw new Error('ESM PROFILE_VERSION=' + PROFILE_VERSION + ' expected v0.3');
           console.log('OK  ESM PROFILE_VERSION=' + PROFILE_VERSION);
           ESEOF
 
