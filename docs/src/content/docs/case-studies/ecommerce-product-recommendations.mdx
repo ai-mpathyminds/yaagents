@@ -17,11 +17,44 @@ recommendation service itself.
 
 ## The full flow
 
-> **The complete request flow — Mermaid architecture diagram, 7-step walkthrough, and the
-> normative response table — is documented in the
-> [YAAgents README → §How it works](https://github.com/ai-mpathyminds/yaagents#how-it-works).
-> Read it there; this page provides domain context and design rationale for the specific choices
-> made in this case study.**
+<Aside type="note">
+  This section is a copy of the
+  [YAAgents README → §How it works](https://github.com/ai-mpathyminds/yaagents#how-it-works)
+  for convenience. The README is the canonical source; if the two diverge, README is correct.
+</Aside>
+
+```mermaid
+flowchart LR
+  A["Application\n(any client)"] --> B["YAAgents Gateway\n(auth · tenant · audit)"]
+  B --> C["Agentic API Service\n(your code)"]
+  C --> D["Agent Implementation\n(your choice)"]
+  D --> E["Optional: A2A / MCP / Tools"]
+```
+
+**E-commerce recommendations — 7 steps:**
+
+1. A product catalog service receives `POST /recommendations/{customerId}` requests.
+2. The yaagents gateway authenticates the request (`token-validator` plugin).
+3. The gateway injects tenant context (`tenant-injector` plugin).
+4. The backend Python service (using `sdk-fastapi`) runs recommendation logic.
+5. If the recommendation engine needs clarification (e.g., no purchase history), it returns `clarification_required`.
+6. The Go client (using `sdk-go`) handles `clarification_required` natively — no raw HTTP parsing.
+7. The audit log (`otel-audit` plugin) records the operation for every request.
+
+**Response Profile — YAAgents follows the [Agentic REST Response Profile v0.3](/yaagents/profile/).**
+
+| Response type | HTTP status | Content-Type |
+|---|---:|---|
+| `success` | `200` | `application/json` |
+| `created` | `201` | `application/json` |
+| `accepted` | `202` | `application/vnd.yaagents.operation+json` |
+| `clarification_required` | `400` | `application/vnd.yaagents.clarification+json` |
+| `validation_failed` | `422` | `application/vnd.yaagents.validation-error+json` |
+| `approval_required` | `412` | `application/vnd.yaagents.approval-required+json` |
+| `forbidden` | `403` | `application/vnd.yaagents.error+json` |
+| `conflict` | `409` | `application/vnd.yaagents.conflict+json` |
+| `failed_dependency` | `424` | `application/vnd.yaagents.error+json` |
+| `error` | `500` | `application/vnd.yaagents.error+json` |
 
 ## Domain context and design choices
 
