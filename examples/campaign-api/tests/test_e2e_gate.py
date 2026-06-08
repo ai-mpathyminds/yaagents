@@ -415,13 +415,13 @@ def test_spec_section4_table_not_redefined_in_component_source() -> None:
     """grep proof: §4 normative table not embedded in component source code.
 
     The normative status × media-type table lives in spec/ and the PRD
-    (system-refs/).  Component *source code* (*.py, *.go, *.ts, *.js) must
+    (internal-only design docs).  Component *source code* (*.py, *.go, *.ts, *.js) must
     reference vendor types as constants, not re-embed a table definition.
 
     We check that no Python, Go, or TypeScript source file outside spec/ contains
     the markdown-table row pattern used in the normative table.
 
-    Documentation (*.md, system-refs/, README files) is intentionally excluded —
+    Documentation (*.md, design docs, README files) is intentionally excluded —
     those may legitimately reference or reproduce the table for explanation.
     """
     repo_root = _REPO_ROOT

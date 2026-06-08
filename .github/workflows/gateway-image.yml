@@ -1,7 +1,7 @@
 # .github/workflows/gateway-image.yml
 # WI-4yaa.LA-GHCR — GHCR gateway image publish @ 0.4.0 (multi-arch + Cosign + SBOM)
 # WI-2yaa.REL-3   — re-publish @ 0.2.0 (multi-arch + SBOM)
-# WI-1yaa.REL-5   — original authoring; updated at PI2-yaa for Apache 2.0 OCI label
+# WI-1yaa.REL-5 — original authoring; updated for v0.2 Apache 2.0 OCI label
 # WI-1yaa.NFR-REL-1 — SBOM SPDX 2.3 JSON via syft (OQ-5 resolution)
 # ADR PI1-yaa-0005 — OIDC trusted publishing; no PAT, no long-lived token; Cosign keyless §4
 # ADR PI2-yaa-0003 — Apache 2.0 license metadata; OCI licenses label flip
@@ -156,7 +156,7 @@ jobs:
 
       # ── SBOM — SPDX 2.3 JSON (syft / anchore/sbom-action) ───────────────
       # OQ-5 resolution: SPDX 2.3 JSON, platform-engineer A-4 pick.
-      # See: docs/PI1-yaa/release-and-publish.md §OQ-5 resolution
+      # See: release-and-publish design doc §OQ-5 resolution
       # Cosign SBOM attach follows below (WI-4yaa.LA-GHCR; ADR PI1-yaa-0005 §4).
       - name: Generate SBOM — SPDX 2.3 JSON (syft)
         uses: anchore/sbom-action@v0.17.9
