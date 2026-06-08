@@ -1,0 +1,77 @@
+# yaagents Compose Demo -- store reference example
+# port: 8120 (gateway, host) -- portfolio band 8120-8129 (yaagents)
+#
+# Quick start:
+#   docker compose up -d
+#   curl -sX POST http://localhost:8120/products/p-1/recommendations \
+#     -H 'Content-Type: application/json' \
+#     -H 'X-Actor-Subject: c-1' \
+#     -d '{"limit": 3, "exclude_purchased": true}' | jq
+#   docker compose down
+#
+# For local gateway source dev:
+#   docker compose -f docker-compose.yml -f docker-compose.local-test.yml up --build
+#
+# Auth note: this demo runs the gateway WITHOUT the token-validator plugin
+# (plugins.yaml contains no plugins). The X-Actor-Subject header is set by
+# the caller directly. In production, deploy with GATEWAY_JWT_JWKS_URL and
+# add the token-validator block to plugins.yaml (ADR PI1-yaa-0001 ss3).
+
+name: yaagents-store-demo
+
+services:
+  yaagents-gateway:
+    image: ghcr.io/ai-mpathyminds/yaagents-gateway:0.4.0
+    ports:
+      - "8120:8120"
+    environment:
+      GATEWAY_PORT: "8120"
+      GATEWAY_ROUTES_FILE: /cfg/routes.yaml
+      GATEWAY_PLUGINS_FILE: /cfg/plugins.yaml
+      GATEWAY_AUDIT_LOG: stdout
+    volumes:
+      - ./routes.yaml:/cfg/routes.yaml:ro
+      - ./plugins.yaml:/cfg/plugins.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8120/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.50"
+    networks:
+      - yaagents-store-net
+    depends_on:
+      store-api:
+        condition: service_healthy
+    restart: on-failure
+
+  store-api:
+    build:
+      context: ./store-api
+    expose:
+      - "8125"
+    environment:
+      PORT: "8125"
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8125/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: "0.25"
+    networks:
+      - yaagents-store-net
+    restart: on-failure
+
+networks:
+  yaagents-store-net:    # named network -- intra-example isolation

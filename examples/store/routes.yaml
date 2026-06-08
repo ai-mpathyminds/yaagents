@@ -1,0 +1,18 @@
+# yaagents store demo — gateway route configuration
+# Maps the product-recommendations Agentic REST Profile endpoint to the
+# mock store-api backend (Compose service name: store-api, port 8125).
+#
+# Auth: no token-validator in this demo (plugins.yaml is empty).
+# The X-Actor-Subject header is passed through from the client request;
+# in a production deployment this would be injected by the gateway after
+# validating a JWT (token-validator plugin, GATEWAY_JWT_JWKS_URL).
+#
+# Profile path: POST /products/{productId}/recommendations (ADR PI1-yaa-0001 §2)
+
+routes:
+  - id: product-recommendations
+    method: POST
+    path: /products/{productId}/recommendations
+    target: http://store-api:8125
+    tenantRequired: false
+    audit: true
