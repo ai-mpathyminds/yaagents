@@ -46,6 +46,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -115,6 +117,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       # go-version-file is relative to the repo root, not working-directory.
       # client-go has no external deps so go.sum does not exist; omit
@@ -169,6 +173,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -218,6 +224,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -269,6 +277,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -320,6 +330,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -372,6 +384,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Go (from go.mod)
         uses: actions/setup-go@v5
@@ -416,6 +430,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -459,6 +475,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -507,6 +525,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: no-dynamic-load-scan
         run: |
@@ -536,6 +556,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: license-clean-scan
         run: |
@@ -557,6 +579,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: no-secret-in-dockerfile
         run: |
@@ -590,6 +614,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Create versioned spec archive
         id: archive
