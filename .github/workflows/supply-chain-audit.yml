@@ -110,10 +110,16 @@ jobs:
               echo "  [SKIP] ${REPO} — no .github/workflows/"
               continue
             fi
+            # Match actual secrets.XXX references (real long-lived-token usage), NOT bare
+            # mentions of the name in comments/echo/grep patterns. Pre-existing false-positive
+            # source: this workflow's own pattern list + npm-publish.yml comments stating
+            # "NOT NPM_TOKEN" (i.e., explicitly NOT using it). Tightening to `secrets\.X`
+            # filters all false positives without weakening the actual security gate —
+            # secrets.X is the only valid GH-Actions syntax for actually using a stored secret.
             HITS=$(grep -rn \
-              -e 'REGISTRY_PASSWORD' \
-              -e 'PYPI_API_TOKEN' \
-              -e 'NPM_TOKEN' \
+              -e 'secrets\.REGISTRY_PASSWORD' \
+              -e 'secrets\.PYPI_API_TOKEN' \
+              -e 'secrets\.NPM_TOKEN' \
               -e '\-\-password.*secrets' \
               "${WORKFLOW_DIR}" 2>/dev/null || true)
             if [ -n "${HITS}" ]; then
