@@ -7,50 +7,74 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
 ## Pick your starter
 
-Each example is a complete, runnable service with a `docker compose up` quick-start.
-Choose the domain that matches your use case and the agentic response type you need.
+Each example is a complete, runnable service. Choose the domain closest to your use case,
+then run `docker compose up` inside the example directory — the compose file starts both
+the gateway and the service automatically.
 
-| Example | Domain | Agentic response demonstrated | Port | Main endpoint |
-|---|---|---|---|---|
-| [`examples/store/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store) | E-commerce recommendations | `clarification_required` (no purchase history) | 8121 | `POST /products/{id}/recommendations` |
-| [`examples/store-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store-go) | E-commerce recommendations (Go) | `clarification_required` (no purchase history) | 8121 | `POST /products/{id}/recommendations` |
-| [`examples/campaign-api/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/campaign-api) | Campaign optimization | `success` · `clarification_required` | 8121 | `POST /campaigns/{id}/optimizations` |
-| [`examples/campaign-api-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/campaign-api-go) | Campaign optimization (Go) | `success` · `clarification_required` | 8121 | `POST /campaigns/{id}/optimizations` |
-| [`examples/customer-support-triage/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/customer-support-triage) | Customer support triage | `clarification_required` (missing context) | 8121 | `POST /tickets/{id}:triage` |
-| [`examples/financial-risk-screening/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/financial-risk-screening) | Financial risk screening | `approval_required` (high-risk decision) | 8121 | `POST /claims/{id}/risk-screens` |
+| Example | Purpose | Port | Main endpoint | Required headers | Success status |
+|---|---|---:|---|---|---:|
+| [`examples/store/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store) — full | E-commerce product recommendations (Python) | 8120 | `POST /products/{id}/recommendations` | `Authorization` · `X-Tenant-ID` | `200` |
+| [`examples/store-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store-go) — full | E-commerce product recommendations (Go) | 8120 | `POST /products/{id}/recommendations` | `Authorization` · `X-Tenant-ID` | `200` |
+| [`examples/campaign-api/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/campaign-api) — full | Campaign optimization (Python) | 8120 | `POST /campaigns/{id}/optimizations` | `Authorization` · `X-Tenant-ID` | `200` |
+| [`examples/campaign-api-go/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/campaign-api-go) — full | Campaign optimization (Go) | 8120 | `POST /campaigns/{id}/optimizations` | `Authorization` · `X-Tenant-ID` | `200` |
+| [`examples/customer-support-triage/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/customer-support-triage) — skeleton | Triage support tickets; clarification flow | 8120 | `POST /tickets/{id}:triage` | `Authorization` · `X-Tenant-ID` | `201` |
+| [`examples/financial-risk-screening/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/financial-risk-screening) — skeleton | Screen financial claims; approval flow | 8120 | `POST /claims/{id}/risk-screens` | `Authorization` · `X-Tenant-ID` · `X-License-Tier` | `201` |
+| [`examples/agent-graph-ecom/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/agent-graph-ecom) — multi-service | 2-service inter-agent: recommendations + inventory | 8124 | `POST /products/{id}/recommendations` | `Authorization` · `X-Tenant-ID` | `200` |
+| [`examples/llm-gateway/`](https://github.com/ai-mpathyminds/yaagents/tree/main/examples/llm-gateway) | SSE streaming + per-tenant concurrency | 8122 | `POST /completions` | `Authorization` · `X-Tenant-ID` | `200` |
 
-All examples require the YAAgents Gateway on port 8120. Run `docker compose up` inside
-any example directory — the compose file starts both the gateway and the service.
+> All single-service examples run the YAAgents Gateway on port 8120; it handles auth,
+> tenant context, and audit before forwarding to the service. The `agent-graph-ecom` example
+> uses two gateway instances (gateway-A on 8124 for end-user requests, gateway-B on 8126
+> for service-to-service calls).
 
 ## By agentic response type
 
-**E-commerce recommendations** (`store/`, `store-go/`) — demonstrates the
-`clarification_required` (400) response: when a customer has no purchase history,
-the service asks the client for anchor items rather than returning empty results.
+**E-commerce recommendations** (`store/`, `store-go/`) — demonstrates `clarification_required`
+(400): when a customer has no purchase history, the service asks the client for anchor items
+rather than returning empty results.
 
 **Campaign optimization** (`campaign-api/`, `campaign-api-go/`) — demonstrates
-`success` (200) for optimization results and `clarification_required` (400)
-when the budget delta is ambiguous.
+`success` (200) for optimization results and `clarification_required` (400) when the
+budget delta is ambiguous.
 
-**Customer support triage** (`customer-support-triage/`) — demonstrates
-`clarification_required` (400) for missing context: the agent asks for ticket
-severity or SLA tier before routing, rather than guessing.
+**Customer support triage** (`customer-support-triage/` · skeleton) — demonstrates
+`clarification_required` (400) for missing context: when severity or SLA tier is absent
+from the request, the service returns a structured clarification request rather than guessing.
 
-**Financial risk screening** (`financial-risk-screening/`) — demonstrates
-`approval_required` (412): when a claim exceeds the auto-approve threshold,
-the service returns a structured approval request instead of making the decision unilaterally.
+**Financial risk screening** (`financial-risk-screening/` · skeleton) — demonstrates
+`approval_required` (412): when a claim exceeds the auto-approve threshold, the service
+returns a structured approval request instead of making the decision unilaterally.
+
+**Inter-agent recommendation graph** (`agent-graph-ecom/` · multi-service) — demonstrates
+outcome propagation across two services: when the inventory service returns
+`clarification_required` or `failed_dependency`, the recommendation service forwards the
+structured outcome faithfully rather than converting it to a generic error.
 
 ## Multi-service example
 
-The `campaign-api` examples also demonstrate how to chain two yaagents-governed
-services via inter-agent calls. See
-[inter-agent calls](/yaagents/architecture/inter-agent-calls/) for the gateway
-inter-agent routing pattern.
+`examples/agent-graph-ecom/` shows two YAAgents-governed services calling each other through
+a second gateway instance. The recommendation service mints a service-account token and
+forwards `X-Tenant-ID` and `Idempotency-Key` to the inventory service via gateway-B.
+
+```
+client → gateway-A:8124 → recommendation-agent:8125
+                                    │ service-account token
+                                    ▼
+                          gateway-B:8126 → inventory-agent:8127
+```
+
+See [inter-agent calls](/yaagents/architecture/inter-agent-calls/) for the routing pattern,
+token-forwarding contract, and outcome propagation rules.
 
 ## All examples
 
 <CardGrid>
-  <LinkCard title="campaign-api (Python)" href="/yaagents/examples/campaign-api/" description="Five agentic flows with curl — success, clarification, approval, async, and error." />
-  <LinkCard title="campaign-api-go (Go)" href="/yaagents/examples/campaign-api-go/" description="Same five flows using the sdk-go client." />
+  <LinkCard title="store (Python · full)" href="https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store" description="E-commerce product recommendations with clarification flow." />
+  <LinkCard title="store-go (Go · full)" href="https://github.com/ai-mpathyminds/yaagents/tree/main/examples/store-go" description="E-commerce product recommendations — Go implementation." />
+  <LinkCard title="campaign-api (Python · full)" href="/yaagents/examples/campaign-api/" description="Five agentic flows with curl — success, clarification, approval, async, and error." />
+  <LinkCard title="campaign-api-go (Go · full)" href="/yaagents/examples/campaign-api-go/" description="Same five flows using the sdk-go client." />
+  <LinkCard title="customer-support-triage (skeleton)" href="https://github.com/ai-mpathyminds/yaagents/tree/main/examples/customer-support-triage" description="Triage tickets with clarification_required flow." />
+  <LinkCard title="financial-risk-screening (skeleton)" href="https://github.com/ai-mpathyminds/yaagents/tree/main/examples/financial-risk-screening" description="Screen claims with approval_required flow and license-tier gate." />
+  <LinkCard title="agent-graph-ecom (multi-service)" href="https://github.com/ai-mpathyminds/yaagents/tree/main/examples/agent-graph-ecom" description="2-service inter-agent call with tenant propagation and outcome forwarding." />
   <LinkCard title="llm-gateway" href="/yaagents/examples/llm-gateway/" description="SSE streaming + per-tenant concurrency gate." />
 </CardGrid>
