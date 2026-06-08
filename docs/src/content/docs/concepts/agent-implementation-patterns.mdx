@@ -151,10 +151,10 @@ async def optimize_with_claude_code_cli(id: str, body: OptimizationRequest) -> A
 ```
 
 <Aside type="note">
-  YAAgents has zero dependency on Claude Code or any specific LLM CLI. This section
-  documents an AmpathyMinds-internal choice; your agent service can use whatever
-  reasoning pipeline fits your domain. The pattern is §2.3 (process-shell); the CLI
-  is just one instance of that pattern.
+  YAAgents is framework-neutral — this is one pattern, not a recommendation. The
+  AmpathyMinds team chose the Claude Code CLI as their internal implementation; your
+  agent service can use any reasoning pipeline, framework, SDK, or CLI that fits your
+  domain. YAAgents has zero dependency on Claude Code or any specific LLM tooling.
 </Aside>
 
 ## What YAAgents does NOT do
