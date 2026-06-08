@@ -40,7 +40,7 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 \
 USER campaign
 
 # Portfolio port allocation: yaagents campaign-api-go = 8121
-# (ref: .claude/rules/portfolio-conventions.md §Port Allocation)
+# (ref: portfolio conventions §Port Allocation)
 EXPOSE 8121
 
 ENV PORT=8121

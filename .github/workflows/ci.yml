@@ -554,7 +554,7 @@ jobs:
   # Blocks regression to the v0.1.x "YAAgents Community License" identifier.
   # Runs on push events only (not pull_request) — advisory, to avoid blocking
   # external fork contributors who cannot easily run the check locally.
-  # Also invoked by bin/pi2-yaa-gate.sh step 7. ADR: PI2-yaa-0003.
+  # Also invoked by the v0.2 release gate script. (ADR PI2-yaa-0003)
   license-clean-scan:
     name: License clean scan — no Community License strings
     runs-on: ubuntu-latest
@@ -578,7 +578,7 @@ jobs:
   # ── No secrets in Dockerfile / no .env files in repo ────────────────────
   # Blocks any ENV instruction that bakes a secret value into the gateway
   # image layer. Runs on all push + pull_request events (security-critical;
-  # not advisory like license-clean-scan). ADR: PI1-yaa-0001 §3 + NFR-GW-1.
+  # not advisory like license-clean-scan). (ADR PI1-yaa-0001 §3 + NFR-GW-1)
   no-secret-in-dockerfile:
     name: No secrets in Dockerfile or .env files
     runs-on: ubuntu-latest
@@ -609,7 +609,7 @@ jobs:
   # ── Spec archive: schemas/ + openapi/ → GitHub Release ───────────────────
   # Runs only on tag push, and only after all three language jobs are green.
   # ADR PI1-yaa-0005 §6: schemas + OpenAPI attached as versioned archive;
-  # no separate spec registry in PI1-yaa.
+  # no separate spec registry in v0.1.
   spec-archive:
     name: Attach spec archive to Release
     needs: [ci-go, e2e-tokenvalidator, e2e-tenantinjector, e2e-licensecheck, e2e-promptsanitize, e2e-otelaudit, ci-python, ci-ts]

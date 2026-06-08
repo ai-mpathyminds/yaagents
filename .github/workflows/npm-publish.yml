@@ -1,7 +1,7 @@
 # .github/workflows/npm-publish.yml
 # WI-4yaa.LA-NPM  — npm publish @aimpathyminds/yaagents-client @ 0.4.0 (release-wave sync)
 # WI-2yaa.REL-2   — npm re-publish @ 0.2.0 (OIDC provenance)
-# WI-1yaa.REL-4   — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
+# WI-1yaa.REL-4 — original authoring; updated for v0.2 Apache 2.0 + profile
 # ADR PI1-yaa-0003 — dual ESM+CJS via tsup
 # ADR PI1-yaa-0005 — no long-lived token; npm publish --provenance via OIDC (2 SLSA attestations)
 # ADR PI2-yaa-0003 — Apache 2.0 license metadata (supersedes Community License)

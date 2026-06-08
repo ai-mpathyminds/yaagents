@@ -1,6 +1,6 @@
 # yaagents Compose Demo -- financial-risk-screening example
 # ports: 8120 (gateway), 8123 (financial-risk-screening) -- portfolio band 8120-8129
-# See: portfolio/yaagents-internal/docs/PI4-yaa/examples.md (WI-4yaa.EX-02)
+# financial-risk-screening example
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL

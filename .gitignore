@@ -1,5 +1,5 @@
 # Claude Code local settings (machine-specific; not for version control)
-.claude/settings.local.json
+**/settings.local.json
 
 # Secret files — must never be committed (NFR-GW-1)
 # Runtime credentials are injected by the orchestrator, never stored in files.

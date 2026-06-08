@@ -1,6 +1,6 @@
 # yaagents Compose Demo -- customer-support-triage example
 # ports: 8120 (gateway), 8122 (customer-support-triage) -- portfolio band 8120-8129
-# See: portfolio/yaagents-internal/docs/PI4-yaa/examples.md (WI-4yaa.EX-01)
+# customer-support-triage example
 #
 # SECURITY NOTE: GATEWAY_JWT_SECRET below is a DEMO-ONLY hardcoded token.
 # Never use this value in production. For production, set GATEWAY_JWT_JWKS_URL
