@@ -59,7 +59,11 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.64
+          # v1.64 was built with Go 1.24; gateway/go.mod targets Go 1.25.0 → "Go language
+          # version used to build golangci-lint is lower than targeted Go version" error.
+          # Bumped to latest stable (2026-06-08 PI4-yaa post-close fix). If 'latest' proves
+          # unstable across CI runs, pin to a known-good major (e.g. v2.0 or v2.1).
+          version: latest
           working-directory: gateway
 
       # govulncheck scans for known Go vulnerabilities (OSV database).
