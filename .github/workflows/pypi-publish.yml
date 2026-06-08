@@ -1,8 +1,9 @@
 # .github/workflows/pypi-publish.yml
-# WI-2yaa.REL-1 — PyPI re-publish ×3 @ 0.2.0 (OIDC Trusted Publisher)
-# WI-1yaa.REL-3 — original authoring; updated at PI2-yaa for Apache 2.0 + v0.2 profile
+# WI-4yaa.LA-PYPI-1/2/3 — PyPI publish ×3 @ 0.4.0 (OIDC Trusted Publisher)
+# WI-2yaa.REL-1 — first re-publish @ 0.2.0; WI-1yaa.REL-3 — original authoring
 # ADR PI1-yaa-0003 — Hatch build; ADR PI1-yaa-0005 — OIDC; no API token
-# ADR PI2-yaa-0003 — Apache 2.0 license metadata (supersedes Community License)
+# ADR PI2-yaa-0003 — Apache 2.0 license metadata
+# ADR PI4-yaa-0001 — AuditEmitter contract (yaagents-fastapi 0.4.0 carries new audit symbols)
 #
 # Packages: yaagents-fastapi | yaagents-client | yaagents-cli
 # Flow:     license-clean-scan (gate) → build → TestPyPI (gate) → PyPI publish
@@ -14,13 +15,11 @@
 #   the repo owner on pypi.org / test.pypi.org before the prod publish step
 #   can succeed.  The workflow itself has no secrets to manage.
 
-# PUBLISH PARKED 2026-05-24 — yaagents is private for now; do NOT auto-publish to
-# public PyPI. Re-enable the tag trigger below at public launch (PI-yaa public seed).
 on:
-  workflow_dispatch: {}   # manual-only; tag-push auto-publish disabled while private
-  # push:
-  #   tags:
-  #     - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.1.0, v1.2.3, …
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # v0.4.0, v1.2.3, …
 
 jobs:
   # ── 1. Build all three packages ─────────────────────────────────────────────
@@ -197,11 +196,10 @@ jobs:
 
       - name: Smoke-test profile declarations + license + Supports-YAAgents-Profile
         run: |
-          # WI-2yaa.REL-1 acceptance criteria:
-          #   - All three wheels report License: Apache-2.0
-          #   - All three wheels declare Supports-YAAgents-Profile: v0.2
-          #   - Module __profile__ == "v0.2" on all three
-          # ADR PI2-yaa-0003 (Apache 2.0 metadata everywhere)
+          # WI-4yaa.LA-PYPI-1/2/3 acceptance criteria (v0.4.0):
+          #   - All three wheels report License: Apache-2.0  (ADR PI2-yaa-0003)
+          #   - All three wheels declare Supports-YAAgents-Profile: v0.3
+          #   - Module __profile__ == "v0.3" on all three (Profile unchanged in v0.4)
           python - <<'EOF'
           import importlib.metadata as im
           from yaagents_fastapi import __version__ as fv, __profile__ as fp
@@ -211,7 +209,7 @@ jobs:
           from yaagents_cli.__about__ import __profile__ as lp
 
           assert fv == cv == lv, f"version mismatch: {fv} {cv} {lv}"
-          assert fp == cp == lp == "v0.2", f"profile mismatch: {fp} {cp} {lp}"
+          assert fp == cp == lp == "v0.3", f"profile mismatch: {fp} {cp} {lp} — expected v0.3 (Profile unchanged in v0.4; ADR PI4-yaa-0001)"
           print(f"OK  version={fv}  profile={fp}")
 
           PKGS = ["yaagents-fastapi", "yaagents-client", "yaagents-cli"]
@@ -222,14 +220,49 @@ jobs:
               assert "Apache-2.0" in str(lic), \
                   f"{pkg}: License={lic!r} — expected Apache-2.0 (ADR PI2-yaa-0003)"
               # Supports-YAAgents-Profile assertion via Project-URL header
-              # pyproject.toml [project.urls] "Supports-YAAgents-Profile" = "v0.2"
-              # → Project-URL: Supports-YAAgents-Profile, v0.2 in wheel METADATA
+              # pyproject.toml [project.urls] "Supports-YAAgents-Profile" = "v0.3"
+              # → Project-URL: Supports-YAAgents-Profile, v0.3 in wheel METADATA
               urls = meta.get_all("Project-URL") or []
               assert any(
-                  "Supports-YAAgents-Profile" in u and "v0.2" in u for u in urls
-              ), f"{pkg}: Supports-YAAgents-Profile: v0.2 not found. Project-URLs={urls}"
-              print(f"PASS  {pkg}  License={lic}  Supports-YAAgents-Profile: v0.2")
+                  "Supports-YAAgents-Profile" in u and "v0.3" in u for u in urls
+              ), f"{pkg}: Supports-YAAgents-Profile: v0.3 not found. Project-URLs={urls}"
+              print(f"PASS  {pkg}  License={lic}  Supports-YAAgents-Profile: v0.3")
           EOF
+
+      - name: Smoke-test AuditEmitter symbols (WI-4yaa.SG-04 + ADR PI4-yaa-0001)
+        run: |
+          # LA-PYPI-1 acceptance: AuditEmitter + AuditEvent + NoopEmitter importable from
+          # yaagents_fastapi; AgenticContext.audit_emit round-trip with NoopEmitter is no-op.
+          python - <<'EOF'
+          import asyncio
+          import inspect
+          from yaagents_fastapi import AuditEmitter, AuditEvent, NoopEmitter, __version__
+          from yaagents_fastapi.context import AgenticContext
+
+          # Protocol structural check
+          assert inspect.iscoroutinefunction(NoopEmitter.emit), \
+              "NoopEmitter.emit must be async (AuditEmitter Protocol)"
+
+          # AuditEvent dataclass round-trip — all 10 fields present
+          ev = AuditEvent(event_type="agentic.test.check")
+          assert ev.event_type == "agentic.test.check"
+          assert ev.tenant_id == "" and ev.actor_id == "" and ev.outcome == ""
+          assert ev.attributes == {}
+
+          # NoopEmitter no-op — does not raise
+          asyncio.run(NoopEmitter().emit(ev))
+
+          print(f"PASS  AuditEmitter/AuditEvent/NoopEmitter symbols verified  version={__version__}")
+          EOF
+
+      - name: Smoke-test [otel] extra install (WI-4yaa.LA-PYPI-1 acceptance)
+        run: |
+          # LA-PYPI-1 acceptance: pip install yaagents-fastapi[otel] succeeds + pulls opentelemetry-sdk
+          pip install --quiet \
+            --index-url https://test.pypi.org/simple/ \
+            --extra-index-url https://pypi.org/simple/ \
+            "yaagents-fastapi[otel]==${{ steps.ver.outputs.version }}"
+          python -c "import opentelemetry.sdk; print('PASS  [otel] extra pulls opentelemetry-sdk')"
 
       - name: Smoke-test CLI entrypoint
         run: yaagents --help
