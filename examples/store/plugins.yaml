@@ -1,0 +1,9 @@
+# yaagents store demo -- plugin configuration
+#
+# This demo intentionally runs with no plugins (empty chain) so the
+# quick-start curl works without a JWT. The gateway still enforces
+# route dispatch and audit logging via routes.yaml audit: true.
+#
+# Production: add token-validator here (GATEWAY_JWT_JWKS_URL required).
+# See examples/llm-gateway/plugins.yaml for a full plugin-chain example.
+plugins: []
