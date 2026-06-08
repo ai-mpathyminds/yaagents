@@ -13,6 +13,26 @@
 
 ---
 
+## What problem does yaagents solve?
+
+Most production systems already have REST APIs, OpenAPI contracts, gateways, RBAC, audit logs,
+tenant context, rate limits, and SDKs.
+
+AI agents often bypass that discipline through chat interfaces, generic invoke endpoints, or
+framework-specific runtimes.
+
+yaagents keeps the agent implementation flexible, but exposes it through normal business APIs:
+
+- resource-oriented endpoints
+- typed outcomes
+- clarification and approval responses
+- gateway-level auth, tenant context, audit, and policy
+- framework-neutral agent implementation
+
+> See also: [Why Agentic REST?](https://ai-mpathyminds.github.io/yaagents/concepts/why-agentic-rest/) and [Comparisons](https://ai-mpathyminds.github.io/yaagents/concepts/comparisons/) on the docs site.
+
+---
+
 ## What you can build
 
 Here's a product-recommendation API that asks for clarification when it has nothing to recommend.
