@@ -1,9 +1,13 @@
 # .github/workflows/verify-go-module.yml
-# WI-2yaa.REL-4 — Go module tag client-go/v0.2.0 + proxy.golang.org verify
+# WI-4yaa.LA-GO  — Go module tag client-go/v0.4.0 + proxy.golang.org verify
+# WI-2yaa.REL-4  — original authoring; Go module tag client-go/v0.2.0
 # ADR PI1-yaa-0005 — no long-lived registry tokens (tag push uses git auth;
 #   proxy.golang.org is a public read endpoint; no token required)
 # ADR PI2-yaa-0003 — Apache 2.0 LICENSE file must be present at client-go/
 #   module root (inherited from repo root; Go module proxy serves it)
+# NOTE: EXPECTED_PROFILE is the YAAgents Profile version constant ("v0.3"),
+#   NOT the Go module version tag ("v0.4.0"). They are distinct and MUST NOT
+#   be conflated. ProfileVersion in version.go tracks the spec version.
 #
 # Flow:
 #   1. Poll proxy.golang.org until the module is indexed (≤ 30 min, backoff)
@@ -32,9 +36,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Module version to verify (without "v" prefix, e.g. 0.2.0)'
+        description: 'Module version to verify (without "v" prefix, e.g. 0.4.0)'
         required: true
-        default: '0.2.0'
+        default: '0.4.0'
 
 permissions:
   contents: read   # read-only — pure verification; no writes needed
@@ -126,22 +130,22 @@ jobs:
       # ── go get + build + import in a scratch module ───────────────────────
       # Creates a minimal Go module, fetches the client-go package from the
       # proxy, builds a small program that imports and uses it, and asserts
-      # ProfileVersion matches the expected semver.
+      # ProfileVersion matches the YAAgents Profile version constant.
       # ADR PI2-yaa-0003: the Apache-2.0 LICENSE file at client-go/ is served
       # by the proxy alongside the module; this step implicitly validates that
       # the module is well-formed.
+      # IMPORTANT: EXPECTED_PROFILE is the spec profile version ("v0.3"), NOT
+      # the Go module semver tag. They are distinct — do not conflate them.
       - name: go get + build + import in scratch module
         env:
           MODULE_VERSION: ${{ steps.ver.outputs.version }}
+          EXPECTED_PROFILE: "v0.3"   # YAAgents Profile version (spec §2); NOT the module tag
           GOFLAGS: '-mod=mod'
         run: |
           MODULE="github.com/ai-mpathyminds/yaagents-client-go"
           SCRATCH="$(mktemp -d)/scratch"
           mkdir -p "${SCRATCH}"
           cd "${SCRATCH}"
-
-          # Strip leading "v" for the expected ProfileVersion string
-          EXPECTED_PROFILE="v${MODULE_VERSION#v}"
 
           go mod init scratch-verify-module
 
@@ -183,7 +187,7 @@ jobs:
           MODULE_VERSION: ${{ steps.ver.outputs.version }}
         run: |
           MODULE="github.com/ai-mpathyminds/yaagents-client-go"
-          echo "✓ WI-2yaa.REL-4 verification PASSED"
+          echo "✓ WI-4yaa.LA-GO / WI-2yaa.REL-4 verification PASSED"
           echo "  Module:        ${MODULE}@${MODULE_VERSION}"
           echo "  Proxy URL:     https://proxy.golang.org/${MODULE}/@v/${MODULE_VERSION}.info"
           echo "  GitHub tag:    https://github.com/ai-mpathyminds/yaagents-client-go/releases/tag/${MODULE_VERSION}"
