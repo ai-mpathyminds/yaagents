@@ -112,11 +112,15 @@ jobs:
             fi
             # Match actual secrets.XXX references (real long-lived-token usage), NOT bare
             # mentions of the name in comments/echo/grep patterns. Pre-existing false-positive
-            # source: this workflow's own pattern list + npm-publish.yml comments stating
-            # "NOT NPM_TOKEN" (i.e., explicitly NOT using it). Tightening to `secrets\.X`
-            # filters all false positives without weakening the actual security gate —
-            # secrets.X is the only valid GH-Actions syntax for actually using a stored secret.
+            # sources eliminated: (a) `secrets\.X` prefix excludes comments + echo + grep-pattern
+            # mentions of bare names; (b) --exclude=supply-chain-audit.yml prevents this audit
+            # workflow's own documentation lines (which list `--password.*secrets` as the
+            # pattern to detect) from self-matching. Security gate preserved — `secrets\.X` is
+            # the only valid GH-Actions syntax for actually USING a stored secret, and the
+            # `--password.*secrets` regex still catches docker-login-style CLI uses outside
+            # this audit file.
             HITS=$(grep -rn \
+              --exclude='supply-chain-audit.yml' \
               -e 'secrets\.REGISTRY_PASSWORD' \
               -e 'secrets\.PYPI_API_TOKEN' \
               -e 'secrets\.NPM_TOKEN' \
