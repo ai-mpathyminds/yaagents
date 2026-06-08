@@ -107,6 +107,14 @@ for REPO_PATH in "$@"; do
 --exclude=*.gif --exclude=*.woff --exclude=*.woff2 --exclude=*.ttf \
 --exclude=*.otf --exclude=*.ico --exclude=*.svg"
 
+  # Allowlist filter for the `PI[0-9]+-yaa` pattern only:
+  #   - `ADR PI{N}-yaa-{NNNN}` — legitimate citation of an architectural decision record
+  #   - `PI{N}-yaa regression` — legitimate historical regression-test comment
+  #   - `spec/VERSION = N (ADR PI{N}-yaa-{NNNN} ...)` — Profile version literal explanation
+  # The other 4 patterns (\.claude/, portfolio/, system-refs/, CLAUDE\.md) have no
+  # legitimate citation form in public artifacts and stay unfiltered.
+  PI_ALLOWLIST_FILTER='ADR PI[0-9]+-yaa-[0-9]{4}|PI[0-9]+-yaa regression|spec/VERSION = [0-9.]+ \(ADR PI[0-9]+-yaa-[0-9]{4}'
+
   for PATTERN in '\.claude/' 'portfolio/' 'PI[0-9][0-9]*-yaa' 'system-refs/' 'CLAUDE\.md'; do
     # shellcheck disable=SC2086
     HITS=$(grep -rn $GREP_EXCLUDE_DIR $GREP_EXCLUDE_FILES \
@@ -114,6 +122,10 @@ for REPO_PATH in "$@"; do
       --include="*.md" --include="*.yaml" --include="*.yml" \
       --include="*.json" --include="*.toml" --include="*.mod" \
       "$PATTERN" "$REPO_PATH" 2>/dev/null | head -20 || true)
+    # Allowlist post-filter applies ONLY to the PI*-yaa content pattern
+    if [ "$PATTERN" = 'PI[0-9][0-9]*-yaa' ] && [ -n "$HITS" ]; then
+      HITS=$(echo "$HITS" | grep -vE "$PI_ALLOWLIST_FILTER" || true)
+    fi
     if [ -n "$HITS" ]; then
       fail_line "content pattern '$PATTERN' found:"
       echo "$HITS" | sed 's/^/    /'

@@ -59,11 +59,14 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          # v1.64 was built with Go 1.24; gateway/go.mod targets Go 1.25.0 → "Go language
-          # version used to build golangci-lint is lower than targeted Go version" error.
-          # Bumped to latest stable (2026-06-08 PI4-yaa post-close fix). If 'latest' proves
-          # unstable across CI runs, pin to a known-good major (e.g. v2.0 or v2.1).
+          # Round 1 used pinned v1.64 → built with Go 1.24, failed on go 1.25.0 target.
+          # Round 2 used `version: latest` → still Go 1.24-built (upstream binary lag).
+          # Round 3: `install-mode: goinstall` → the action installs golangci-lint via
+          # `go install ...@latest` using the runner's Go toolchain (1.25.0 from setup-go's
+          # go-version-file: gateway/go.mod). The resulting binary IS built with Go 1.25,
+          # so the version-mismatch error cannot occur. No upstream-binary timing dependency.
           version: latest
+          install-mode: goinstall
           working-directory: gateway
 
       # govulncheck scans for known Go vulnerabilities (OSV database).
