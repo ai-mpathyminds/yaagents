@@ -167,7 +167,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Apache 2.0 — see [`LICENSE`](LICENSE). Published artifacts are v0.3.0; Profile v0.3. v0.1.x packages shipped under the YAAgents Community License remain under that license (non-retroactive). Contact bhaskar@aimpathyminds.com for historical v0.1.x license questions.
+Apache 2.0 — see [`LICENSE`](LICENSE). Published artifacts are v0.3.0; Profile v0.3. v0.1.x packages shipped under the previous source-available license remain under that license (non-retroactive). Contact bhaskar@aimpathyminds.com for historical v0.1.x license questions.
 
 ---
 
