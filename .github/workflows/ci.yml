@@ -143,7 +143,7 @@ jobs:
       # WI-2yaa.NFR-GOC-1 acceptance criterion: exits 0 on clean, 1 on any
       # HIGH/CRITICAL finding.
       - name: govulncheck-client-go
-        # 2026-06-09 PI4-yaa post-close: degraded to advisory. govulncheck currently
+        # 2026-06-09 post-close cleanup: degraded to advisory. govulncheck currently
         # surfaces Go 1.25.0 stdlib CVEs (GO-2026-5037, GO-2026-5039 — x509/tls/http)
         # that the project cannot patch directly; the fix is awaiting a Go 1.25.x
         # patch release. Re-promote to blocking once stdlib CVEs clear on the next
