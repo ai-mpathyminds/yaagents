@@ -23,7 +23,7 @@
 #
 # NOTE: proxy.golang.org only indexes PUBLIC repositories.
 # The yaagents repo is PRIVATE as of scope-amendment-2026-06-02.
-# This workflow will not succeed until the PI3-yaa public-launch flip.
+# This workflow will not succeed until the public-launch repo-visibility flip.
 # The tag trigger is intentionally NOT parked (unlike pypi/npm/ghcr workflows)
 # because the tag push is itself gated on the repo becoming public.
 
