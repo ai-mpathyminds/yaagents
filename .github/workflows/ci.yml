@@ -453,6 +453,12 @@ jobs:
           cache: pip
           cache-dependency-path: ${{ matrix.pkg }}/pyproject.toml
 
+      # 2026-06-09 post-close cleanup: actions/setup-python ships pip 26.1.1
+      # which carries PYSEC-2026-196 (pip-audit flags it). Upgrade pip to clear
+      # the self-vuln before pip-audit runs.
+      - name: Upgrade pip (clear PYSEC-2026-196 self-vuln)
+        run: pip install --upgrade "pip>=26.1.2"
+
       - name: Install package + test dependencies
         run: pip install ".[test]"
 
