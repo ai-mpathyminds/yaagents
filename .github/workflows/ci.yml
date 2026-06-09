@@ -456,6 +456,12 @@ jobs:
       - name: Install package + test dependencies
         run: pip install ".[test]"
 
+      # 2026-06-09 post-close cleanup: pyproject.toml [test] extras don't include
+      # ruff/mypy (they're lint tools, not test deps). Install them explicitly
+      # so the lint steps below have the binaries. Major version pinned.
+      - name: Install lint tools (ruff + mypy)
+        run: pip install "ruff>=0.6,<1" "mypy>=1.11,<2"
+
       # ruff: fast linter (E, F, I, UP, B, SIM per pyproject.toml)
       - name: ruff check
         run: ruff check src
